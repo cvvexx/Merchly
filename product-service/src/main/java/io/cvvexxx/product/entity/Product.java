@@ -1,4 +1,4 @@
-package io.cvvexxx.backend.entity;
+package io.cvvexxx.product.entity;
 
 
 import jakarta.persistence.Entity;

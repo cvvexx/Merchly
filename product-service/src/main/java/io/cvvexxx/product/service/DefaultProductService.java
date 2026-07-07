@@ -1,8 +1,8 @@
-package io.cvvexxx.backend.service;
+package io.cvvexxx.product.service;
 
 
-import io.cvvexxx.backend.entity.Product;
-import io.cvvexxx.backend.repository.ProductRepository;
+import io.cvvexxx.product.entity.Product;
+import io.cvvexxx.product.repository.ProductRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,6 @@
-package io.cvvexxx.backend.service;
+package io.cvvexxx.product.service;
 
-import io.cvvexxx.backend.entity.Product;
+import io.cvvexxx.product.entity.Product;
 
 import java.util.List;
 import java.util.Optional;

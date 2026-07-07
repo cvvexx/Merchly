@@ -10,7 +10,7 @@
         <relativePath>../pom.xml</relativePath> </parent>
 
     <artifactId>product-service</artifactId>
-    <name>backend</name>
+    <name>product-service</name>
     <description>Backend module for Merchly</description>
 
     <dependencies>

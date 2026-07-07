@@ -1,10 +1,10 @@
-package io.cvvexxx.frontend;
+package io.cvvexxx.backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class FrontendApplicationTests {
+class ProductServiceApplication {
 
     @Test
     void contextLoads() {

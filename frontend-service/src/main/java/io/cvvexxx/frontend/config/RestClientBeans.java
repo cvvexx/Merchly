@@ -11,7 +11,7 @@ public class RestClientBeans {
 
     @Bean
     public RestClientProductsRestClient productsRestClient(
-        @Value("${spring.restclient.uri:http://localhost:8081}") String restClientUri
+        @Value("${spring.restclient.uri.product_service:http://localhost:8081}") String restClientUri
     ) {
         return new RestClientProductsRestClient(
                 RestClient.builder()

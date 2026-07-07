@@ -1,4 +1,4 @@
-package io.cvvexxx.backend.controller.payload;
+package io.cvvexxx.product.controller.payload;
 
 public record UpdateProductPayload(
         String title,

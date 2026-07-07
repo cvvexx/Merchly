@@ -1,13 +1,13 @@
-package io.cvvexxx.backend;
+package io.cvvexxx.frontend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class BackendApplication {
+public class FrontendServiceApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(BackendApplication.class, args);
+        SpringApplication.run(FrontendServiceApplication.class, args);
     }
 
 }

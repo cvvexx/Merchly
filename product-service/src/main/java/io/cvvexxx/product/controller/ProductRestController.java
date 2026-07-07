@@ -1,9 +1,9 @@
-package io.cvvexxx.backend.controller;
+package io.cvvexxx.product.controller;
 
 
-import io.cvvexxx.backend.controller.payload.UpdateProductPayload;
-import io.cvvexxx.backend.entity.Product;
-import io.cvvexxx.backend.service.ProductService;
+import io.cvvexxx.product.controller.payload.UpdateProductPayload;
+import io.cvvexxx.product.entity.Product;
+import io.cvvexxx.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
