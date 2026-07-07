@@ -1,0 +1,93 @@
+package io.cvvexxx.frontend.client;
+
+import io.cvvexxx.frontend.controller.payload.NewProductPayload;
+import io.cvvexxx.frontend.controller.payload.UpdateProductPayload;
+import io.cvvexxx.frontend.entity.Product;
+import lombok.RequiredArgsConstructor;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClient;
+
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Optional;
+
+
+@RequiredArgsConstructor
+public class RestClientProductsRestClient implements ProductsRestClient {
+
+    private static final ParameterizedTypeReference<List<Product>> PRODUCT_LIST_TYPE =
+            new ParameterizedTypeReference<>() {
+            };
+
+    private final RestClient restClient;
+
+    @Override
+    public List<Product> findAllProducts() {
+        return restClient
+                .get()
+                .uri("/api/products")
+                .retrieve()
+                .body(PRODUCT_LIST_TYPE);
+    }
+
+    @Override
+    public Optional<Product> findProductById(int productId) {
+        try {
+            return Optional.ofNullable(restClient
+                    .get()
+                    .uri("/api/products/{productId}", productId)
+                    .retrieve()
+                    .body(Product.class)
+            );
+        } catch (HttpClientErrorException.NotFound exception) {
+            return Optional.empty();
+        }
+
+    }
+
+    @Override
+    public Product createProduct(String title, String description) {
+        try {
+            return restClient
+                    .post()
+                    .uri("/api/products")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new NewProductPayload(title, description))
+                    .retrieve()
+                    .body(Product.class);
+        } catch (HttpClientErrorException.BadRequest exception) {
+            //TODO(Добавить валидацию на стороне бэка)
+            return null;
+        }
+    }
+
+    @Override
+    public void deleteProduct(int productId) {
+        try {
+            restClient
+                    .delete()
+                    .uri("/api/products/{productId}", productId)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (HttpClientErrorException.NotFound exception) {
+            throw new NoSuchElementException(exception);
+        }
+    }
+
+    @Override
+    public void updateProduct(int productId, String title, String description) {
+        try {
+            restClient
+                    .patch()
+                    .uri("/api/products/{productId}", productId)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new UpdateProductPayload(title, description))
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (HttpClientErrorException.NotFound exception) {
+            throw new NoSuchElementException(exception);
+        }
+    }
+}
