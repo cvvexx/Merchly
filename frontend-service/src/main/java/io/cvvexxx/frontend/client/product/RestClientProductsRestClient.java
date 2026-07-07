@@ -1,7 +1,7 @@
-package io.cvvexxx.frontend.client;
+package io.cvvexxx.frontend.client.product;
 
-import io.cvvexxx.frontend.controller.payload.NewProductPayload;
-import io.cvvexxx.frontend.controller.payload.UpdateProductPayload;
+import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
+import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
 import io.cvvexxx.frontend.entity.Product;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;

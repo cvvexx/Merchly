@@ -18,8 +18,8 @@
     <description>Root POM for Merchly Marketplace</description>
 
     <modules>
-        <module>backend</module>
-        <module>frontend</module>
+        <module>product-service</module>
+        <module>frontend-service</module>
     </modules>
 
     <properties>

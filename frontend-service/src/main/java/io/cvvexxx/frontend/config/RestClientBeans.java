@@ -1,13 +1,13 @@
 package io.cvvexxx.frontend.config;
 
-import io.cvvexxx.frontend.client.RestClientProductsRestClient;
+import io.cvvexxx.frontend.client.product.RestClientProductsRestClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestClient;
 
 @Configuration
-public class ClientBeans {
+public class RestClientBeans {
 
     @Bean
     public RestClientProductsRestClient productsRestClient(

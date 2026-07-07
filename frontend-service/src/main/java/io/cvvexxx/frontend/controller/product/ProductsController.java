@@ -1,8 +1,8 @@
-package io.cvvexxx.frontend.controller;
+package io.cvvexxx.frontend.controller.product;
 
 
-import io.cvvexxx.frontend.client.ProductsRestClient;
-import io.cvvexxx.frontend.controller.payload.NewProductPayload;
+import io.cvvexxx.frontend.client.product.ProductsRestClient;
+import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.entity.Product;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
