@@ -1,18 +1,32 @@
 version: '3.8'
 
 services:
-  postgres:
+  users_db:
     image: postgres:16
-    container_name: merchly_db
+    container_name: merchly_users_db
     restart: always
     environment:
-      POSTGRES_USER: cvvexxx
-      POSTGRES_PASSWORD: 12345678
-      POSTGRES_DB: merchly_db
+      POSTGRES_USER: ${USERS_DB_USER}
+      POSTGRES_PASSWORD: ${USERS_DB_PASSWORD}
+      POSTGRES_DB: ${USERS_DB_NAME}
     ports:
       - "5432:5432"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgdata_users:/var/lib/postgresql/data
+
+  products_db:
+    image: postgres:16
+    container_name: merchly_products_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${PRODUCTS_DB_USER}
+      POSTGRES_PASSWORD: ${PRODUCTS_DB_PASSWORD}
+      POSTGRES_DB: ${PRODUCTS_DB_NAME}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata_products:/var/lib/postgresql/data
 
 volumes:
-  pgdata:
+  pgdata_users:
+  pgdata_products:
