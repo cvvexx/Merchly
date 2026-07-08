@@ -4,10 +4,17 @@ package io.cvvexxx.product.controller;
 import io.cvvexxx.product.controller.payload.UpdateProductPayload;
 import io.cvvexxx.product.entity.Product;
 import io.cvvexxx.product.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindException;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Locale;
 import java.util.NoSuchElementException;
 
 @RestController
@@ -17,10 +24,12 @@ public class ProductRestController {
 
     private final ProductService productService;
 
+    private final MessageSource messageSource;
+
     @ModelAttribute("product")
     public Product getProduct(@PathVariable("productId") int productId) {
         return productService.findProductById(productId)
-                .orElseThrow(() -> new NoSuchElementException(""));//TODO
+                .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
     }
 
     @GetMapping
@@ -31,11 +40,20 @@ public class ProductRestController {
     @PatchMapping
     public ResponseEntity<?> updateProduct(
             @PathVariable("productId") int productId,
-            @RequestBody UpdateProductPayload payload
-    ) {
-        productService.updateProduct(productId, payload.title(), payload.description());
-        return ResponseEntity.noContent()
-                .build();
+            @Valid @RequestBody UpdateProductPayload payload,
+            BindingResult bindingResult
+    ) throws BindException {
+        if (bindingResult.hasErrors()) {
+            if (bindingResult instanceof BindException exception) {
+                throw exception;
+            }
+            throw new BindException(bindingResult);
+        } else {
+            productService.updateProduct(productId, payload.title(), payload.description());
+            return ResponseEntity.noContent()
+                    .build();
+
+        }
     }
 
     @DeleteMapping
@@ -45,5 +63,19 @@ public class ProductRestController {
         productService.deleteProduct(productId);
         return ResponseEntity.noContent()
                 .build();
+    }
+
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<ProblemDetail> handleNoSuchElementException(
+            NoSuchElementException exception,
+            Locale locale
+    ) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(
+                        ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,
+                                messageSource.getMessage(exception.getMessage(), new Object[0],
+                                        exception.getMessage(), locale))
+                );
+
     }
 }

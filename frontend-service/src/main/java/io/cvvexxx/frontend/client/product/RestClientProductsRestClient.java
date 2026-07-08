@@ -3,9 +3,11 @@ package io.cvvexxx.frontend.client.product;
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
 import io.cvvexxx.frontend.entity.Product;
+import io.cvvexxx.frontend.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
@@ -58,8 +60,8 @@ public class RestClientProductsRestClient implements ProductsRestClient {
                     .retrieve()
                     .body(Product.class);
         } catch (HttpClientErrorException.BadRequest exception) {
-            //TODO(Добавить валидацию на стороне бэка)
-            return null;
+            ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
+            throw new BadRequestException((List<String>) problemDetail.getProperties().get("errors"));
         }
     }
 
@@ -86,8 +88,9 @@ public class RestClientProductsRestClient implements ProductsRestClient {
                     .body(new UpdateProductPayload(title, description))
                     .retrieve()
                     .toBodilessEntity();
-        } catch (HttpClientErrorException.NotFound exception) {
-            throw new NoSuchElementException(exception);
+        } catch (HttpClientErrorException.BadRequest exception) {
+            ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
+            throw new BadRequestException((List<String>) problemDetail.getProperties().get("errors"));
         }
     }
 }
