@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Вход в Merchly</title>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .login-card { background: #2a2a2a; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; }
+        .input-group { margin-bottom: 15px; }
+        input { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; box-sizing: border-box;}
+        button { width: 100%; padding: 10px; background: #ff4757; border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: bold;}
+        .error { color: #ff6b6b; margin-bottom: 15px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>Войти в систему</h2>
+
+    <div th:if="${param.error}" class="error">
+        Неверный логин или пароль!
+    </div>
+    <div th:if="${param.logout}" style="color: #2ed573; margin-bottom: 15px;">
+        Вы успешно вышли.
+    </div>
+
+    <form th:action="@{/login}" method="post">
+        <div class="input-group">
+            <label>Логин (Email)</label>
+            <input type="text" name="username" required placeholder="Введите логин..."/>
+        </div>
+        <div class="input-group">
+            <label>Пароль</label>
+            <input type="password" name="password" required placeholder="Пароль..."/>
+        </div>
+        <button type="submit">Уверенно войти</button>
+    </form>
+</div>
+
+</body>
+</html>
