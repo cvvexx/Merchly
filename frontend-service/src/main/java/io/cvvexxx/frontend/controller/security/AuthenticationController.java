@@ -26,7 +26,7 @@ public class AuthenticationController {
     public String registrationPage() {
         return "security/registration";
     }
-//test
+
     @PostMapping("/do-register")
     public String registerUser(
         UserRegistrationPayload payload
