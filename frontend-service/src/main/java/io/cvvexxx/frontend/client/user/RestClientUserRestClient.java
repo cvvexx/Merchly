@@ -1,6 +1,7 @@
 package io.cvvexxx.frontend.client.user;
 
 import io.cvvexxx.frontend.controller.security.payload.UserLoginPayload;
+import io.cvvexxx.frontend.controller.security.payload.UserRegistrationPayload;
 import io.cvvexxx.frontend.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
@@ -22,4 +23,14 @@ public class RestClientUserRestClient implements UserRestClient {
                 .body(UserDto.class);
     }
 
+    @Override
+    public UserDto registerUser(String username, String password) {
+        return restClient
+                .post()
+                .uri("api/users/auth")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(new UserRegistrationPayload(username, password))
+                .retrieve()
+                .body(UserDto.class);
+    }
 }

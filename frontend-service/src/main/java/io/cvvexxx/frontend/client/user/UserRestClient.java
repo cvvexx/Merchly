@@ -6,4 +6,6 @@ public interface UserRestClient {
 
     UserDto checkUserAuth(String username, String password);
 
+    UserDto registerUser(String username, String password);
+
 }

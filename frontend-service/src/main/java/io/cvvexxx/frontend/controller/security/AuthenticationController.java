@@ -3,6 +3,7 @@ package io.cvvexxx.frontend.controller.security;
 
 import io.cvvexxx.frontend.client.user.RestClientUserRestClient;
 import io.cvvexxx.frontend.controller.security.payload.UserLoginPayload;
+import io.cvvexxx.frontend.controller.security.payload.UserRegistrationPayload;
 import io.cvvexxx.frontend.dto.UserDto;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -20,6 +21,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 public class AuthenticationController {
 
     private final RestClientUserRestClient restClient;
+
+    @GetMapping("/registration")
+    public String registrationPage() {
+        return "security/registration";
+    }
+
+    @PostMapping("/do-register")
+    public String registerUser(
+        UserRegistrationPayload payload
+    ) {
+        UserDto userDto = restClient.registerUser(payload.username(), payload.password());
+
+        return "redirect:/login";
+    }
+
 
     @GetMapping("/login")
     public String loginPage() {

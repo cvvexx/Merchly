@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Регистрация в Merchly</title>
+    <style>
+        body { background: #1a1a1a; color: white; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .login-card { background: #2a2a2a; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; }
+        .input-group { margin-bottom: 15px; }
+        input { width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #444; background: #333; color: white; box-sizing: border-box;}
+        button { width: 100%; padding: 10px; background: #2ed573; border: none; color: white; border-radius: 4px; cursor: pointer; font-weight: bold;}
+        .link { margin-top: 15px; text-align: center; font-size: 14px; }
+        .link a { color: #ff4757; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+<div class="login-card">
+    <h2>Регистрация</h2>
+
+    <form th:action="@{/do-register}" method="post">
+        <div class="input-group">
+            <label>Имя пользователя</label>
+            <input type="text" name="username" required placeholder="Введите логин..."/>
+        </div>
+        <div class="input-group">
+            <label>Пароль</label>
+            <input type="password" name="password" required placeholder="Введите пароль..."/>
+        </div>
+        <button type="submit">Зарегистрироваться</button>
+    </form>
+
+    <div class="link">
+        Уже есть аккаунт? <a th:href="@{/login}">Войти</a>
+    </div>
+</div>
+
+</body>
+</html>
