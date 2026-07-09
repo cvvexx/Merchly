@@ -24,14 +24,18 @@
         Вы успешно вышли.
     </div>
 
-    <form th:action="@{/login}" method="post">
+    <form th:action="@{/do-login}" method="post">
         <div class="input-group">
             <label>Логин (Email)</label>
-            <input type="text" name="username" required placeholder="Введите логин..."/>
+            <label>
+                <input type="text" name="username" required placeholder="Введите логин..."/>
+            </label>
         </div>
         <div class="input-group">
             <label>Пароль</label>
-            <input type="password" name="password" required placeholder="Пароль..."/>
+            <label>
+                <input type="password" name="password" required placeholder="Пароль..."/>
+            </label>
         </div>
         <button type="submit">Уверенно войти</button>
     </form>

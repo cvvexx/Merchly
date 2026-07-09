@@ -62,7 +62,7 @@ public class UserService {
 
         SecurityUser securityUser = (SecurityUser) userDetailsService.loadUserByUsername(username);
 
-        return mapToDto(securityUser.getUser());
+        return mapToDto(securityUser.user());
     }
 
     private UserDto mapToDto(User user) {

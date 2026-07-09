@@ -25,7 +25,7 @@ public class SecurityBeans {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users/login", "/api/users/auth").permitAll()
+                        .requestMatchers("/api/users/login", "/api/users/auth", "/login").permitAll()
                         .anyRequest().authenticated()
                 )
                 .build();
@@ -34,7 +34,8 @@ public class SecurityBeans {
     @Bean
     public AuthenticationManager authenticationManager(
             DefaultUserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder
+    ) {
 
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userDetailsService);

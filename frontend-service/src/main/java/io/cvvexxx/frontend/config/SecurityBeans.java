@@ -12,19 +12,16 @@ public class SecurityBeans {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.authorizeHttpRequests(
-                        configurer ->
-                                configurer
-                                        .requestMatchers("/login", "/logout", "/css/**", "/js/**")
-                                        .permitAll()
-                                        .anyRequest().authenticated()
+        return http.authorizeHttpRequests(auth -> auth
+                        // РАЗРЕШАЕМ доступ к странице логина и к нашему кастомному URL обработчику!
+                        .requestMatchers("/login", "/do-login", "/css/**", "/js/**").permitAll()
+                        .anyRequest().authenticated()
                 )
-                .formLogin(
-                        configurer -> configurer
-                                .loginPage("/login")
-                                .defaultSuccessUrl("/", true)
-                                .failureUrl("/login")
-                                .permitAll()
+                .formLogin(form -> form
+                        .loginPage("/login") // Указываем, ГДЕ лежит наша страница логина
+                        // ВАЖНО: Убираем loginProcessingUrl, если он там был!
+                        // Не пишите сюда "/do-login", иначе Spring Security снова начнет его перехватывать
+                        .permitAll()
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
@@ -35,7 +32,6 @@ public class SecurityBeans {
                 )
                 .build();
     }
-
 
 
 }

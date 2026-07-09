@@ -20,7 +20,6 @@ public class RestClientUserRestClient implements UserRestClient {
                 .body(new UserLoginPayload(username, password))
                 .retrieve()
                 .body(UserDto.class);
-
     }
 
 }

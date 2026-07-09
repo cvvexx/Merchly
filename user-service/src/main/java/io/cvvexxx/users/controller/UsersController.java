@@ -20,7 +20,7 @@ public class UsersController {
 
     @PostMapping("auth")
     public ResponseEntity<UserDto> authUser(@RequestBody LoginUserPayload payload) {
-        UserDto userDto = userService.authUser(payload.username(), payload.username());
+        UserDto userDto = userService.authUser(payload.username(), payload.password());
 
         return ResponseEntity.ok(userDto);
     }
