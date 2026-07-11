@@ -1,8 +1,7 @@
 package io.cvvexxx.users.controller;
 
-
 import io.cvvexxx.users.controller.payload.LoginUserPayload;
-import io.cvvexxx.users.dto.UserDto;
+import io.cvvexxx.users.dto.JwtAuthenticationDto;
 import io.cvvexxx.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,18 +18,14 @@ public class UsersController {
     private final UserService userService;
 
     @PostMapping("auth")
-    public ResponseEntity<UserDto> authUser(@RequestBody LoginUserPayload payload) {
-        UserDto userDto = userService.authUser(payload.username(), payload.password());
-
-        return ResponseEntity.ok(userDto);
+    public ResponseEntity<JwtAuthenticationDto> registerUser(@RequestBody LoginUserPayload payload) {
+        JwtAuthenticationDto jwtDto = userService.registerUser(payload.username(), payload.password());
+        return ResponseEntity.ok(jwtDto);
     }
 
     @PostMapping("login")
-    public ResponseEntity<UserDto> loginUser(@RequestBody LoginUserPayload payload) {
-        UserDto userDto = userService.loginUser(payload.username(), payload.password());
-
-        return ResponseEntity.ok(userDto);
+    public ResponseEntity<JwtAuthenticationDto> loginUser(@RequestBody LoginUserPayload payload) {
+        JwtAuthenticationDto jwtDto = userService.loginUser(payload.username(), payload.password());
+        return ResponseEntity.ok(jwtDto);
     }
-
-
 }
