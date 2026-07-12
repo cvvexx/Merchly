@@ -1,35 +1,35 @@
 package io.cvvexxx.frontend.config;
 
 
+import io.cvvexxx.frontend.security.jwt.JwtCookieFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.config.annotation.web.FormLoginDsl;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
+@RequiredArgsConstructor
 public class SecurityBeans {
+
+    private final JwtCookieFilter jwtCookieFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http.authorizeHttpRequests(auth -> auth
-                        // РАЗРЕШАЕМ доступ к странице логина и к нашему кастомному URL обработчику!
-                        .requestMatchers("/login", "/do-login", "/css/**", "/js/**").permitAll()
+                        .requestMatchers("/login", "/do-login",
+                                "/registration", "/do-register",
+                                "/logout",
+                                "/css/**", "/js/**").permitAll()
                         .anyRequest().authenticated()
                 )
-                .formLogin(form -> form
-                        .loginPage("/login") // Указываем, ГДЕ лежит наша страница логина
-                        // ВАЖНО: Убираем loginProcessingUrl, если он там был!
-                        // Не пишите сюда "/do-login", иначе Spring Security снова начнет его перехватывать
-                        .permitAll()
-                )
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login")
-                        .invalidateHttpSession(true) // Инвалидируем сессию
-                        .deleteCookies("JSESSIONID") // Чистим куки
-                        .permitAll()
-                )
+                .addFilterBefore(jwtCookieFilter, UsernamePasswordAuthenticationFilter.class)
+                .formLogin(AbstractHttpConfigurer::disable)
                 .build();
     }
 

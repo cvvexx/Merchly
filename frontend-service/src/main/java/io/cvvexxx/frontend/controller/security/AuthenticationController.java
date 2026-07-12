@@ -4,14 +4,11 @@ package io.cvvexxx.frontend.controller.security;
 import io.cvvexxx.frontend.client.user.RestClientUserRestClient;
 import io.cvvexxx.frontend.controller.security.payload.UserLoginPayload;
 import io.cvvexxx.frontend.controller.security.payload.UserRegistrationPayload;
-import io.cvvexxx.frontend.dto.UserDto;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import io.cvvexxx.frontend.dto.JwtAuthenticationDto;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,53 +24,65 @@ public class AuthenticationController {
         return "security/registration";
     }
 
-    @PostMapping("/do-register")
-    public String registerUser(
-        UserRegistrationPayload payload
-    ) {
-        UserDto userDto = restClient.registerUser(payload.username(), payload.password());
-
-        return "redirect:/login";
-    }
-
-
     @GetMapping("/login")
     public String loginPage() {
         return "security/login";
     }
 
-    @PostMapping("/do-login") // Меняем адрес здесь!
-    public String loginUser(UserLoginPayload payload, HttpServletRequest request) {
+    @PostMapping("/do-register")
+    public String registerUser(
+            UserRegistrationPayload payload
+    ) {
+        restClient.registerUser(payload.username(), payload.password());
 
+        return "redirect:/login";
+    }
+
+    @PostMapping("/do-login")
+    public String loginUser(UserLoginPayload payload, HttpServletResponse response) {
         try {
-            // 1. Отправляем запрос на бэкенд
-            UserDto userDto = restClient.checkUserAuth(payload.username(), payload.password());
+            JwtAuthenticationDto jwtAuthenticationDto = restClient.checkUserAuth(payload.username(), payload.password());
+            String accessToken = jwtAuthenticationDto.token();
+            String refreshToken = jwtAuthenticationDto.refreshToken();
 
-            // 2. Создаем аутентификацию вручную
-            // В userDto.roles() у тебя приходят роли с префиксом "ROLE_"
-            var authorities = userDto.roles().stream()
-                    .map(SimpleGrantedAuthority::new)
-                    .toList();
+            ResponseCookie accessTokenCookie = ResponseCookie.from("JWT_TOKEN", accessToken)
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .maxAge(15 * 60) // 15 min
+                    .sameSite("Lax")
+                    .build();
 
-            UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                    userDto.username(),
-                    null,
-                    authorities
-            );
+            ResponseCookie refreshTokenCookie = ResponseCookie.from("REFRESH_TOKEN", refreshToken)
+                    .httpOnly(true)
+                    .secure(false)
+                    .path("/")
+                    .maxAge(30 * 24 * 60 * 60) // 30 days
+                    .sameSite("Lax")
+                    .build();
 
-            // 3. Кладем ее в контекст Spring Security
-            SecurityContextHolder.getContext().setAuthentication(auth);
 
-            // 4. Сохраняем контекст в HTTP-сессию фронтенда
-            HttpSession session = request.getSession(true);
-            session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, SecurityContextHolder.getContext());
+            response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+            response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
-            return "catalogue/main/main_page";
-
+            return "redirect:/catalogue/main/main_page";
         } catch (Exception e) {
-            // Если бэкенд вернул ошибку (например, 401 Unauthorized), кидаем обратно на страницу логина
             return "redirect:/login?error";
         }
+    }
+
+    @PostMapping("/logout")//TODO(НЕ РАБОТАЕТ)
+    public String logoutUser(HttpServletResponse response) {
+        ResponseCookie jwtCookie = ResponseCookie.from("JWT_TOKEN", "")
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
+        return "";//TODO
     }
 
 }
