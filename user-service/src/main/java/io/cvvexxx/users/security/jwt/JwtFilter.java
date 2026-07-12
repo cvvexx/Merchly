@@ -16,13 +16,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
-
 @Component
 @RequiredArgsConstructor
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-
     private final DefaultUserDetailsService userDetailsService;
 
     @Override
@@ -33,15 +31,20 @@ public class JwtFilter extends OncePerRequestFilter {
     ) throws ServletException, IOException {
         String token = getTokenFromRequest(request);
 
-        if (token != null && jwtService.validateJwtToken(token)) {
-            setCustomUserDetailsToSecurityContextHolder(token);
+        if (token != null) {
+            jwtService.getUsernameFromToken(token).ifPresent(username -> {
+                if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                    setCustomUserDetailsToSecurityContextHolder(username);
+                }
+            });
         }
+
         filterChain.doFilter(request, response);
     }
 
-    public void setCustomUserDetailsToSecurityContextHolder(String token) {
-        String username = jwtService.getUsernameFromToken(token);
+    private void setCustomUserDetailsToSecurityContextHolder(String username) {
         SecurityUser securityUser = userDetailsService.loadUserByUsername(username);
+
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                 securityUser,
                 null,
@@ -51,9 +54,12 @@ public class JwtFilter extends OncePerRequestFilter {
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 
-    public String getTokenFromRequest(HttpServletRequest request) {
+    private String getTokenFromRequest(HttpServletRequest request) {
         String bearerToken = request.getHeader(HttpHeaders.AUTHORIZATION);
 
-        return (bearerToken != null && !bearerToken.isBlank()) ? bearerToken.substring(7) : null;
+        if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
+            return bearerToken.substring(7).trim();
+        }
+        return null;
     }
 }

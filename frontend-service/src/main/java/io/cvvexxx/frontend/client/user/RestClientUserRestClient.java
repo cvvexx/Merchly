@@ -4,6 +4,7 @@ import io.cvvexxx.frontend.controller.security.payload.UserLoginPayload;
 import io.cvvexxx.frontend.controller.security.payload.UserRegistrationPayload;
 import io.cvvexxx.frontend.dto.UserDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
@@ -30,6 +31,16 @@ public class RestClientUserRestClient implements UserRestClient {
                 .uri("api/users/auth")
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(new UserRegistrationPayload(username, password))
+                .retrieve()
+                .body(UserDto.class);
+    }
+
+    @Override
+    public UserDto getUserInfo(String token) {
+        return restClient
+                .get()
+                .uri("api/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer" + token)
                 .retrieve()
                 .body(UserDto.class);
     }

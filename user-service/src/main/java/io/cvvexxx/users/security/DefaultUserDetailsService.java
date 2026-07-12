@@ -1,9 +1,7 @@
 package io.cvvexxx.users.security;
 
-import io.cvvexxx.users.entity.User;
 import io.cvvexxx.users.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;

@@ -4,8 +4,10 @@ import io.cvvexxx.frontend.dto.UserDto;
 
 public interface UserRestClient {
 
-    UserDto checkUserAuth(String username, String password);
+    UserDto checkUserAuth(String username, String password);//TODO
 
-    UserDto registerUser(String username, String password);
+    UserDto registerUser(String username, String password);//TODO
+
+    UserDto getUserInfo(String token);
 
 }

@@ -1,6 +1,7 @@
 package io.cvvexxx.users.service;
 
 import io.cvvexxx.users.dto.JwtAuthenticationDto;
+import io.cvvexxx.users.dto.UserDto;
 import io.cvvexxx.users.entity.Role;
 import io.cvvexxx.users.entity.User;
 import io.cvvexxx.users.repository.RoleRepository;
@@ -11,10 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -51,5 +54,20 @@ public class UserService {
         );
 
         return jwtService.generateAuthToken(username);
+    }
+
+    @Transactional(readOnly = true)
+    public UserDto getUserInfo(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Not found user with username: %s"
+                        .formatted(username)));
+
+        return new UserDto(
+                user.getId(),
+                user.getUsername(),
+                user.getRoles().stream()
+                        .map(Role::getRole)
+                        .toList()
+        );
     }
 }
