@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.net.URLEncoder;
@@ -27,7 +28,7 @@ public class AuthenticationController {
     @GetMapping("/registration")
     public String registrationPage(
             @RequestParam(value = "target", required = false) String target,
-             Model model
+            Model model
     ) {
         model.addAttribute("target", target);
 
@@ -75,7 +76,7 @@ public class AuthenticationController {
                     .httpOnly(true)
                     .secure(false)
                     .path("/")
-                    .maxAge(15 * 60) // 15 min
+                    .maxAge(30) // 15 min
                     .sameSite("Lax")
                     .build();
 
@@ -101,17 +102,23 @@ public class AuthenticationController {
         }
     }
 
-    @PostMapping("/logout")//TODO(НЕ РАБОТАЕТ)
+    @PostMapping("/logout")
     public String logoutUser(HttpServletResponse response) {
         ResponseCookie jwtCookie = ResponseCookie.from("JWT_TOKEN", "")
-                .httpOnly(true)
-                .secure(false)
-                .path("/")
-                .maxAge(0)
-                .sameSite("Lax")
-                .build();
+                .httpOnly(true).path("/").maxAge(0).sameSite("Lax").build();
+
+        ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", "")
+                .httpOnly(true).path("/").maxAge(0).sameSite("Lax").build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
-        return "";//TODO
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
+
+        return "redirect:/login?logout";
     }
+
+    @RequestMapping("error-403")
+    public String accessDenied() {
+        return "error/403";
+    }
+
 }

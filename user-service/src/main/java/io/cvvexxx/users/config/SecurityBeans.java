@@ -30,7 +30,8 @@ public class SecurityBeans {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/users/login", "/api/users/auth").permitAll()
+                        .requestMatchers("/api/users/login", "/api/users/auth",
+                                "api/jwt/refresh").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

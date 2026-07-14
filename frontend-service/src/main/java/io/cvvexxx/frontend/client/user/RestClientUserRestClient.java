@@ -45,4 +45,16 @@ public class RestClientUserRestClient implements UserRestClient {
                 .retrieve()
                 .body(UserDto.class);
     }
+
+    @Override
+    public JwtAuthenticationDto refreshTokens(String refreshToken) {
+        return restClient
+                .post()
+                .uri("/api/jwt/refresh")
+                .header("X-Refresh-Token", refreshToken)
+                .retrieve()
+                .body(JwtAuthenticationDto.class);
+    }
+
+
 }
