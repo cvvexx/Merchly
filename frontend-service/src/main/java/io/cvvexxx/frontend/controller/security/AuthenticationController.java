@@ -10,8 +10,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Controller
 @RequiredArgsConstructor
@@ -20,26 +25,47 @@ public class AuthenticationController {
     private final RestClientUserRestClient restClient;
 
     @GetMapping("/registration")
-    public String registrationPage() {
+    public String registrationPage(
+            @RequestParam(value = "target", required = false) String target,
+             Model model
+    ) {
+        model.addAttribute("target", target);
+
+
         return "security/registration";
     }
 
     @GetMapping("/login")
-    public String loginPage() {
+    public String loginPage(@RequestParam(value = "error", required = false) String error,
+                            @RequestParam(value = "target", required = false) String target,
+                            Model model) {
+        if ("unauthorized".equals(error)) {
+            model.addAttribute("message", "Сперва необходимо зарегистрироваться или войти в аккаунт!");
+        }
+
+        model.addAttribute("target", target);
         return "security/login";
     }
 
     @PostMapping("/do-register")
     public String registerUser(
-            UserRegistrationPayload payload
+            UserRegistrationPayload payload,
+            @RequestParam(value = "target", required = false) String target
     ) {
         restClient.registerUser(payload.username(), payload.password());
+
+        if (target != null && target.startsWith("/")) {
+            return "redirect:/login?target=" + URLEncoder.encode(target, StandardCharsets.UTF_8);
+        }
 
         return "redirect:/login";
     }
 
     @PostMapping("/do-login")
-    public String loginUser(UserLoginPayload payload, HttpServletResponse response) {
+    public String loginUser(
+            UserLoginPayload payload,
+            @RequestParam(value = "target", required = false) String target,
+            HttpServletResponse response) {
         try {
             JwtAuthenticationDto jwtAuthenticationDto = restClient.checkUserAuth(payload.username(), payload.password());
             String accessToken = jwtAuthenticationDto.token();
@@ -65,7 +91,11 @@ public class AuthenticationController {
             response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
             response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
 
-            return "redirect:/catalogue/main/main_page";
+            if (target != null && target.startsWith("/")) {
+                return "redirect:" + target;
+            }
+
+            return "redirect:/";
         } catch (Exception e) {
             return "redirect:/login?error";
         }
@@ -84,5 +114,4 @@ public class AuthenticationController {
         response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
         return "";//TODO
     }
-
 }

@@ -17,14 +17,20 @@
 <div class="login-card">
     <h2>Войти в систему</h2>
 
-    <div th:if="${param.error}" class="error">
+    <div th:if="${message}" style="color: red; background-color: #ffe6e6; padding: 10px; border-radius: 5px; margin-bottom: 15px;">
+        <p th:text="${message}"></p>
+    </div>
+
+    <div th:if="${param.error != null && (param.error[0] == 'true' || param.error[0] == 'bad_credentials')}" class="error">
         Неверный логин или пароль!
     </div>
+
     <div th:if="${param.logout}" style="color: #2ed573; margin-bottom: 15px;">
         Вы успешно вышли.
     </div>
 
     <form th:action="@{/do-login}" method="post">
+        <input type="hidden" name="target" th:value="${target}"/>
         <div class="input-group">
             <label>Логин (Email)</label>
             <label>
@@ -37,10 +43,10 @@
                 <input type="password" name="password" required placeholder="Пароль..."/>
             </label>
         </div>
-        <button type="submit">Уверенно войти</button>
+        <button type="submit">Войти</button>
     </form>
     <div style="margin-top: 15px; text-align: center; font-size: 14px;">
-        Нет аккаунта? <a th:href="@{/registration}" style="color: #2ed573; text-decoration: none;">Зарегистрироваться</a>
+        Нет аккаунта? <a th:href="@{/registration(target=${target})}" style="color: #2ed573; text-decoration: none;">Зарегистрироваться</a>
     </div>
 </div>
 
