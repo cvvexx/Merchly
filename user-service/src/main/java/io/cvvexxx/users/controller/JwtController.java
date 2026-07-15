@@ -3,6 +3,7 @@ package io.cvvexxx.users.controller;
 
 import io.cvvexxx.users.dto.JwtAuthenticationDto;
 import io.cvvexxx.users.security.jwt.JwtService;
+import io.cvvexxx.users.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,13 +14,15 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Set;
+
 @RequiredArgsConstructor
 @RequestMapping("api/jwt")
 @RestController
 public class JwtController {
 
     private final JwtService jwtService;
-
+    private final UserService userService;
 
     @PostMapping("/refresh")
     public ResponseEntity<?> refreshToken(
@@ -34,7 +37,8 @@ public class JwtController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired refresh token");
             }
             String username = usernameOpt.get();
-            JwtAuthenticationDto newTokens = jwtService.refreshBaseToken(username, refreshToken);
+            Set<String> roles = userService.getUserRoles(username);
+            JwtAuthenticationDto newTokens = jwtService.refreshBaseToken(username, roles, refreshToken);
 
             return ResponseEntity.ok(newTokens);
         } catch (Exception e) {

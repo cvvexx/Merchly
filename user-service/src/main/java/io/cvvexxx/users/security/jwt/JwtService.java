@@ -13,7 +13,9 @@ import javax.crypto.SecretKey;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 public class JwtService {
@@ -23,22 +25,22 @@ public class JwtService {
     @Value("${jwt.token.secret}")
     private String jwtSecret;
 
-    public JwtAuthenticationDto generateAuthToken(String username) {
+    public JwtAuthenticationDto generateAuthToken(String username, Set<String> userRoles) {
         JwtAuthenticationDto jwtDto = new JwtAuthenticationDto();
-        jwtDto.setToken(generateJwtToken(username));
+        jwtDto.setToken(generateJwtToken(username, userRoles));
         jwtDto.setRefreshToken(generateRefreshToken(username));
         return jwtDto;
     }
 
-    public JwtAuthenticationDto refreshBaseToken(String username, String refreshToken) {
+    public JwtAuthenticationDto refreshBaseToken(String username, Set<String> roles, String refreshToken) {
         JwtAuthenticationDto jwtDto = new JwtAuthenticationDto();
-        jwtDto.setToken(generateJwtToken(username));
+        jwtDto.setToken(generateJwtToken(username, roles));
         jwtDto.setRefreshToken(refreshToken);
         return jwtDto;
     }
 
     public Optional<String> getUsernameFromToken(String token) {
-        return getAllClaimsFromToken(token).map(Claims::getSubject);
+        return getAllClaimsFromToken(token).map(claims -> claims.get("username", String.class));
     }
 
     private Optional<Claims> getAllClaimsFromToken(String token) {
@@ -67,10 +69,11 @@ public class JwtService {
         return getAllClaimsFromToken(token).isPresent();
     }
 
-    private String generateJwtToken(String username) {
+    private String generateJwtToken(String username, Set<String> userRoles) {
         Date date = Date.from(LocalDateTime.now().plusMinutes(15).atZone(ZoneId.systemDefault()).toInstant());
         return Jwts.builder()
-                .subject(username)
+                .claim("username", username)
+                .claim("roles", userRoles)
                 .expiration(date)
                 .signWith(getSignInKey())
                 .compact();
@@ -79,7 +82,7 @@ public class JwtService {
     private String generateRefreshToken(String username) {
         Date date = Date.from(LocalDateTime.now().plusDays(30).atZone(ZoneId.systemDefault()).toInstant());
         return Jwts.builder()
-                .subject(username)
+                .claim("username", username)
                 .expiration(date)
                 .signWith(getSignInKey())
                 .compact();

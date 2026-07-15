@@ -5,11 +5,11 @@ import io.cvvexxx.frontend.dto.UserDto;
 
 public interface UserRestClient {
 
-    JwtAuthenticationDto checkUserAuth(String username, String password);
+    JwtAuthenticationDto checkUserAuth(String username, String password);//TODO(переделать на Dto)
 
     JwtAuthenticationDto registerUser(String username, String password);
 
-    UserDto getUserInfo(String token);
+    UserDto getUserInfo();
 
     JwtAuthenticationDto refreshTokens(String refreshToken);
 }

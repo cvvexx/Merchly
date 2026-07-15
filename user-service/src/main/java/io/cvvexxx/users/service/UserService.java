@@ -17,8 +17,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -40,11 +42,15 @@ public class UserService {
 
         String hashPassword = passwordEncoder.encode(password);
         Role role = roleRepository.findByRole("USER");
+        Set<Role> roles = Set.of(role);
         User user = new User(null, username, hashPassword, Set.of(role));
         userRepository.save(user);
         logger.info("New user registered: {}", username);
 
-        return jwtService.generateAuthToken(username);
+
+        return jwtService.generateAuthToken(
+                username, mapRoleToString(roles)
+        );
     }
 
     @Transactional
@@ -52,22 +58,39 @@ public class UserService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(username, password)
         );
+        User user = findUser(username);
 
-        return jwtService.generateAuthToken(username);
+        Set<String> roles = mapRoleToString(user.getRoles());
+        return jwtService.generateAuthToken(username, roles);
     }
-
+    
     @Transactional(readOnly = true)
     public UserDto getUserInfo(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Not found user with username: %s"
-                        .formatted(username)));
+        User user = findUser(username);
 
         return new UserDto(
                 user.getId(),
                 user.getUsername(),
-                user.getRoles().stream()
-                        .map(Role::getRole)
-                        .toList()
+                mapRoleToString(user.getRoles())
         );
+    }
+    @Transactional(readOnly = true)
+    public Set<String> getUserRoles(String username) {
+        User user = findUser(username);
+
+        return mapRoleToString(user.getRoles());
+    }
+
+    protected User findUser(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Not found user with username: %s"
+                        .formatted(username)));
+    }
+
+    private Set<String> mapRoleToString(Set<Role> roles) {
+        return roles.stream()
+                .map(Role::getRole)
+                .map(role -> "ROLE_" + role)
+                .collect(Collectors.toSet());
     }
 }

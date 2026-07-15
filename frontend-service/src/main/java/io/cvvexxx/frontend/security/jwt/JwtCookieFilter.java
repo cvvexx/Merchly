@@ -19,9 +19,9 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.util.WebUtils;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 @Component
 @RequiredArgsConstructor
@@ -30,6 +30,9 @@ public class JwtCookieFilter extends OncePerRequestFilter {
     private final RestClientUserRestClient restClient;
     private final Logger logger = LoggerFactory.getLogger(JwtCookieFilter.class);
 
+    private static final String JWT_COOKIE_NAME = "JWT_TOKEN";
+    private static final String REFRESH_COOKIE_NAME = "REFRESH_TOKEN";
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
@@ -37,43 +40,36 @@ public class JwtCookieFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String accessToken = getCookieValue(request, "JWT_TOKEN");
-        String refreshToken = getCookieValue(request, "REFRESH_TOKEN");
+        // 1. Быстро и чисто достаем куки с помощью WebUtils
+        String accessToken = getCookieValue(request, JWT_COOKIE_NAME);
+        String refreshToken = getCookieValue(request, REFRESH_COOKIE_NAME);
 
         if (SecurityContextHolder.getContext().getAuthentication() == null) {
             boolean isAuthenticated = false;
 
+            // 2. Пытаемся авторизоваться по текущему Access Token
             if (accessToken != null) {
-                authenticateUser(accessToken);
-                isAuthenticated = true;
+                try {
+                    authenticateUser(accessToken);
+                    isAuthenticated = true;
+                } catch (Exception e) {
+                    logger.warn("Access token invalid or expired. Message: {}", e.getMessage());
+                    // Не падаем! Даем коду пройти дальше к попытке обновления через Refresh Token
+                }
             }
 
+            // 3. Если авторизоваться не удалось, но есть Refresh Token — обновляем сессию
             if (!isAuthenticated && refreshToken != null) {
                 try {
-                    logger.info("Access token is missing/expired. Attempting to refresh using Refresh Token...");
-
+                    logger.info("Attempting to refresh session using Refresh Token...");
                     JwtAuthenticationDto newTokens = restClient.refreshTokens(refreshToken);
 
-                    ResponseCookie accessTokenCookie = ResponseCookie.from("JWT_TOKEN", newTokens.token())
-                            .httpOnly(true)
-                            .secure(false)
-                            .path("/")
-                            .maxAge(15 * 60) //15 min
-                            .sameSite("Lax")
-                            .build();
+                    // Сохраняем новые куки в ответе
+                    writeTokenCookies(response, newTokens);
 
-                    ResponseCookie refreshTokenCookie = ResponseCookie.from("REFRESH_TOKEN", newTokens.refreshToken())
-                            .httpOnly(true)
-                            .secure(false)
-                            .path("/")
-                            .maxAge(30 * 24 * 60 * 60) // 30 days
-                            .sameSite("Lax")
-                            .build();
-
-                    response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
-                    response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
-
+                    // КРИТИЧЕСКИ ВАЖНО: Сразу авторизуем текущий запрос новым токеном!
                     authenticateUser(newTokens.token());
+                    logger.info("Session successfully refreshed and authenticated for current request.");
 
                 } catch (Exception refreshEx) {
                     logger.error("Refresh token is also expired or invalid. User must log in again.", refreshEx);
@@ -86,10 +82,11 @@ public class JwtCookieFilter extends OncePerRequestFilter {
     }
 
     private void authenticateUser(String token) {
-        UserDto userDto = restClient.getUserInfo(token);
+        UserDto userDto = restClient.getUserInfo();
+
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 userDto,
-                null,
+                token,
                 userDto.roles().stream()
                         .map(SimpleGrantedAuthority::new)
                         .toList()
@@ -98,17 +95,34 @@ public class JwtCookieFilter extends OncePerRequestFilter {
     }
 
     private String getCookieValue(HttpServletRequest request, String cookieName) {
-        if (request.getCookies() == null) return null;
-        return Arrays.stream(request.getCookies())
-                .filter(cookie -> cookieName.equals(cookie.getName()))
-                .map(Cookie::getValue)
-                .findFirst()
-                .orElse(null);
+        Cookie cookie = WebUtils.getCookie(request, cookieName);
+        return (cookie != null) ? cookie.getValue() : null;
+    }
+
+    private void writeTokenCookies(HttpServletResponse response, JwtAuthenticationDto tokens) {
+        ResponseCookie accessTokenCookie = ResponseCookie.from(JWT_COOKIE_NAME, tokens.token())
+                .httpOnly(true)
+                .secure(false) // Поставь true, если тестируешь под HTTPS в продакшене
+                .path("/")
+                .maxAge(15 * 60) // 15 мин
+                .sameSite("Lax")
+                .build();
+
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(REFRESH_COOKIE_NAME, tokens.refreshToken())
+                .httpOnly(true)
+                .secure(false)
+                .path("/")
+                .maxAge(30L * 24 * 60 * 60) // 30 дней
+                .sameSite("Lax")
+                .build();
+
+        response.addHeader(HttpHeaders.SET_COOKIE, accessTokenCookie.toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
     }
 
     private void clearCookies(HttpServletResponse response) {
-        ResponseCookie cleanAccess = ResponseCookie.from("JWT_TOKEN", "").path("/").maxAge(0).build();
-        ResponseCookie cleanRefresh = ResponseCookie.from("REFRESH_TOKEN", "").path("/").maxAge(0).build();
+        ResponseCookie cleanAccess = ResponseCookie.from(JWT_COOKIE_NAME, "").path("/").maxAge(0).build();
+        ResponseCookie cleanRefresh = ResponseCookie.from(REFRESH_COOKIE_NAME, "").path("/").maxAge(0).build();
         response.addHeader(HttpHeaders.SET_COOKIE, cleanAccess.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, cleanRefresh.toString());
     }

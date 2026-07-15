@@ -1,10 +1,10 @@
 package io.cvvexxx.users.dto;
 
-import java.util.List;
+import java.util.Set;
 
 public record UserDto(
         int id,
         String username,
-        List<String> roles
+        Set<String> roles
 ) {
 }
