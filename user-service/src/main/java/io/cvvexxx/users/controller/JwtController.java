@@ -39,7 +39,7 @@ public class JwtController {
             return ResponseEntity.ok(newTokens);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Internal server error during token refresh: " + e.getMessage());
+                    .body("Internal server error during token refresh");
         }
     }
 }
