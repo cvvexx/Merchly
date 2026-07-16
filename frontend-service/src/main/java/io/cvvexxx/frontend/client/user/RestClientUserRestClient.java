@@ -37,10 +37,11 @@ public class RestClientUserRestClient implements UserRestClient {
     }
 
     @Override
-    public UserDto getUserInfo() {
+    public UserDto getUserInfo(String token) {
         return restClient
                 .get()
                 .uri("api/users/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .retrieve()
                 .body(UserDto.class);
     }

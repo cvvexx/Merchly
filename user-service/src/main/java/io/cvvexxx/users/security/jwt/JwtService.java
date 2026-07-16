@@ -13,7 +13,6 @@ import javax.crypto.SecretKey;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -25,22 +24,31 @@ public class JwtService {
     @Value("${jwt.token.secret}")
     private String jwtSecret;
 
-    public JwtAuthenticationDto generateAuthToken(String username, Set<String> userRoles) {
+    public JwtAuthenticationDto generateAuthToken(int id, String username, Set<String> userRoles) {
         JwtAuthenticationDto jwtDto = new JwtAuthenticationDto();
-        jwtDto.setToken(generateJwtToken(username, userRoles));
+        jwtDto.setToken(generateJwtToken(id, username, userRoles));
         jwtDto.setRefreshToken(generateRefreshToken(username));
         return jwtDto;
     }
 
     public JwtAuthenticationDto refreshBaseToken(String username, Set<String> roles, String refreshToken) {
         JwtAuthenticationDto jwtDto = new JwtAuthenticationDto();
-        jwtDto.setToken(generateJwtToken(username, roles));
+        jwtDto.setToken(generateJwtToken(
+                getIdFromToken(refreshToken),
+                username,
+                roles
+        ));
         jwtDto.setRefreshToken(refreshToken);
         return jwtDto;
     }
 
     public Optional<String> getUsernameFromToken(String token) {
         return getAllClaimsFromToken(token).map(claims -> claims.get("username", String.class));
+    }
+
+    public int getIdFromToken(String token) {
+        return getAllClaimsFromToken(token).map(claims -> claims.get("id", Integer.class))
+                .orElseThrow(() -> new IllegalArgumentException("Invalid refresh token"));
     }
 
     private Optional<Claims> getAllClaimsFromToken(String token) {
@@ -69,9 +77,10 @@ public class JwtService {
         return getAllClaimsFromToken(token).isPresent();
     }
 
-    private String generateJwtToken(String username, Set<String> userRoles) {
+    private String generateJwtToken(int id, String username, Set<String> userRoles) {
         Date date = Date.from(LocalDateTime.now().plusMinutes(15).atZone(ZoneId.systemDefault()).toInstant());
         return Jwts.builder()
+                .claim("id", id)
                 .claim("username", username)
                 .claim("roles", userRoles)
                 .expiration(date)

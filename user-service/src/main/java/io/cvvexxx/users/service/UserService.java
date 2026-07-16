@@ -44,12 +44,12 @@ public class UserService {
         Role role = roleRepository.findByRole("USER");
         Set<Role> roles = Set.of(role);
         User user = new User(null, username, hashPassword, Set.of(role));
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
         logger.info("New user registered: {}", username);
 
 
         return jwtService.generateAuthToken(
-                username, mapRoleToString(roles)
+                savedUser.getId(), username, mapRoleToString(roles)
         );
     }
 
@@ -61,9 +61,9 @@ public class UserService {
         User user = findUser(username);
 
         Set<String> roles = mapRoleToString(user.getRoles());
-        return jwtService.generateAuthToken(username, roles);
+        return jwtService.generateAuthToken(user.getId(), username, roles);
     }
-    
+
     @Transactional(readOnly = true)
     public UserDto getUserInfo(String username) {
         User user = findUser(username);

@@ -8,6 +8,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
+import java.util.stream.Collectors;
 
 
 public record SecurityUser(User user) implements UserDetails {
@@ -17,7 +18,7 @@ public record SecurityUser(User user) implements UserDetails {
         return user.getRoles().stream()
                 .map(Role::getRole)
                 .map(SimpleGrantedAuthority::new)
-                .toList();
+                .collect(Collectors.toSet());
     }
 
     @Override

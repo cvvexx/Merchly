@@ -9,7 +9,7 @@ public interface UserRestClient {
 
     JwtAuthenticationDto registerUser(String username, String password);
 
-    UserDto getUserInfo();
+    UserDto getUserInfo(String token);
 
     JwtAuthenticationDto refreshTokens(String refreshToken);
 }
