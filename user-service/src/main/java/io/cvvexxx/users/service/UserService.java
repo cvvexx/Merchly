@@ -17,8 +17,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -74,6 +72,7 @@ public class UserService {
                 mapRoleToString(user.getRoles())
         );
     }
+
     @Transactional(readOnly = true)
     public Set<String> getUserRoles(String username) {
         User user = findUser(username);

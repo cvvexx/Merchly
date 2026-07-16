@@ -14,14 +14,16 @@
             height: 100vh;
             margin: 0;
         }
+
         .error-card {
             background: #2a2a2a;
             padding: 40px 30px;
             border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
             width: 380px;
             text-align: center;
         }
+
         .error-code {
             font-size: 72px;
             font-weight: bold;
@@ -29,17 +31,20 @@
             margin: 0 0 10px 0;
             line-height: 1;
         }
+
         h2 {
             margin-top: 0;
             margin-bottom: 15px;
             font-size: 22px;
         }
+
         p {
             color: #aaa;
             font-size: 15px;
             line-height: 1.5;
             margin-bottom: 25px;
         }
+
         .btn-home {
             display: inline-block;
             width: 100%;
@@ -53,6 +58,7 @@
             box-sizing: border-box;
             transition: background 0.2s;
         }
+
         .btn-home:hover {
             background: #26af5f;
         }
@@ -63,9 +69,10 @@
 <div class="error-card">
     <div class="error-code">403</div>
     <h2>Доступ ограничен</h2>
-    <p>У вашей учетной записи недостаточно прав для просмотра этой страницы. Если вы считаете, что это ошибка, обратитесь к администратору.</p>
+    <p>У вашей учетной записи недостаточно прав для просмотра этой страницы. Если вы считаете, что это ошибка,
+        обратитесь к администратору.</p>
 
-    <a th:href="@{/}" class="btn-home">На главную</a>
+    <a class="btn-home" th:href="@{/}">На главную</a>
 </div>
 
 </body>

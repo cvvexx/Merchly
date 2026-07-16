@@ -13,14 +13,15 @@
         <li data-th-each="error: ${errors}" data-th-text="${error}"></li>
     </ul>
 </div>
-<form method="post" data-th-action="@{/catalogue/products/{productId}/edit(productId=${product.id})}">
+<form data-th-action="@{/catalogue/products/{productId}/edit(productId=${product.id})}" method="post">
     <label>
         Название:<br>
-        <input type="text" name="title" data-th-value="${payload != null ? payload.title : product.title}">
+        <input data-th-value="${payload != null ? payload.title : product.title}" name="title" type="text">
     </label><br>
     <label>
         Описание:<br>
-        <textarea name="description" data-th-text="${payload != null ? payload.description : product.description}"></textarea>
+        <textarea data-th-text="${payload != null ? payload.description : product.description}"
+                  name="description"></textarea>
     </label><br>
     <button type="submit">Изменить</button>
 </form>

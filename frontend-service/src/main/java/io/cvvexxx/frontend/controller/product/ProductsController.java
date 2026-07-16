@@ -6,15 +6,11 @@ import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.entity.Product;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ProblemDetail;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.client.HttpClientErrorException;
-
-import java.util.List;
 
 @Controller
 @RequestMapping("catalogue/products")
