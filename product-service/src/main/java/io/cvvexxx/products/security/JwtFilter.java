@@ -1,6 +1,7 @@
 package io.cvvexxx.products.security;
 
 
+import io.cvvexxx.products.dto.UserDto;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -42,18 +44,27 @@ public class JwtFilter extends OncePerRequestFilter {
 
         jwtService.extractClaims(token).ifPresent(claims -> {
             String username = claims.get("username", String.class);
+            int id = claims.get("id", Integer.class);
 
             @SuppressWarnings("unchecked")
-            Set<String> roles = claims.get("roles", Set.class);
+            List<String> rolesList = claims.get("roles", List.class);
+            Set<String> roles = rolesList != null ? Set.copyOf(rolesList) : Set.of();
+            Set<SimpleGrantedAuthority> authorities = Set.of();
 
-            Set<SimpleGrantedAuthority> authorities = roles == null ? Set.of() : roles.stream()
-                    .map(SimpleGrantedAuthority::new)
-                    .collect(Collectors.toSet());
+            if (!roles.isEmpty()) {
+                authorities = roles.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .collect(Collectors.toSet());
+            }
 
-            UsernamePasswordAuthenticationToken authenticationToken =
-                    new UsernamePasswordAuthenticationToken(username, null, authorities);
+            UserDto userDto = new UserDto(id, username, roles);
 
-            SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+            UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                    userDto,
+                    token,
+                    authorities
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
         });
 
         filterChain.doFilter(request, response);

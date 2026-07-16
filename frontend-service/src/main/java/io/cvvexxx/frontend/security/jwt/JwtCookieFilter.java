@@ -119,7 +119,7 @@ public class JwtCookieFilter extends OncePerRequestFilter {
 
         // Достаем роли (убедись, что твой auth-сервис упаковывает их в JWT как List)
         @SuppressWarnings("unchecked")
-        java.util.List<String> rolesList = claims.get("roles", List.class);
+        List<String> rolesList = claims.get("roles", List.class);
 
         // 2. Преобразуем List в Set (если в UserDto требуется именно Set)
         Set<String> roles = rolesList != null ? Set.copyOf(rolesList) : Set.of();
