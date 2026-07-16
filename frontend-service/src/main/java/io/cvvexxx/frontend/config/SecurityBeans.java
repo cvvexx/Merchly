@@ -38,8 +38,8 @@ public class SecurityBeans {
                                 "/css/**", "/js/**",
                                 "/error"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/catalogue/products/**")
-                        .hasRole("ADMIN")//TODO(мб перенести обработку всего этого на бэк)
+                        .requestMatchers(HttpMethod.GET, "/catalogue/products/create").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/catalogue/products/*/edit").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtCookieFilter, UsernamePasswordAuthenticationFilter.class)

@@ -8,9 +8,8 @@ import io.cvvexxx.frontend.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.HttpClientErrorException;
 
 @Controller
 @RequestMapping("catalogue/products")
@@ -21,9 +20,11 @@ public class ProductsController {
 
     @GetMapping("list")
     public String getProductsList(
-            Model model
+            Model model,
+            @RequestParam(name = "filter", required = false) String filter
     ) {
-        model.addAttribute("products", this.restClient.findAllProducts());
+        model.addAttribute("products", this.restClient.findAllProducts(filter));
+        model.addAttribute("filter");
         return "catalogue/products/list";
     }
 

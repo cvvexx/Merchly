@@ -1,33 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Список товаров &ndash; Сельмаг</title>
+    <title>Список товаров &ndash; Merchly</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-<a data-th-href="@{/catalogue/products/create}">+ Создать товар</a>
-<h1>Список товаров</h1>
-<form data-th-action="@{/catalogue/products/list}" method="get">
-    <label>Фильтр:<input data-th-value="${filter}" name="filter" type="text">
-        <button type="submit">Поиск</button>
-    </label>
-</form>
-<table>
-    <thead>
-    <tr>
-        <th>#</th>
-        <th>Товар</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr data-th-each="product : ${products}">
-        <td data-th-text="${product.id}"></td>
-        <td>
-            <a data-th-href="@{/catalogue/products/{productId}(productId=${product.id})}"
-               data-th-text="${product.title}"></a>
-        </td>
-    </tr>
-    </tbody>
-</table>
+<body class="bg-light">
+
+<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-primary" th:href="@{/}">Merchly</a>
+        <a th:href="@{/profile}" class="btn btn-outline-info btn-sm">В профиль</a>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="h2 text-dark m-0">Каталог мерча</h1>
+        <a class="btn btn-success" th:href="@{/catalogue/products/create}">+ Создать товар</a>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <form th:action="@{/catalogue/products/list}" method="get" class="row g-2 align-items-center">
+                <div class="col-sm-9">
+                    <input th:value="${filter}" name="filter" type="text" class="form-control" placeholder="Поиск по названию...">
+                </div>
+                <div class="col-sm-3 d-grid">
+                    <button type="submit" class="btn btn-primary">Найти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-3 g-4">
+        <div class="col" th:each="product : ${products}">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-body d-flex flex-column">
+                    <span class="text-muted small">ID: <span th:text="${product.id}"></span></span>
+                    <h5 class="card-title fw-bold mt-1 text-dark" th:text="${product.title}">Товар</h5>
+                    <p class="card-text text-muted flex-grow-1" th:text="${product.description != null ? #strings.abbreviate(product.description, 100) : 'Описание отсутствует...'}"></p>
+                    <div class="mt-3">
+                        <a th:href="@{/catalogue/products/{productId}(productId=${product.id})}" class="btn btn-outline-primary w-100">Подробнее</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 </body>
 </html>

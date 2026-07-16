@@ -81,4 +81,9 @@ public class ProductController {
 
         return "errors/404";
     }
+
+    @RequestMapping("error-403")
+    public String accessDenied() {
+        return "error/403";
+    }
 }

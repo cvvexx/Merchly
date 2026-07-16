@@ -104,7 +104,6 @@ public class JwtCookieFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    // Локальный парсинг JWT без походов в другие сервисы
     private Claims parseToken(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
@@ -113,20 +112,16 @@ public class JwtCookieFilter extends OncePerRequestFilter {
                 .getPayload();
     }
 
-    // Сборка авторизации на основе расшифрованных клеймов (Claims)
     private void authenticateUserFromClaims(Claims claims, String token) {
         String username = claims.get("username", String.class);
 
-        // Достаем роли (убедись, что твой auth-сервис упаковывает их в JWT как List)
         @SuppressWarnings("unchecked")
         List<String> rolesList = claims.get("roles", List.class);
 
-        // 2. Преобразуем List в Set (если в UserDto требуется именно Set)
         Set<String> roles = rolesList != null ? Set.copyOf(rolesList) : Set.of();
 
         int id = claims.get("id", Integer.class);
 
-        // Собираем DTO "на лету" из токена
         UserDto userDto = new UserDto(id, username, roles);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

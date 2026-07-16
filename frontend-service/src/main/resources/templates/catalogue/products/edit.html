@@ -1,29 +1,50 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Редактирование товара &laquo;[[${product.title}]]&raquo; &ndash; Сельмаг</title>
+    <title>Редактирование &laquo;[[${product.title}]]&raquo;</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
-<a data-th-href="@{/catalogue/products/{productId}(productId=${product.id})}">&larr; К товару</a>
-<h1>Редактирование товара &laquo;[[${product.title}]]</h1>
-<div data-th-if="${errors}">
-    <h2>Допущены ошибки</h2>
-    <ul>
-        <li data-th-each="error: ${errors}" data-th-text="${error}"></li>
-    </ul>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <a th:href="@{/catalogue/products/{productId}(productId=${product.id})}" class="text-decoration-none text-secondary">&larr; Вернуться к товару</a>
+            </div>
+
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-warning text-dark py-3">
+                    <h3 class="card-title h5 mb-0 text-center fw-bold">Редактирование товара</h3>
+                </div>
+                <div class="card-body p-4">
+
+                    <div th:if="${errors}" class="alert alert-danger" role="alert">
+                        <h5 class="alert-heading small fw-bold">Возникли ошибки:</h5>
+                        <ul class="mb-0 px-3 small">
+                            <li th:each="error: ${errors}" th:text="${error}"></li>
+                        </ul>
+                    </div>
+
+                    <form th:action="@{/catalogue/products/{productId}/edit(productId=${product.id})}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Название товара</label>
+                            <input th:value="${payload != null ? payload.title : product.title}" name="title" type="text" class="form-control">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Описание</label>
+                            <textarea th:text="${payload != null ? payload.description : product.description}" name="description" class="form-control" rows="4"></textarea>
+                        </div>
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-warning fw-bold">Сохранить изменения</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-<form data-th-action="@{/catalogue/products/{productId}/edit(productId=${product.id})}" method="post">
-    <label>
-        Название:<br>
-        <input data-th-value="${payload != null ? payload.title : product.title}" name="title" type="text">
-    </label><br>
-    <label>
-        Описание:<br>
-        <textarea data-th-text="${payload != null ? payload.description : product.description}"
-                  name="description"></textarea>
-    </label><br>
-    <button type="submit">Изменить</button>
-</form>
+
 </body>
 </html>
