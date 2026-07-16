@@ -32,11 +32,11 @@ public class SecurityBeans {
                         .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::none))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/",
-                                "/login", "/do-login",
-                                "/registration", "/do-register",
-                                "/logout",
-                                "/css/**", "/js/**",
-                                "/error"
+                        "/login", "/do-login",
+                        "/registration", "/do-register",
+                        "/logout",
+                        "/css/**", "/js/**",
+                        "/error"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/catalogue/products/create").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/catalogue/products/*/edit").hasRole("ADMIN")

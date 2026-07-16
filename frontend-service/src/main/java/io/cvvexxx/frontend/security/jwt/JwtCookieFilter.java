@@ -21,7 +21,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -64,10 +66,12 @@ public class JwtCookieFilter extends OncePerRequestFilter {
         String accessToken = getCookieValue(request, JWT_COOKIE_NAME);
         String refreshToken = getCookieValue(request, REFRESH_COOKIE_NAME);
 
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean alreadyAuthenticated = (auth != null) && (auth.isAuthenticated()) && !(auth instanceof AnonymousAuthenticationToken);
+
+        if (!alreadyAuthenticated) {
             boolean isAuthenticated = false;
 
-            // 1. Попытка локальной валидации Access Token
             if (accessToken != null) {
                 try {
                     Claims claims = parseToken(accessToken);
@@ -80,22 +84,19 @@ public class JwtCookieFilter extends OncePerRequestFilter {
                 }
             }
 
-            // 2. Если Access Token невалиден/истек, но есть Refresh Token — обновляем сессию (Сетевой запрос)
             if (!isAuthenticated && refreshToken != null) {
                 try {
                     logger.info("Attempting to refresh session using Refresh Token...");
                     JwtAuthenticationDto newTokens = restClient.refreshTokens(refreshToken);
 
-                    // Записываем новые куки клиенту
                     writeTokenCookies(response, newTokens);
 
-                    // Локально парсим уже НОВЫЙ accessToken и авторизуем
                     Claims claims = parseToken(newTokens.token());
                     authenticateUserFromClaims(claims, newTokens.token());
 
                     logger.info("Session successfully refreshed locally.");
                 } catch (Exception refreshEx) {
-                    logger.error("Refresh token is also expired or invalid. User must log in again.");
+                    logger.error("Refresh token is also expired or invalid. User must log in again.", refreshEx);
                     clearCookies(response);
                 }
             }
@@ -144,7 +145,7 @@ public class JwtCookieFilter extends OncePerRequestFilter {
                 .httpOnly(true)
                 .secure(false) // Сделай true на продакшене (HTTPS)
                 .path("/")
-                .maxAge(15 * 60)
+                .maxAge(15 * 60) // 15 min
                 .sameSite("Lax")
                 .build();
 
@@ -152,7 +153,7 @@ public class JwtCookieFilter extends OncePerRequestFilter {
                 .httpOnly(true)
                 .secure(false) // Сделай true на продакшене (HTTPS)
                 .path("/")
-                .maxAge(30L * 24 * 60 * 60)
+                .maxAge(30 * 24 * 60 * 60) // 30 days
                 .sameSite("Lax")
                 .build();
 

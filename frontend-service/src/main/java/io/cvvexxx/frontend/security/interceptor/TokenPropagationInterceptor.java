@@ -27,13 +27,9 @@ public class TokenPropagationInterceptor implements ClientHttpRequestInterceptor
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         // 2. Проверяем: она должна быть, и это НЕ должен быть анонимный пользователь
-        if (authentication != null && authentication.isAuthenticated() && !(authentication instanceof AnonymousAuthenticationToken)) {
-
-            // Вытаскиваем сам токен.
-            // В зависимости от того, как ты его сохраняешь при авторизации, это может быть:
-            // - authentication.getCredentials() (если при логине клал его туда)
-            // - authentication.getPrincipal() (если в кастомном AuthenticationToken токен лежит там)
-            Object credentials = authentication.getCredentials();
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
+            Object credentials = auth.getCredentials();
 
             if (credentials instanceof String token && !token.isBlank()) {
                 request.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + token);
