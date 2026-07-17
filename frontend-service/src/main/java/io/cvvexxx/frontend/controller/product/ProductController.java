@@ -2,7 +2,7 @@ package io.cvvexxx.frontend.controller.product;
 
 import io.cvvexxx.frontend.client.product.ProductsRestClient;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
-import io.cvvexxx.frontend.entity.Product;
+import io.cvvexxx.frontend.dto.Product;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

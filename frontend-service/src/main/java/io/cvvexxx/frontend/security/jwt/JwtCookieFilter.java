@@ -114,7 +114,7 @@ public class JwtCookieFilter extends OncePerRequestFilter {
     }
 
     private void authenticateUserFromClaims(Claims claims, String token) {
-        String username = claims.get("username", String.class);
+        String username = claims.get("login", String.class);
 
         @SuppressWarnings("unchecked")
         List<String> rolesList = claims.get("roles", List.class);

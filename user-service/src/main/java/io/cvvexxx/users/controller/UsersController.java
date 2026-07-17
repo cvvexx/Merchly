@@ -1,9 +1,9 @@
 package io.cvvexxx.users.controller;
 
-import io.cvvexxx.users.dto.JwtAuthenticationDto;
-import io.cvvexxx.users.dto.LoginUserDto;
-import io.cvvexxx.users.dto.NewUserDto;
-import io.cvvexxx.users.dto.UserDto;
+import io.cvvexxx.users.security.dto.JwtAuthenticationDto;
+import io.cvvexxx.users.security.dto.LoginUserDto;
+import io.cvvexxx.users.security.dto.NewUserDto;
+import io.cvvexxx.users.dto.CurrentUserInfo;
 import io.cvvexxx.users.security.SecurityUser;
 import io.cvvexxx.users.service.UserService;
 import jakarta.validation.Valid;
@@ -27,16 +27,16 @@ public class UsersController {
     }
 
     @PostMapping("login")
-    public ResponseEntity<JwtAuthenticationDto> loginUser(@RequestBody LoginUserDto loginUserDto) {
+    public ResponseEntity<JwtAuthenticationDto> loginUser(@Valid @RequestBody LoginUserDto loginUserDto) {
         JwtAuthenticationDto jwtDto = userService.loginUser(loginUserDto);
 
         return ResponseEntity.ok(jwtDto);
     }
 
     @GetMapping("me")
-    public ResponseEntity<UserDto> getUserInformation(@AuthenticationPrincipal SecurityUser securityUser) {
-        UserDto userDto = userService.getUserInfo(securityUser.getUsername());
+    public ResponseEntity<CurrentUserInfo> getUserInformation(@AuthenticationPrincipal SecurityUser securityUser) {
+        CurrentUserInfo currentUserInfo = userService.getUserInfo(securityUser.getUsername());
 
-        return ResponseEntity.ok(userDto);
+        return ResponseEntity.ok(currentUserInfo);
     }
 }

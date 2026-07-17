@@ -1,4 +1,4 @@
-package io.cvvexxx.users.dto;
+package io.cvvexxx.users.security.dto;
 
 import io.cvvexxx.users.domain.Gender;
 import jakarta.validation.constraints.*;

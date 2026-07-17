@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.entity;
+package io.cvvexxx.frontend.dto;
 
 public record Product(
         int id,

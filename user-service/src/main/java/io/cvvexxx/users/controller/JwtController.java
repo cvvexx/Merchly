@@ -1,7 +1,7 @@
 package io.cvvexxx.users.controller;
 
 
-import io.cvvexxx.users.dto.JwtAuthenticationDto;
+import io.cvvexxx.users.security.dto.JwtAuthenticationDto;
 import io.cvvexxx.users.security.jwt.JwtService;
 import io.cvvexxx.users.service.UserService;
 import lombok.RequiredArgsConstructor;

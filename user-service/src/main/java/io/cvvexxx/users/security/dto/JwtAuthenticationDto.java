@@ -1,4 +1,4 @@
-package io.cvvexxx.users.dto;
+package io.cvvexxx.users.security.dto;
 
 import lombok.Data;
 

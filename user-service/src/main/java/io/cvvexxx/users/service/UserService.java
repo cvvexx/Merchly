@@ -1,9 +1,9 @@
 package io.cvvexxx.users.service;
 
-import io.cvvexxx.users.dto.JwtAuthenticationDto;
-import io.cvvexxx.users.dto.LoginUserDto;
-import io.cvvexxx.users.dto.NewUserDto;
-import io.cvvexxx.users.dto.UserDto;
+import io.cvvexxx.users.security.dto.JwtAuthenticationDto;
+import io.cvvexxx.users.security.dto.LoginUserDto;
+import io.cvvexxx.users.security.dto.NewUserDto;
+import io.cvvexxx.users.dto.CurrentUserInfo;
 import io.cvvexxx.users.entity.Role;
 import io.cvvexxx.users.entity.User;
 import io.cvvexxx.users.repository.RoleRepository;
@@ -79,10 +79,10 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public UserDto getUserInfo(String username) {
+    public CurrentUserInfo getUserInfo(String username) {
         User user = findUser(username);
 
-        return new UserDto(
+        return new CurrentUserInfo(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),

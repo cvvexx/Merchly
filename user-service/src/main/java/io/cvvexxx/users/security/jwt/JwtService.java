@@ -1,6 +1,6 @@
 package io.cvvexxx.users.security.jwt;
 
-import io.cvvexxx.users.dto.JwtAuthenticationDto;
+import io.cvvexxx.users.security.dto.JwtAuthenticationDto;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;

@@ -13,7 +13,7 @@
         <div class="d-flex align-items-center gap-3">
             <a class="btn btn-outline-light btn-sm" th:href="@{/catalogue/products/list}">Каталог товаров</a>
 
-            <a sec:authorize="isAnonymous()" th:href="@{/profile}" class="btn btn-primary btn-sm">Войти в профиль</a>
+            <a sec:authorize="isAnonymous()" th:href="@{/login}" class="btn btn-primary btn-sm">Войти в профиль</a>
 
             <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-2">
                 <a th:href="@{/profile}" class="btn btn-info btn-sm">Мой Профиль</a>

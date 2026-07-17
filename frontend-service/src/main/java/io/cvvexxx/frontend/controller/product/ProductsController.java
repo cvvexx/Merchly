@@ -3,13 +3,12 @@ package io.cvvexxx.frontend.controller.product;
 
 import io.cvvexxx.frontend.client.product.ProductsRestClient;
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
-import io.cvvexxx.frontend.entity.Product;
+import io.cvvexxx.frontend.dto.Product;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.client.HttpClientErrorException;
 
 @Controller
 @RequestMapping("catalogue/products")

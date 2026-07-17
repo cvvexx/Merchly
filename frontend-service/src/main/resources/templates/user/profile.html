@@ -2,6 +2,7 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>Профиль пользователя &ndash; Merchly</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
@@ -17,16 +18,43 @@
                 </div>
                 <div class="card-body p-4">
 
+                    <!-- ID -->
                     <div class="mb-3 border-bottom pb-2">
                         <span class="text-muted d-block small text-uppercase">ID пользователя</span>
                         <strong class="fs-5 text-dark" th:text="${user.id}">123</strong>
                     </div>
 
+                    <!-- Логин -->
                     <div class="mb-3 border-bottom pb-2">
                         <span class="text-muted d-block small text-uppercase">Имя пользователя (Логин)</span>
                         <strong class="fs-5 text-dark" th:text="${user.username}">ivan_ivanov</strong>
                     </div>
 
+                    <!-- Email -->
+                    <div class="mb-3 border-bottom pb-2">
+                        <span class="text-muted d-block small text-uppercase">Email адрес</span>
+                        <strong class="fs-5 text-dark" th:text="${user.email}">user@example.com</strong>
+                    </div>
+
+                    <!-- Пол -->
+                    <div class="mb-3 border-bottom pb-2">
+                        <span class="text-muted d-block small text-uppercase">Пол</span>
+                        <strong class="fs-5 text-dark"
+                                th:text="${user.gender == 'M' ? 'Мужской' : (user.gender == 'F' ? 'Женский' : user.gender)}">
+                            Мужской
+                        </strong>
+                    </div>
+
+                    <!-- Дата рождения -->
+                    <div class="mb-3 border-bottom pb-2">
+                        <span class="text-muted d-block small text-uppercase">Дата рождения</span>
+                        <strong class="fs-5 text-dark"
+                                th:text="${user.birthDate != null ? #temporals.format(user.birthDate, 'dd.MM.yyyy') : 'Не указана'}">
+                            01.01.2000
+                        </strong>
+                    </div>
+
+                    <!-- Роли -->
                     <div class="mb-4">
                         <span class="text-muted d-block mb-1 small text-uppercase">Роли / Права доступа</span>
                         <div>
@@ -38,6 +66,7 @@
                         </div>
                     </div>
 
+                    <!-- Кнопки управления -->
                     <div class="d-flex justify-content-between align-items-center mt-4">
                         <div class="btn-group gap-2">
                             <a class="btn btn-outline-primary" href="/">На главную</a>

@@ -2,7 +2,7 @@ package io.cvvexxx.frontend.client.product;
 
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
-import io.cvvexxx.frontend.entity.Product;
+import io.cvvexxx.frontend.dto.Product;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;

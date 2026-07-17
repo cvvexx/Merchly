@@ -3,7 +3,7 @@ package io.cvvexxx.frontend.controller.security;
 
 import io.cvvexxx.frontend.client.user.RestClientUserRestClient;
 import io.cvvexxx.frontend.controller.security.payload.UserLoginPayload;
-import io.cvvexxx.frontend.controller.security.payload.UserRegistrationPayload;
+import io.cvvexxx.frontend.controller.security.payload.NewUserPayload;
 import io.cvvexxx.frontend.dto.JwtAuthenticationDto;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -50,10 +50,10 @@ public class AuthenticationController {
 
     @PostMapping("/do-register")
     public String registerUser(
-            UserRegistrationPayload payload,
+            NewUserPayload payload,
             @RequestParam(value = "target", required = false) String target
     ) {
-        restClient.registerUser(payload.username(), payload.password());
+        restClient.registerUser(payload);
 
         if (target != null && target.startsWith("/")) {
             return "redirect:/login?target=" + URLEncoder.encode(target, StandardCharsets.UTF_8);
@@ -68,7 +68,7 @@ public class AuthenticationController {
             @RequestParam(value = "target", required = false) String target,
             HttpServletResponse response) {
         try {
-            JwtAuthenticationDto jwtAuthenticationDto = restClient.checkUserAuth(payload.username(), payload.password());
+            JwtAuthenticationDto jwtAuthenticationDto = restClient.checkUserAuth(payload);
             String accessToken = jwtAuthenticationDto.token();
             String refreshToken = jwtAuthenticationDto.refreshToken();
 

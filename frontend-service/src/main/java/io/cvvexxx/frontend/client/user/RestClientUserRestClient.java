@@ -1,9 +1,9 @@
 package io.cvvexxx.frontend.client.user;
 
 import io.cvvexxx.frontend.controller.security.payload.UserLoginPayload;
-import io.cvvexxx.frontend.controller.security.payload.UserRegistrationPayload;
+import io.cvvexxx.frontend.controller.security.payload.NewUserPayload;
+import io.cvvexxx.frontend.dto.CurrentUserInfo;
 import io.cvvexxx.frontend.dto.JwtAuthenticationDto;
-import io.cvvexxx.frontend.dto.UserDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -15,35 +15,35 @@ public class RestClientUserRestClient implements UserRestClient {
     private final RestClient restClient;
 
     @Override
-    public JwtAuthenticationDto checkUserAuth(String username, String password) {
+    public JwtAuthenticationDto checkUserAuth(UserLoginPayload payload) {
         return restClient
                 .post()
                 .uri("api/users/login")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new UserLoginPayload(username, password))
+                .body(payload)
                 .retrieve()
                 .body(JwtAuthenticationDto.class);
     }
 
     @Override
-    public JwtAuthenticationDto registerUser(String username, String password) {
+    public JwtAuthenticationDto registerUser(NewUserPayload payload) {
         return restClient
                 .post()
                 .uri("api/users/auth")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(new UserRegistrationPayload(username, password))
+                .body(payload)
                 .retrieve()
                 .body(JwtAuthenticationDto.class);
     }
 
     @Override
-    public UserDto getUserInfo(String token) {
+    public CurrentUserInfo getUserInfo(String token) {
         return restClient
                 .get()
                 .uri("api/users/me")
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .retrieve()
-                .body(UserDto.class);
+                .body(CurrentUserInfo.class);
     }
 
     @Override

@@ -1,15 +1,17 @@
 package io.cvvexxx.frontend.client.user;
 
+import io.cvvexxx.frontend.controller.security.payload.UserLoginPayload;
+import io.cvvexxx.frontend.controller.security.payload.NewUserPayload;
+import io.cvvexxx.frontend.dto.CurrentUserInfo;
 import io.cvvexxx.frontend.dto.JwtAuthenticationDto;
-import io.cvvexxx.frontend.dto.UserDto;
 
 public interface UserRestClient {
 
-    JwtAuthenticationDto checkUserAuth(String username, String password);//TODO(переделать на Dto)
+    JwtAuthenticationDto checkUserAuth(UserLoginPayload payload);
 
-    JwtAuthenticationDto registerUser(String username, String password);
+    JwtAuthenticationDto registerUser(NewUserPayload payload);
 
-    UserDto getUserInfo(String token);
+    CurrentUserInfo getUserInfo(String token);
 
     JwtAuthenticationDto refreshTokens(String refreshToken);
 }

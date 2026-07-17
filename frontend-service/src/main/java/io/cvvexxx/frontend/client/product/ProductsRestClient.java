@@ -1,6 +1,6 @@
 package io.cvvexxx.frontend.client.product;
 
-import io.cvvexxx.frontend.entity.Product;
+import io.cvvexxx.frontend.dto.Product;
 
 import java.util.List;
 import java.util.Optional;
