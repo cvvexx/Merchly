@@ -23,16 +23,12 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @NotNull
-    @Size(min = 3, max = 30)//TODO(error message)
     @Column(nullable = false, unique = true)
     private String username;
 
-    @NotNull
     @Column(nullable = false)
     private String password;
 
-    @Email
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 
@@ -50,4 +46,16 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User user)) return false;
+        return id != null && id.equals(user.getId());
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
 }

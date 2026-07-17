@@ -14,8 +14,8 @@ public class DefaultUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     @Override
-    public SecurityUser loadUserByUsername(String username) throws UsernameNotFoundException {
-        return userRepository.findByUsername(username)
+    public SecurityUser loadUserByUsername(String login) throws UsernameNotFoundException {
+        return userRepository.findByUsernameOrEmail(login, login)
                 .map(SecurityUser::new)
                 .orElseThrow(() -> new UsernameNotFoundException(""));//TODO
     }

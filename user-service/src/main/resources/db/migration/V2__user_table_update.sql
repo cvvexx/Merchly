@@ -3,6 +3,9 @@ ALTER TABLE users
     ADD COLUMN gender VARCHAR(10),
     ADD COLUMN birth_date DATE CHECK (birth_date <= CURRENT_DATE - INTERVAL '14 years');
 
+ALTER TABLE users
+    ADD CONSTRAINT check_users_password check ( length(trim(users.password)) >= 8 and length(trim(users.password)) <= 255);
+
 UPDATE users
 SET
     email = COALESCE(email, 'user_' || id || '@test.com'),
