@@ -37,4 +37,6 @@ public class RestClientBeans {
         );
     }
 
+
+    //TODO(Добавить отдельный restCLient для аутентификации и авторизации)
 }

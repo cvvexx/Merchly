@@ -21,7 +21,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.lang.NonNull;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -64,10 +66,12 @@ public class JwtCookieFilter extends OncePerRequestFilter {
         String accessToken = getCookieValue(request, JWT_COOKIE_NAME);
         String refreshToken = getCookieValue(request, REFRESH_COOKIE_NAME);
 
-        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        boolean alreadyAuthenticated = (auth != null) && (auth.isAuthenticated()) && !(auth instanceof AnonymousAuthenticationToken);
+
+        if (!alreadyAuthenticated) {
             boolean isAuthenticated = false;
 
-            // 1. Попытка локальной валидации Access Token
             if (accessToken != null) {
                 try {
                     Claims claims = parseToken(accessToken);
@@ -80,22 +84,19 @@ public class JwtCookieFilter extends OncePerRequestFilter {
                 }
             }
 
-            // 2. Если Access Token невалиден/истек, но есть Refresh Token — обновляем сессию (Сетевой запрос)
             if (!isAuthenticated && refreshToken != null) {
                 try {
                     logger.info("Attempting to refresh session using Refresh Token...");
                     JwtAuthenticationDto newTokens = restClient.refreshTokens(refreshToken);
 
-                    // Записываем новые куки клиенту
                     writeTokenCookies(response, newTokens);
 
-                    // Локально парсим уже НОВЫЙ accessToken и авторизуем
                     Claims claims = parseToken(newTokens.token());
                     authenticateUserFromClaims(claims, newTokens.token());
 
                     logger.info("Session successfully refreshed locally.");
                 } catch (Exception refreshEx) {
-                    logger.error("Refresh token is also expired or invalid. User must log in again.");
+                    logger.error("Refresh token is also expired or invalid. User must log in again.", refreshEx);
                     clearCookies(response);
                 }
             }
@@ -104,7 +105,6 @@ public class JwtCookieFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
 
-    // Локальный парсинг JWT без походов в другие сервисы
     private Claims parseToken(String token) {
         return Jwts.parser()
                 .verifyWith(secretKey)
@@ -113,20 +113,16 @@ public class JwtCookieFilter extends OncePerRequestFilter {
                 .getPayload();
     }
 
-    // Сборка авторизации на основе расшифрованных клеймов (Claims)
     private void authenticateUserFromClaims(Claims claims, String token) {
         String username = claims.get("username", String.class);
 
-        // Достаем роли (убедись, что твой auth-сервис упаковывает их в JWT как List)
         @SuppressWarnings("unchecked")
         List<String> rolesList = claims.get("roles", List.class);
 
-        // 2. Преобразуем List в Set (если в UserDto требуется именно Set)
         Set<String> roles = rolesList != null ? Set.copyOf(rolesList) : Set.of();
 
         int id = claims.get("id", Integer.class);
 
-        // Собираем DTO "на лету" из токена
         UserDto userDto = new UserDto(id, username, roles);
 
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -149,7 +145,7 @@ public class JwtCookieFilter extends OncePerRequestFilter {
                 .httpOnly(true)
                 .secure(false) // Сделай true на продакшене (HTTPS)
                 .path("/")
-                .maxAge(15 * 60)
+                .maxAge(15 * 60) // 15 min
                 .sameSite("Lax")
                 .build();
 
@@ -157,7 +153,7 @@ public class JwtCookieFilter extends OncePerRequestFilter {
                 .httpOnly(true)
                 .secure(false) // Сделай true на продакшене (HTTPS)
                 .path("/")
-                .maxAge(30L * 24 * 60 * 60)
+                .maxAge(30 * 24 * 60 * 60) // 30 days
                 .sameSite("Lax")
                 .build();
 

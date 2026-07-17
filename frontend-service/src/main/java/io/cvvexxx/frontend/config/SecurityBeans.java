@@ -32,14 +32,14 @@ public class SecurityBeans {
                         .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::none))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/",
-                                "/login", "/do-login",
-                                "/registration", "/do-register",
-                                "/logout",
-                                "/css/**", "/js/**",
-                                "/error"
+                        "/login", "/do-login",
+                        "/registration", "/do-register",
+                        "/logout",
+                        "/css/**", "/js/**",
+                        "/error"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.POST, "/catalogue/products/**")
-                        .hasRole("ADMIN")//TODO(мб перенести обработку всего этого на бэк)
+                        .requestMatchers(HttpMethod.GET, "/catalogue/products/create").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/catalogue/products/*/edit").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtCookieFilter, UsernamePasswordAuthenticationFilter.class)

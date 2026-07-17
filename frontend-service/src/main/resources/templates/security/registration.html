@@ -1,93 +1,49 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Регистрация в Merchly</title>
-    <style>
-        body {
-            background: #1a1a1a;
-            color: white;
-            font-family: sans-serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        .login-card {
-            background: #2a2a2a;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-            width: 300px;
-        }
-
-        .input-group {
-            margin-bottom: 15px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 14px;
-            color: #aaa;
-        }
-
-        input {
-            width: 100%;
-            padding: 10px;
-            border-radius: 4px;
-            border: 1px solid #444;
-            background: #333;
-            color: white;
-            box-sizing: border-box;
-        }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            background: #2ed573;
-            border: none;
-            color: white;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-
-        .link {
-            margin-top: 15px;
-            text-align: center;
-            font-size: 14px;
-        }
-
-        .link a {
-            color: #ff4757;
-            text-decoration: none;
-        }
-    </style>
+    <title>Регистрация &ndash; Merchly</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body>
+<body class="bg-light">
 
-<div class="login-card">
-    <h2>Регистрация</h2>
+<div class="container vh-100 d-flex justify-content-center align-items-center">
+    <div class="col-md-4">
 
-    <form method="post" th:action="@{/do-register}">
-        <input name="target" th:value="${target}" type="hidden"/>
-
-        <div class="input-group">
-            <label>Имя пользователя</label>
-            <input name="username" placeholder="Введите логин..." required type="text"/>
+        <div class="text-center mb-4">
+            <a th:href="@{/}" class="text-decoration-none h2 fw-bold text-primary">Merchly</a>
         </div>
-        <div class="input-group">
-            <label>Пароль</label>
-            <input name="password" placeholder="Введите пароль..." required type="password"/>
-        </div>
-        <button type="submit">Зарегистрироваться</button>
-    </form>
 
-    <div class="link">
-        Уже есть аккаунт? <a th:href="@{/login(target=${target})}">Войти</a>
+        <div class="card shadow-sm border-0">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4 fw-bold">Регистрация</h3>
+
+                <form method="post" th:action="@{/do-register}">
+                    <input name="target" th:value="${target}" type="hidden"/>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Придумайте логин</label>
+                        <input name="username" placeholder="Например, ivan_merch" required type="text" class="form-control form-control-lg fs-6"/>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Придумайте пароль</label>
+                        <input name="password" placeholder="Минимум 6 символов" required type="password" class="form-control form-control-lg fs-6"/>
+                    </div>
+
+                    <button type="submit" class="btn btn-success btn-lg w-100 shadow-sm mb-3">Зарегистрироваться</button>
+                </form>
+
+                <div class="text-center mt-3">
+                    <span class="text-muted small">Уже есть аккаунт?</span>
+                    <a th:href="@{/login(target=${target})}" class="text-decoration-none small fw-bold text-success">Войти в кабинет</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a th:href="@{/}" class="text-muted small text-decoration-none">&larr; Отмена</a>
+        </div>
     </div>
 </div>
 

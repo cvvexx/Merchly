@@ -27,7 +27,7 @@ public class JwtService {
     public JwtAuthenticationDto generateAuthToken(int id, String username, Set<String> userRoles) {
         JwtAuthenticationDto jwtDto = new JwtAuthenticationDto();
         jwtDto.setToken(generateJwtToken(id, username, userRoles));
-        jwtDto.setRefreshToken(generateRefreshToken(username));
+        jwtDto.setRefreshToken(generateRefreshToken(id, username));
         return jwtDto;
     }
 
@@ -88,9 +88,10 @@ public class JwtService {
                 .compact();
     }
 
-    private String generateRefreshToken(String username) {
+    private String generateRefreshToken(int id, String username) {
         Date date = Date.from(LocalDateTime.now().plusDays(30).atZone(ZoneId.systemDefault()).toInstant());
         return Jwts.builder()
+                .claim("id", id)
                 .claim("username", username)
                 .expiration(date)
                 .signWith(getSignInKey())

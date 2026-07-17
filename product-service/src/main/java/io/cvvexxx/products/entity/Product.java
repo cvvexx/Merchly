@@ -1,10 +1,7 @@
 package io.cvvexxx.products.entity;
 
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -15,6 +12,12 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
+@NamedQueries(
+        @NamedQuery(
+                name = "Product.findAllByTitleLikeIgnoringCase",
+                query = "select p from Product p where p.title ilike :filter"
+        )
+)
 public class Product {
 
     @Id
