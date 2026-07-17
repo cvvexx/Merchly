@@ -2,9 +2,10 @@ package io.cvvexxx.frontend.controller.security;
 
 
 import io.cvvexxx.frontend.client.user.RestClientUserRestClient;
-import io.cvvexxx.frontend.controller.security.payload.UserLoginPayload;
 import io.cvvexxx.frontend.controller.security.payload.NewUserPayload;
+import io.cvvexxx.frontend.controller.security.payload.UserLoginPayload;
 import io.cvvexxx.frontend.dto.JwtAuthenticationDto;
+import io.cvvexxx.frontend.exception.BadRequestException;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.client.HttpClientErrorException;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -37,9 +39,11 @@ public class AuthenticationController {
     }
 
     @GetMapping("/login")
-    public String loginPage(@RequestParam(value = "error", required = false) String error,
-                            @RequestParam(value = "target", required = false) String target,
-                            Model model) {
+    public String loginPage(
+            @RequestParam(value = "error", required = false) String error,
+            @RequestParam(value = "target", required = false) String target,
+            Model model
+    ) {
         if ("unauthorized".equals(error)) {
             model.addAttribute("message", "Сперва необходимо зарегистрироваться или войти в аккаунт!");
         }
@@ -51,22 +55,32 @@ public class AuthenticationController {
     @PostMapping("/do-register")
     public String registerUser(
             NewUserPayload payload,
-            @RequestParam(value = "target", required = false) String target
+            @RequestParam(value = "target", required = false) String target,
+            Model model
     ) {
-        restClient.registerUser(payload);
+        try {
+            restClient.registerUser(payload);
 
-        if (target != null && target.startsWith("/")) {
-            return "redirect:/login?target=" + URLEncoder.encode(target, StandardCharsets.UTF_8);
+            if (target != null && target.startsWith("/")) {
+                return "redirect:/login?target=" + URLEncoder.encode(target, StandardCharsets.UTF_8);
+            }
+
+            return "redirect:/login";
+        } catch (BadRequestException exception) {
+            model.addAttribute("payload", payload);
+            model.addAttribute("errors", exception.getErrors());
+            model.addAttribute("target", target);
+            return "security/registration";
         }
 
-        return "redirect:/login";
     }
 
     @PostMapping("/do-login")
     public String loginUser(
             UserLoginPayload payload,
             @RequestParam(value = "target", required = false) String target,
-            HttpServletResponse response) {
+            HttpServletResponse response,
+            Model model) {
         try {
             JwtAuthenticationDto jwtAuthenticationDto = restClient.checkUserAuth(payload);
             String accessToken = jwtAuthenticationDto.token();
@@ -97,8 +111,17 @@ public class AuthenticationController {
             }
 
             return "redirect:/";
-        } catch (Exception e) {
-            return "redirect:/login?error";
+        } catch (HttpClientErrorException.Unauthorized exception) {
+            // Ловим именно 401 Unauthorized от бэкенда (неверные логин/пароль)
+            model.addAttribute("payload", payload);
+            model.addAttribute("errors", java.util.List.of("Неверный логин или пароль"));
+            model.addAttribute("target", target);
+            return "security/login"; // Возвращаем на форму входа
+        } catch (BadRequestException exception) {
+            model.addAttribute("payload", payload);
+            model.addAttribute("errors", exception.getErrors());
+            model.addAttribute("target", target);
+            return "security/login";
         }
     }
 

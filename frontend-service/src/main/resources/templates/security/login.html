@@ -7,6 +7,13 @@
 </head>
 <body class="bg-light">
 
+<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-primary" th:href="@{/}">Merchly</a>
+        <a th:href="@{/profile}" class="btn btn-outline-info btn-sm">В профиль</a>
+    </div>
+</nav>
+
 <div class="container vh-100 d-flex justify-content-center align-items-center">
     <div class="col-md-4">
 
@@ -16,7 +23,14 @@
 
         <div class="card shadow-sm border-0">
             <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4 fw-bold">Вход в систему</h3>
+                <h3 class="card-title text-center mb-4 fw-bold">Вход в аккаунт</h3>
+
+                <!-- Блок для вывода списка ошибок 400 Bad Request -->
+                <div class="alert alert-danger py-2 small" th:if="${errors}">
+                    <ul class="mb-0 ps-3">
+                        <li th:each="error : ${errors}" th:text="${error}"></li>
+                    </ul>
+                </div>
 
                 <div class="alert alert-info py-2 small" th:if="${message}">
                     <p class="m-0" th:text="${message}"></p>
@@ -36,12 +50,15 @@
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Имя пользователя / Email</label>
-                        <input name="login" placeholder="Введите логин..." required type="text" class="form-control form-control-lg fs-6"/>
+                        <!-- Добавлен th:value для сохранения ввода -->
+                        <input name="login"
+                               th:value="${payload != null ? payload.login : ''}"
+                               placeholder="Введите логин..." required type="text" class="form-control form-control-lg fs-6"/>
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted text-uppercase">Пароль</label>
-                        <input name="password" placeholder="••••••••" required type="password" class="form-control form-control-lg fs-6"/>
+                        <input name="password" placeholder="********" required type="password" class="form-control form-control-lg fs-6"/>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm mb-3">Войти</button>

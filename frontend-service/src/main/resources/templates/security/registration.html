@@ -8,6 +8,13 @@
 </head>
 <body class="bg-light">
 
+<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-primary" th:href="@{/}">Merchly</a>
+        <a th:href="@{/profile}" class="btn btn-outline-info btn-sm">В профиль</a>
+    </div>
+</nav>
+
 <div class="container my-5 d-flex justify-content-center align-items-center" style="min-height: 90vh;">
     <div class="col-md-5 col-lg-4">
 
@@ -19,13 +26,22 @@
             <div class="card-body p-4">
                 <h3 class="card-title text-center mb-4 fw-bold">Регистрация</h3>
 
+                <!-- Блок для вывода списка ошибок 400 Bad Request -->
+                <div class="alert alert-danger py-2 small" th:if="${errors}">
+                    <ul class="mb-0 ps-3">
+                        <li th:each="error : ${errors}" th:text="${error}"></li>
+                    </ul>
+                </div>
+
                 <form method="post" th:action="@{/do-register}">
                     <input name="target" th:value="${target}" type="hidden"/>
 
                     <!-- Логин -->
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Придумайте логин</label>
-                        <input name="username" placeholder="..." required type="text" class="form-control fs-6"/>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Имя пользователя</label>
+                        <input name="username"
+                               th:value="${payload != null ? payload.username : ''}"
+                               placeholder="..." required type="text" class="form-control fs-6"/>
                     </div>
 
                     <!-- Пароль -->
@@ -37,23 +53,27 @@
                     <!-- Email -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Электронная почта</label>
-                        <input name="email" placeholder="example@mail.com" required type="email" class="form-control fs-6"/>
+                        <input name="email"
+                               th:value="${payload != null ? payload.email : ''}"
+                               placeholder="example@mail.com" required type="email" class="form-control fs-6"/>
                     </div>
 
                     <!-- Пол -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Пол</label>
                         <select name="gender" required class="form-select fs-6">
-                            <option value="" disabled selected>Выберите пол...</option>
-                            <option value="M">Мужской</option>
-                            <option value="F">Женский</option>
+                            <option value="" disabled th:selected="${payload == null || payload.gender == null}">Выберите пол...</option>
+                            <option value="M" th:selected="${payload != null && payload.gender == 'M'}">Мужской</option>
+                            <option value="F" th:selected="${payload != null && payload.gender == 'F'}">Женский</option>
                         </select>
                     </div>
 
                     <!-- Дата рождения -->
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted text-uppercase">Дата рождения</label>
-                        <input name="birthDate" required type="date" class="form-control fs-6"/>
+                        <input name="birthDate"
+                               th:value="${payload != null ? payload.birthDate : ''}"
+                               required type="date" class="form-control fs-6"/>
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm mb-3">Зарегистрироваться</button>
@@ -61,7 +81,7 @@
 
                 <div class="text-center mt-3">
                     <span class="text-muted small">Уже есть аккаунт?</span>
-                    <a th:href="@{/login(target=${target})}" class="text-decoration-none small fw-bold text-primary">Войти в систему</a>
+                    <a th:href="@{/login(target=${target})}" class="text-decoration-none small fw-bold text-primary">Войти в аккаунт</a>
                 </div>
             </div>
         </div>
