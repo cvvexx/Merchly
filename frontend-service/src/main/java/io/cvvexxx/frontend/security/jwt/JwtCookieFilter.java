@@ -40,8 +40,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class JwtCookieFilter extends OncePerRequestFilter {
 
-    private static final String JWT_COOKIE_NAME = "JWT_TOKEN";
-    private static final String REFRESH_COOKIE_NAME = "REFRESH_TOKEN";
+    private static final String ACCESS_TOKEN_COOKIE_NAME = "JWT_TOKEN";
+    private static final String REFRESH_TOKEN_COOKIE_NAME = "REFRESH_TOKEN";
 
     private final RestClientUserRestClient restClient;
     private final Logger logger = LoggerFactory.getLogger(JwtCookieFilter.class);
@@ -63,8 +63,8 @@ public class JwtCookieFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        String accessToken = getCookieValue(request, JWT_COOKIE_NAME);
-        String refreshToken = getCookieValue(request, REFRESH_COOKIE_NAME);
+        String accessToken = getCookieValue(request, ACCESS_TOKEN_COOKIE_NAME);
+        String refreshToken = getCookieValue(request, REFRESH_TOKEN_COOKIE_NAME);
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         boolean alreadyAuthenticated = (auth != null) && (auth.isAuthenticated()) && !(auth instanceof AnonymousAuthenticationToken);
@@ -141,7 +141,7 @@ public class JwtCookieFilter extends OncePerRequestFilter {
     }
 
     private void writeTokenCookies(HttpServletResponse response, JwtAuthenticationDto tokens) {
-        ResponseCookie accessTokenCookie = ResponseCookie.from(JWT_COOKIE_NAME, tokens.token())
+        ResponseCookie accessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_COOKIE_NAME, tokens.token())
                 .httpOnly(true)
                 .secure(false) // Сделай true на продакшене (HTTPS)
                 .path("/")
@@ -149,7 +149,7 @@ public class JwtCookieFilter extends OncePerRequestFilter {
                 .sameSite("Lax")
                 .build();
 
-        ResponseCookie refreshTokenCookie = ResponseCookie.from(REFRESH_COOKIE_NAME, tokens.refreshToken())
+        ResponseCookie refreshTokenCookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, tokens.refreshToken())
                 .httpOnly(true)
                 .secure(false) // Сделай true на продакшене (HTTPS)
                 .path("/")
@@ -162,8 +162,8 @@ public class JwtCookieFilter extends OncePerRequestFilter {
     }
 
     private void clearCookies(HttpServletResponse response) {
-        ResponseCookie cleanAccess = ResponseCookie.from(JWT_COOKIE_NAME, "").path("/").maxAge(0).build();
-        ResponseCookie cleanRefresh = ResponseCookie.from(REFRESH_COOKIE_NAME, "").path("/").maxAge(0).build();
+        ResponseCookie cleanAccess = ResponseCookie.from(ACCESS_TOKEN_COOKIE_NAME, "").path("/").maxAge(0).build();
+        ResponseCookie cleanRefresh = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, "").path("/").maxAge(0).build();
         response.addHeader(HttpHeaders.SET_COOKIE, cleanAccess.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, cleanRefresh.toString());
     }

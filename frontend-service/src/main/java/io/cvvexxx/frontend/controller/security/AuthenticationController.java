@@ -27,6 +27,9 @@ public class AuthenticationController {
 
     private final RestClientUserRestClient restClient;
 
+    private static final String ACCESS_TOKEN_COOKIE_NAME = "JWT_TOKEN";
+    private static final String REFRESH_TOKEN_COOKIE_NAME = "REFRESH_TOKEN";
+
     @GetMapping("/registration")
     public String registrationPage(
             @RequestParam(value = "target", required = false) String target,
@@ -86,7 +89,7 @@ public class AuthenticationController {
             String accessToken = jwtAuthenticationDto.token();
             String refreshToken = jwtAuthenticationDto.refreshToken();
 
-            ResponseCookie accessTokenCookie = ResponseCookie.from("JWT_TOKEN", accessToken)
+            ResponseCookie accessTokenCookie = ResponseCookie.from(ACCESS_TOKEN_COOKIE_NAME, accessToken)
                     .httpOnly(true)
                     .secure(false)
                     .path("/")
@@ -94,7 +97,7 @@ public class AuthenticationController {
                     .sameSite("Lax")
                     .build();
 
-            ResponseCookie refreshTokenCookie = ResponseCookie.from("REFRESH_TOKEN", refreshToken)
+            ResponseCookie refreshTokenCookie = ResponseCookie.from(REFRESH_TOKEN_COOKIE_NAME, refreshToken)
                     .httpOnly(true)
                     .secure(false)
                     .path("/")
@@ -127,11 +130,21 @@ public class AuthenticationController {
 
     @PostMapping("/logout")
     public String logoutUser(HttpServletResponse response) {
-        ResponseCookie jwtCookie = ResponseCookie.from("JWT_TOKEN", "")
-                .httpOnly(true).path("/").maxAge(0).sameSite("Lax").build();
+        ResponseCookie jwtCookie = ResponseCookie
+                .from(ACCESS_TOKEN_COOKIE_NAME, "")
+                .httpOnly(true)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
 
-        ResponseCookie refreshCookie = ResponseCookie.from("REFRESH_TOKEN", "")
-                .httpOnly(true).path("/").maxAge(0).sameSite("Lax").build();
+        ResponseCookie refreshCookie = ResponseCookie
+                .from(REFRESH_TOKEN_COOKIE_NAME, "")
+                .httpOnly(true)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
 
         response.addHeader(HttpHeaders.SET_COOKIE, jwtCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());

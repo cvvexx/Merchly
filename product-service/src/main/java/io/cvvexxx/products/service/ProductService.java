@@ -2,6 +2,7 @@ package io.cvvexxx.products.service;
 
 import io.cvvexxx.products.entity.Product;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -11,10 +12,10 @@ public interface ProductService {
 
     Optional<Product> findProductById(int productId);
 
-    Product createProduct(String title, String description);
+    Product createProduct(String title, String description, BigDecimal price, int createdBy);
 
     void deleteProduct(Integer productId);
 
-    void updateProduct(Integer productId, String title, String description);
+    void updateProduct(Integer productId, String title, String description, BigDecimal price);
 
 }

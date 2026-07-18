@@ -44,7 +44,9 @@ public class ProductsRestController {
         } else {
             Product createdProduct = this.productService.createProduct(
                     payload.title(),
-                    payload.description()
+                    payload.description(),
+                    payload.price(),
+                    payload.createdBy()
             );
 
             return ResponseEntity.created(
