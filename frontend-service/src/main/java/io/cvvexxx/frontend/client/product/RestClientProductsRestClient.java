@@ -11,6 +11,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
@@ -50,13 +51,13 @@ public class RestClientProductsRestClient implements ProductsRestClient {
     }
 
     @Override
-    public Product createProduct(String title, String description) {
+    public Product createProduct(String title, String description, BigDecimal price, Integer createdBy) {
         try {
             return restClient
                     .post()
                     .uri("/api/products")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(new NewProductPayload(title, description))
+                    .body(new NewProductPayload(title, description, price, createdBy))
                     .retrieve()
                     .body(Product.class);
         } catch (HttpClientErrorException.BadRequest exception) {
@@ -79,13 +80,13 @@ public class RestClientProductsRestClient implements ProductsRestClient {
     }
 
     @Override
-    public void updateProduct(int productId, String title, String description) {
+    public void updateProduct(int productId, String title, String description, BigDecimal price) {
         try {
             restClient
                     .patch()
                     .uri("/api/products/{productId}", productId)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(new UpdateProductPayload(title, description))
+                    .body(new UpdateProductPayload(title, description, price))
                     .retrieve()
                     .toBodilessEntity();
         } catch (HttpClientErrorException.BadRequest exception) {

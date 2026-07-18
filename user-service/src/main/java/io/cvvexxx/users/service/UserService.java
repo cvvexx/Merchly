@@ -1,13 +1,14 @@
 package io.cvvexxx.users.service;
 
-import io.cvvexxx.users.security.dto.JwtAuthenticationDto;
-import io.cvvexxx.users.security.dto.LoginUserDto;
-import io.cvvexxx.users.security.dto.NewUserDto;
-import io.cvvexxx.users.dto.CurrentUserInfo;
+import io.cvvexxx.users.dto.UserInfoDto;
+import io.cvvexxx.users.dto.UserProductOwnerDto;
 import io.cvvexxx.users.entity.Role;
 import io.cvvexxx.users.entity.User;
 import io.cvvexxx.users.repository.RoleRepository;
 import io.cvvexxx.users.repository.UserRepository;
+import io.cvvexxx.users.security.dto.JwtAuthenticationDto;
+import io.cvvexxx.users.security.dto.LoginUserDto;
+import io.cvvexxx.users.security.dto.NewUserDto;
 import io.cvvexxx.users.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -20,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -79,10 +81,10 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public CurrentUserInfo getUserInfo(String username) {
+    public UserInfoDto getUserInfo(String username) {
         User user = findUser(username);
 
-        return new CurrentUserInfo(
+        return new UserInfoDto(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
@@ -105,10 +107,35 @@ public class UserService {
                         .formatted(login)));
     }
 
+    protected User findUser(Integer userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("Not found user with login: %d"
+                        .formatted(userId)));
+    }
+
     private Set<String> mapRoleToString(Set<Role> roles) {
         return roles.stream()
                 .map(Role::getRole)
                 .map(role -> "ROLE_" + role)
                 .collect(Collectors.toSet());
+    }
+
+    public List<UserProductOwnerDto> findUsersByIds(List<Integer> ids) {
+        return userRepository.findAllByIdIn(ids).stream()
+                .map(user -> new UserProductOwnerDto(
+                        user.getId(),
+                        user.getUsername()
+                ))
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public UserProductOwnerDto findUserById(Integer userId) {
+        User user = findUser(userId);
+
+        return new UserProductOwnerDto(
+                user.getId(),
+                user.getUsername()
+        );
     }
 }

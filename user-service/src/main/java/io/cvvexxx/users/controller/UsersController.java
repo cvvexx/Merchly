@@ -1,6 +1,6 @@
 package io.cvvexxx.users.controller;
 
-import io.cvvexxx.users.dto.CurrentUserInfo;
+import io.cvvexxx.users.dto.UserInfoDto;
 import io.cvvexxx.users.security.SecurityUser;
 import io.cvvexxx.users.security.dto.JwtAuthenticationDto;
 import io.cvvexxx.users.security.dto.LoginUserDto;
@@ -56,8 +56,8 @@ public class UsersController {
     }
 
     @GetMapping("me")
-    public ResponseEntity<CurrentUserInfo> getUserInformation(@AuthenticationPrincipal SecurityUser securityUser) {
-        CurrentUserInfo currentUserInfo = userService.getUserInfo(securityUser.getUsername());
+    public ResponseEntity<UserInfoDto> getSecurityUserInfo(@AuthenticationPrincipal SecurityUser securityUser) {
+        UserInfoDto currentUserInfo = userService.getUserInfo(securityUser.getUsername());
 
         return ResponseEntity.ok(currentUserInfo);
     }

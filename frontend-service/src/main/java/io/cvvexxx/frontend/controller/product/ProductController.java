@@ -1,9 +1,12 @@
 package io.cvvexxx.frontend.controller.product;
 
 import io.cvvexxx.frontend.client.product.ProductsRestClient;
+import io.cvvexxx.frontend.client.user.UserRestClient;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
 import io.cvvexxx.frontend.dto.Product;
+import io.cvvexxx.frontend.dto.ProductOwnerDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
@@ -20,18 +23,25 @@ import java.util.NoSuchElementException;
 @RequiredArgsConstructor
 public class ProductController {
 
-    private final ProductsRestClient restClient;
-
+    private final ProductsRestClient productsRestClient;
+    private final UserRestClient userRestClient;
     private final MessageSource messageSource;
 
     @ModelAttribute("product")
     public Product product(@PathVariable("productId") int productId) {
-        return restClient.findProductById(productId)
+        return productsRestClient.findProductById(productId)
                 .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
     }
 
     @GetMapping
-    public String getProductPage() {
+    public String getProductPage(
+            @ModelAttribute("product") Product product
+            , Model model
+    ) {
+        ProductOwnerDto user = userRestClient.findUserById(product.createdBy());
+
+        model.addAttribute("data", new ProductOwnerViewModel(product, user));
+
         return "catalogue/products/product";
     }
 
@@ -47,10 +57,11 @@ public class ProductController {
             Model model
     ) {
         try {
-            restClient.updateProduct(
+            productsRestClient.updateProduct(
                     product.id(),
                     payload.title(),
-                    payload.description()
+                    payload.description(),
+                    payload.price()
             );
             return "redirect:/catalogue/products/%d".formatted(product.id());
         } catch (BadRequestException exception) {
@@ -63,7 +74,7 @@ public class ProductController {
 
     @PostMapping("delete")//TODO(ПЕРЕПИСАТЬ НОРМАЛЬНО)
     public String deleteProduct(@ModelAttribute Product product) {
-        restClient.deleteProduct(product.id());
+        productsRestClient.deleteProduct(product.id());
         return "redirect:/catalogue/products/list";
     }
 

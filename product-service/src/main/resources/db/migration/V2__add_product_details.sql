@@ -1,5 +1,5 @@
 ALTER TABLE product
-    ADD COLUMN price NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    ADD COLUMN price NUMERIC(10, 2) NOT NULL DEFAULT 1.00,
     ADD CONSTRAINT chk_product_price CHECK (price > 0);
 
 ALTER TABLE product

@@ -28,21 +28,34 @@
                 <div class="card-body p-4">
 
                     <div th:if="${errors}" class="alert alert-danger" role="alert">
-                        <h5 class="alert-heading small fw-bold">Возникли ошибки:</h5>
+                        <h5 class="alert-heading small fw-bold">Ошибки валидации:</h5>
                         <ul class="mb-0 px-3 small">
                             <li th:each="error: ${errors}" th:text="${error}"></li>
                         </ul>
                     </div>
 
                     <form th:action="@{/catalogue/products/create}" method="post">
+                        <!-- Название -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">Название товара</label>
                             <input th:value="${payload?.title}" name="title" type="text" class="form-control" placeholder="Введите название...">
                         </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Цена</label>
+                            <div class="input-group">
+                                <span class="input-group-text">₽</span>
+                                <input th:value="${payload?.price}" name="price" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" required>
+                            </div>
+                            <div class="form-text">Цена должна быть больше нуля.</div>
+                        </div>
+
+                        <!-- Описание -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">Описание</label>
-                            <textarea th:text="${payload?.description}" name="description" class="form-control" rows="4" placeholder="Опишите свойства товара..."></textarea>
+                            <textarea th:text="${payload?.description}" name="description" class="form-control" rows="4" placeholder="Введите описание товара..."></textarea>
                         </div>
+
                         <div class="d-grid gap-2 mt-4">
                             <button type="submit" class="btn btn-success">Создать товар</button>
                         </div>

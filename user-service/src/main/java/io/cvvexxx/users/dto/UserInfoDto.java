@@ -1,10 +1,9 @@
-package io.cvvexxx.frontend.dto;
-
+package io.cvvexxx.users.dto;
 
 import java.time.LocalDate;
 import java.util.Set;
 
-public record CurrentUserInfo(
+public record UserInfoDto(
         int id,
         String username,
         String email,
