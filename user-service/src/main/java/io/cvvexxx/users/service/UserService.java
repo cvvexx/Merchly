@@ -13,6 +13,7 @@ import io.cvvexxx.users.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -81,6 +82,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "user_info", key = "#username")
     public UserInfoDto getUserInfo(String username) {
         User user = findUser(username);
 
@@ -120,8 +122,18 @@ public class UserService {
                 .collect(Collectors.toSet());
     }
 
+    @Transactional(readOnly = true)
     public List<UserProductOwnerDto> findUsersByIds(List<Integer> ids) {
-        return userRepository.findAllByIdIn(ids).stream()
+
+        List<Integer> validIds = ids.stream()
+                .filter(id -> id != null && id > 0)
+                .toList();
+
+        if (validIds.isEmpty()) {
+            return List.of();
+        }
+
+        return userRepository.findAllByIdIn(validIds).stream()
                 .map(user -> new UserProductOwnerDto(
                         user.getId(),
                         user.getUsername()
@@ -130,7 +142,12 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "users_owner", key = "#userId")
     public UserProductOwnerDto findUserById(Integer userId) {
+
+        if (userId == null || userId <= 0) {
+            return new UserProductOwnerDto(0, "Неизвестен");
+        }
         User user = findUser(userId);
 
         return new UserProductOwnerDto(

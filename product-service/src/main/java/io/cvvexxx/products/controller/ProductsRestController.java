@@ -23,10 +23,10 @@ public class ProductsRestController {
     private final ProductService productService;
 
     @GetMapping
-    public List<Product> getAllProducts(
+    public ResponseEntity<List<Product>> getAllProducts(
             @RequestParam(value = "filter", required = false) String filter
     ) {
-        return productService.findAllProducts(filter);
+        return ResponseEntity.ok(productService.findAllProducts(filter));
     }
 
     @PostMapping

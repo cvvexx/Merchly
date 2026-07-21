@@ -17,6 +17,6 @@ public class DefaultUserDetailsService implements UserDetailsService {
     public SecurityUser loadUserByUsername(String login) throws UsernameNotFoundException {
         return userRepository.findByUsernameOrEmail(login, login)
                 .map(SecurityUser::new)
-                .orElseThrow(() -> new UsernameNotFoundException(""));//TODO
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with login: " + login));//TODO
     }
 }

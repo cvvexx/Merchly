@@ -21,12 +21,6 @@ import java.time.Instant;
 @Data
 @Builder
 @SQLRestriction("is_available = true")
-@NamedQueries(
-        @NamedQuery(
-                name = "Product.findAllByTitleLikeIgnoringCase",
-                query = "select p from Product p where p.title ilike :filter"
-        )
-)
 public class Product {
 
     @Id

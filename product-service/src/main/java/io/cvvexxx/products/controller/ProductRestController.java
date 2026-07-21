@@ -1,6 +1,5 @@
 package io.cvvexxx.products.controller;
 
-
 import io.cvvexxx.products.controller.payload.UpdateProductPayload;
 import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.service.ProductService;
@@ -23,22 +22,18 @@ import java.util.NoSuchElementException;
 public class ProductRestController {
 
     private final ProductService productService;
-
     private final MessageSource messageSource;
 
-    @ModelAttribute("product")
-    public Product getProduct(@PathVariable("productId") int productId) {
-        return productService.findProductById(productId)
-                .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
-    }
-
     @GetMapping
-    public Product findProduct(@ModelAttribute("product") Product product) {
-        return product;
+    public Product findProduct(@PathVariable("productId") int productId) {
+        // Запрос сразу идет в сервис.
+        // Если в кэше Redis есть данные — сервис отдает их.
+        // Если нет в БД — сервис бросает NoSuchElementException.
+        return productService.findProductById(productId);
     }
 
     @PatchMapping
-    public ResponseEntity<?> updateProduct(
+    public ResponseEntity<Void> updateProduct(
             @PathVariable("productId") int productId,
             @Valid @RequestBody UpdateProductPayload payload,
             BindingResult bindingResult
@@ -48,21 +43,18 @@ public class ProductRestController {
                 throw exception;
             }
             throw new BindException(bindingResult);
-        } else {
-            productService.updateProduct(productId, payload.title(), payload.description(), payload.price());
-            return ResponseEntity.noContent()
-                    .build();
-
         }
+
+        productService.updateProduct(productId, payload.title(), payload.description(), payload.price());
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping
-    public ResponseEntity<?> deleteProduct(
+    public ResponseEntity<Void> deleteProduct(
             @PathVariable("productId") int productId
     ) {
         productService.deleteProduct(productId);
-        return ResponseEntity.noContent()
-                .build();
+        return ResponseEntity.noContent().build();
     }
 
     @ExceptionHandler(NoSuchElementException.class)
@@ -72,10 +64,15 @@ public class ProductRestController {
     ) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(
-                        ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND,
-                                messageSource.getMessage(exception.getMessage(), new Object[0],
-                                        exception.getMessage(), locale))
+                        ProblemDetail.forStatusAndDetail(
+                                HttpStatus.NOT_FOUND,
+                                messageSource.getMessage(
+                                        exception.getMessage(),
+                                        new Object[0],
+                                        exception.getMessage(),
+                                        locale
+                                )
+                        )
                 );
-
     }
 }
