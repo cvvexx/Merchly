@@ -43,6 +43,7 @@
                         <!-- ДОБАВИЛИ ВЫВОД СОЗДАТЕЛЯ -->
                         <span class="text-muted small">Продавец: <span class="fw-bold" th:text="${item.user != null ? item.user.username : 'Неизвестен'}"></span></span>
                     </div>
+                    <span class="text-muted small">Цена: <span class="fw-bold" th:text="${item.product().price()}"></span></span>
 
                     <h5 class="card-title fw-bold mt-1 text-dark" th:text="${item.product.title}">Товар</h5>
                     <p class="card-text text-muted flex-grow-1" th:text="${item.product.description != null ? #strings.abbreviate(item.product.description, 100) : 'Описание отсутствует...'}"></p>
