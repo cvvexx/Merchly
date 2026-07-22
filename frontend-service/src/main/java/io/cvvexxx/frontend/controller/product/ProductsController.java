@@ -2,7 +2,8 @@ package io.cvvexxx.frontend.controller.product;
 
 
 import io.cvvexxx.frontend.client.product.ProductsRestClient;
-import io.cvvexxx.frontend.client.user.UserRestClient;
+import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
+import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.dto.Product;
 import io.cvvexxx.frontend.dto.ProductOwnerDto;
@@ -29,7 +30,8 @@ import java.util.stream.Collectors;
 public class ProductsController {
 
     private final ProductsRestClient productsRestClient;
-    private final UserRestClient userRestClient;
+    private final UserPublicRestClient userPublicRestClient;
+    private final UserInternalRestClient userInternalRestClient;
 
     @GetMapping("list")
     public String getProductsList(
@@ -43,7 +45,7 @@ public class ProductsController {
                 .distinct()
                 .toList();
 
-        List<ProductOwnerDto> creators = this.userRestClient.findAllUsersByIds(creatorIds);
+        List<ProductOwnerDto> creators = this.userInternalRestClient.findAllUsersByIds(creatorIds);
 
         Map<Integer, ProductOwnerDto> creatorsMap = creators.stream()
                 .collect(Collectors.toMap(ProductOwnerDto::id, Function.identity()));
