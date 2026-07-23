@@ -2,9 +2,10 @@ package io.cvvexxx.users.dto;
 
 import java.time.LocalDate;
 import java.util.Set;
+import java.util.UUID;
 
 public record UserInfoDto(
-        int id,
+        UUID id,
         String username,
         String email,
         String gender,

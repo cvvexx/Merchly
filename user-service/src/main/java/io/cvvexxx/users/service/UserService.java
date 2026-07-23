@@ -1,36 +1,100 @@
 package io.cvvexxx.users.service;
 
+import io.cvvexxx.users.dto.NewUserDto;
+import io.cvvexxx.users.dto.UserCreatedDto;
 import io.cvvexxx.users.dto.UserInfoDto;
 import io.cvvexxx.users.dto.UserProductOwnerDto;
 import io.cvvexxx.users.entity.Role;
 import io.cvvexxx.users.entity.User;
 import io.cvvexxx.users.repository.RoleRepository;
 import io.cvvexxx.users.repository.UserRepository;
+import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.UserRepresentation;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class UserService {
 
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-
-    private final RoleRepository roleRepository;
+    private final Keycloak keycloak;
     private final UserRepository userRepository;
-    private final AuthenticationManager authenticationManager;
-    private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
 
+    @Value("${keycloak.realm}")
+    private String realm;
+
+    @Transactional
+    public UserCreatedDto registerUserInKeycloakAndLocalDb(NewUserDto newUserDto) {
+        log.info("Received request to register user in keycloak and local db {}", newUserDto);
+
+        UserRepresentation user = getUserRepresentation(newUserDto);
+
+        UsersResource usersResource = keycloak.realm(realm).users();
+        try (Response response = usersResource.create(user)) {
+            log.info("Keycloak response status: {}", response.getStatus());
+
+            if (response.getStatus() != 201) {
+                throw new RuntimeException("Failed to create user in Keycloak. Status: " + response.getStatus());
+            }
+
+            String locationHeader = response.getHeaderString("Location");
+            if (locationHeader == null || locationHeader.isBlank()) {
+                throw new IllegalStateException("Keycloak response did not include a Location header");
+            }
+
+            String keycloakUserId = locationHeader.substring(locationHeader.lastIndexOf("/") + 1);
+            log.info("Keycloak User ID {}", keycloakUserId);
+
+            Set<Role> roles = Set.of(roleRepository.findByRole("USER"));
+
+            User localUser = new User(
+                    UUID.fromString(keycloakUserId),
+                    newUserDto.username(),
+                    newUserDto.email(),
+                    newUserDto.gender(),
+                    newUserDto.birthDate(),
+                    roles
+            );
+
+            User savedUser = userRepository.save(localUser);
+            log.info("Saved user {}", savedUser);
+
+            return new UserCreatedDto(
+                    savedUser.getId(),
+                    savedUser.getUsername()
+            );
+        } catch (Exception e) {
+            log.error("Error during user registration: {}", e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    private UserRepresentation getUserRepresentation(NewUserDto newUserDto) {
+        CredentialRepresentation credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue(newUserDto.password());
+        credential.setTemporary(false);
+
+        UserRepresentation user = new UserRepresentation();
+        user.setUsername(newUserDto.username());
+        user.setEmail(newUserDto.email());
+        user.setEnabled(true);
+        user.setCredentials(Collections.singletonList(credential));
+        return user;
+    }
 
     @Transactional(readOnly = true)
     @Cacheable(value = "user_info", key = "#username")
@@ -47,12 +111,6 @@ public class UserService {
         );
     }
 
-    @Transactional(readOnly = true)
-    public Set<String> getUserRoles(String username) {
-        User user = findUser(username);
-
-        return mapRoleToString(user.getRoles());
-    }
 
     protected User findUser(String login) {
         return userRepository.findByUsernameOrEmail(login, login)
@@ -60,9 +118,9 @@ public class UserService {
                         .formatted(login)));
     }
 
-    protected User findUser(Integer userId) {
+    protected User findUser(UUID userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("Not found user with login: %d"
+                .orElseThrow(() -> new UsernameNotFoundException("Not found user with login: %s"
                         .formatted(userId)));
     }
 
@@ -74,10 +132,10 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserProductOwnerDto> findUsersByIds(List<Integer> ids) {
+    public List<UserProductOwnerDto> findUsersByIds(List<UUID> ids) {
 
-        List<Integer> validIds = ids.stream()
-                .filter(id -> id != null && id > 0)
+        List<UUID> validIds = ids.stream()
+                .filter(Objects::nonNull)
                 .toList();
 
         if (validIds.isEmpty()) {
@@ -94,10 +152,10 @@ public class UserService {
 
     @Transactional(readOnly = true)
     @Cacheable(value = "users_owner", key = "#userId")
-    public UserProductOwnerDto findUserById(Integer userId) {
+    public UserProductOwnerDto findUserById(UUID userId) {
 
-        if (userId == null || userId <= 0) {
-            return new UserProductOwnerDto(0, "Неизвестен");
+        if (userId == null) {
+            return new UserProductOwnerDto(null, "Неизвестен");
         }
         User user = findUser(userId);
 

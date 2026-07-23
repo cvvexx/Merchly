@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.springframework.security.authorization.AuthorityReactiveAuthorizationManager.hasRole;
 
@@ -21,7 +22,7 @@ public class InternalUsersController {
 
     @GetMapping//TODO(Решить проблему безопасности)
     @PreAuthorize("hasRole('INTERNAL_SERVICE')")
-    public ResponseEntity<List<UserProductOwnerDto>> getUserByIds(@RequestParam("ids") List<Integer> ids) {
+    public ResponseEntity<List<UserProductOwnerDto>> getUserByIds(@RequestParam("ids") List<UUID> ids) {
         if (ids == null || ids.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(List.of());
         }
@@ -31,7 +32,7 @@ public class InternalUsersController {
 
     @GetMapping("{userId}")
     @PreAuthorize("hasRole('INTERNAL_SERVICE')")
-    public ResponseEntity<UserProductOwnerDto> getUserById(@PathVariable("userId") Integer userId) {
+    public ResponseEntity<UserProductOwnerDto> getUserById(@PathVariable("userId") UUID userId) {
         return ResponseEntity.ok(userService.findUserById(userId));
     }
 

@@ -6,10 +6,12 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
+import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.UUID;
 
 @Entity
 @NoArgsConstructor
@@ -17,17 +19,14 @@ import java.util.Set;
 @Getter
 @Setter
 @Table(name = "users")
-public class User {
+public class User implements Persistable<UUID> {
+
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private UUID id;
 
     @Column(nullable = false, unique = true)
     private String username;
-
-    @Column(nullable = false)
-    private String password;
 
     @Column(name = "email", nullable = false, unique = true)
     private String email;
@@ -46,6 +45,29 @@ public class User {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+
+    public User(UUID id, String username, String email, Gender gender, LocalDate birthDate, Set<Role> roles) {
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.gender = gender;
+        this.birthDate = birthDate;
+        this.roles = roles;
+    }
+
+    @Transient
+    private boolean isNew = true;
+
+    @Override
+    public boolean isNew() {
+        return isNew;
+    }
+
+    @PostLoad
+    @PostPersist
+    public void markNotNew() {
+        this.isNew = false;
+    }
 
     @Override
     public boolean equals(Object o) {

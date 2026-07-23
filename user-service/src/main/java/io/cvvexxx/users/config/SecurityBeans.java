@@ -1,7 +1,7 @@
 package io.cvvexxx.users.config;
 
 
-import io.cvvexxx.users.security.DefaultUserDetailsService;
+//import io.cvvexxx.users.security.DefaultUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +35,7 @@ public class SecurityBeans {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/api/users/register").permitAll()
                         .requestMatchers("/api/users/me").hasRole("USER")
                         .requestMatchers("/api/internal/users/**").hasRole("INTERNAL_SERVICE")
                         .anyRequest().authenticated()
@@ -85,24 +86,6 @@ public class SecurityBeans {
         }
 
         return List.of();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(
-            DefaultUserDetailsService userDetailsService,
-            PasswordEncoder passwordEncoder
-    ) {
-
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder);
-
-        return new ProviderManager(authProvider);
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 
 }
