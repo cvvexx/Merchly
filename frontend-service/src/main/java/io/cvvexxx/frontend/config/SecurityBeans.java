@@ -58,7 +58,6 @@ public class SecurityBeans {
                                 targetUri += "?" + queryString;
                             }
 
-                            // Игнорируем редиректы, если запрашивался favicon
                             if ("/favicon.ico".equals(request.getRequestURI())) {
                                 response.sendError(HttpServletResponse.SC_NOT_FOUND);
                                 return;

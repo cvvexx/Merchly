@@ -25,12 +25,6 @@
                 </div>
                 <div class="card-body p-4">
 
-                    <!-- ID -->
-                    <div class="mb-3 border-bottom pb-2">
-                        <span class="text-muted d-block small text-uppercase">ID пользователя</span>
-                        <strong class="fs-5 text-dark" th:text="${user.id}">123</strong>
-                    </div>
-
                     <!-- Логин -->
                     <div class="mb-3 border-bottom pb-2">
                         <span class="text-muted d-block small text-uppercase">Имя пользователя (Логин)</span>
@@ -65,11 +59,14 @@
                     <div class="mb-4">
                         <span class="text-muted d-block mb-1 small text-uppercase">Роли / Права доступа</span>
                         <div>
-                            <span class="badge bg-success me-1 fs-6"
-                                  th:each="auth : ${user.roles}"
-                                  th:text="${auth}">
-                                ROLE_USER
-                            </span>
+                            <th:block th:each="auth : ${user.roles}">
+                                <!-- Фильтруем технические роли Keycloak -->
+                                <span class="badge bg-success me-1 fs-6"
+                                      th:if="${!auth.contains('default-roles') && !auth.contains('uma_authorization') && !auth.contains('offline_access')}"
+                                      th:text="${#strings.replace(auth, 'ROLE_', '')}">
+                                    USER
+                                </span>
+                            </th:block>
                         </div>
                     </div>
 

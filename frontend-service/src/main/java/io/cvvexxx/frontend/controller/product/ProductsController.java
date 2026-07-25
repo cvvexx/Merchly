@@ -76,7 +76,7 @@ public class ProductsController {
             @AuthenticationPrincipal Jwt jwt
     ) {
         try {
-            UUID userId = UUID.fromString(jwt.getSubject());
+            UUID userId = UUID.fromString(jwt.getSubject());//TODO(NULL POINTER)
 
             Product createdProduct = productsRestClient.createProduct(
                     payload.title(),

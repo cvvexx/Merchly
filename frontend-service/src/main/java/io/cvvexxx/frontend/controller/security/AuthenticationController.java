@@ -39,12 +39,21 @@ public class AuthenticationController {
     private final ObjectMapper objectMapper;
 
     @GetMapping("/login")
-    public String getLoginPage() {
+    public String getLoginPage(
+            Model model,
+            @RequestParam(name = "target", required = false) String target
+    ) {
+        model.addAttribute("target", target);
         return "security/login";
     }
 
     @GetMapping("/registration")
-    public String getRegistrationPage() {
+    public String getRegistrationPage(
+            Model model,
+            @RequestParam(name = "target", required = false) String target
+    ) {
+
+        model.addAttribute("target", target);
         return "security/registration";
     }
 
@@ -77,7 +86,7 @@ public class AuthenticationController {
             log.info("Successfully login user: {}", loginUserDto.login());
             log.info("Access token: {}", tokenResponse.accessToken());
             authenticateUserInSession(loginUserDto.login(), tokenResponse.accessToken(), request);
-
+            log.info("Target: {}", target);
             return (target != null && !target.isBlank()) ? "redirect:" + target : "redirect:/catalogue/products/list";
 
         } catch (Exception e) {

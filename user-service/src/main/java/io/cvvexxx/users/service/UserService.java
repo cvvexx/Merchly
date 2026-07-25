@@ -103,13 +103,21 @@ public class UserService {
     public UserInfoDto getUserInfo(String username) {
         User user = findUser(username);
 
+        Set<String> cleanRoles = mapRoleToString(user.getRoles())
+                .stream()
+                .filter(role -> !role.startsWith("default-roles")
+                        && !role.equals("offline_access")
+                        && !role.equals("uma_authorization"))
+                .map(role -> role.replace("ROLE_", ""))
+                .collect(Collectors.toSet());
+
+
         return new UserInfoDto(
-                user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getGender().name(),
                 user.getBirthDate(),
-                mapRoleToString(user.getRoles())
+                cleanRoles
         );
     }
 
