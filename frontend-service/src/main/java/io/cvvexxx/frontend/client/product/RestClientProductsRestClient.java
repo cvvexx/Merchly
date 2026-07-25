@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.UUID;
 
 
 @RequiredArgsConstructor
@@ -51,7 +52,7 @@ public class RestClientProductsRestClient implements ProductsRestClient {
     }
 
     @Override
-    public Product createProduct(String title, String description, BigDecimal price, Integer createdBy) {
+    public Product createProduct(String title, String description, BigDecimal price, UUID createdBy) {
         try {
             return restClient
                     .post()

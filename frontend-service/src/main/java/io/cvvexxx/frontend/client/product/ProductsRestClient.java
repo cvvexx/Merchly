@@ -5,6 +5,7 @@ import io.cvvexxx.frontend.dto.Product;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ProductsRestClient {
 
@@ -12,7 +13,7 @@ public interface ProductsRestClient {
 
     Optional<Product> findProductById(int productId);
 
-    Product createProduct(String title, String description, BigDecimal price,  Integer createdBy);
+    Product createProduct(String title, String description, BigDecimal price,  UUID createdBy);
 
     void deleteProduct(int productId);
 

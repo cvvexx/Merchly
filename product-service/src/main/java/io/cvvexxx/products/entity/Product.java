@@ -14,6 +14,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @AllArgsConstructor
@@ -21,6 +22,7 @@ import java.time.Instant;
 @Data
 @Builder
 @SQLRestriction("is_available = true")
+@Table(name = "products")
 public class Product {
 
     @Id
@@ -38,7 +40,7 @@ public class Product {
     private BigDecimal price;
 
     @Column(name = "created_by",  nullable = false)
-    private Integer createdBy;
+    private UUID createdBy;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

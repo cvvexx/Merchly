@@ -89,6 +89,8 @@ public class UserService {
         credential.setTemporary(false);
 
         UserRepresentation user = new UserRepresentation();
+        user.setFirstName(newUserDto.firstName());
+        user.setLastName(newUserDto.lastName());
         user.setUsername(newUserDto.username());
         user.setEmail(newUserDto.email());
         user.setEnabled(true);

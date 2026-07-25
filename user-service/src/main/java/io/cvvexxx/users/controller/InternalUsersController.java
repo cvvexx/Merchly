@@ -3,6 +3,7 @@ package io.cvvexxx.users.controller;
 import io.cvvexxx.users.dto.UserProductOwnerDto;
 import io.cvvexxx.users.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -11,16 +12,16 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 
-import static org.springframework.security.authorization.AuthorityReactiveAuthorizationManager.hasRole;
-
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/internal/users")
+@Slf4j
 public class InternalUsersController {
 
     private final UserService userService;
 
-    @GetMapping//TODO(Решить проблему безопасности)
+
+    @GetMapping
     @PreAuthorize("hasRole('INTERNAL_SERVICE')")
     public ResponseEntity<List<UserProductOwnerDto>> getUserByIds(@RequestParam("ids") List<UUID> ids) {
         if (ids == null || ids.isEmpty()) {

@@ -14,6 +14,7 @@ import java.math.BigDecimal;
 import java.util.Comparator;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @Service
 @Slf4j
@@ -47,7 +48,7 @@ public class DefaultProductService implements ProductService {
     @Override
     @Transactional
     @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
-    public Product createProduct(String title, String description, BigDecimal price, int createdBy) {
+    public Product createProduct(String title, String description, BigDecimal price, UUID createdBy) {
         return productRepository.save(
                 Product.builder()
                         .title(title)

@@ -2,7 +2,7 @@ package io.cvvexxx.frontend.dto;
 
 import java.util.UUID;
 
-public record ProductOwnerDto(
+public record CreatedUserDto(
         UUID id,
         String username
 ) {

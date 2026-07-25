@@ -5,6 +5,7 @@ import io.cvvexxx.products.entity.Product;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 public interface ProductService {
 
@@ -12,7 +13,7 @@ public interface ProductService {
 
     Product findProductById(int productId);
 
-    Product createProduct(String title, String description, BigDecimal price, int createdBy);
+    Product createProduct(String title, String description, BigDecimal price, UUID createdBy);
 
     void deleteProduct(Integer productId);
 

@@ -37,8 +37,8 @@ public class ProductController {
 
     @GetMapping
     public String getProductPage(
-            @ModelAttribute("product") Product product
-            , Model model
+            @ModelAttribute("product") Product product,
+            Model model
     ) {
         ProductOwnerDto user = userInternalRestClient.findUserById(product.createdBy());
 
