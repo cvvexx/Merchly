@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="ru" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>Merchly &ndash; Главная</title>
@@ -13,10 +13,10 @@
         <div class="d-flex align-items-center gap-3">
             <a class="btn btn-outline-light btn-sm" th:href="@{/catalogue/products/list}">Каталог товаров</a>
 
-            <a sec:authorize="isAnonymous()" th:href="@{/login}" class="btn btn-primary btn-sm">Войти в профиль</a>
+            <a class="btn btn-primary btn-sm" sec:authorize="isAnonymous()" th:href="@{/login}">Войти в профиль</a>
 
-            <div sec:authorize="isAuthenticated()" class="d-flex align-items-center gap-2">
-                <a th:href="@{/profile}" class="btn btn-info btn-sm">Мой профиль</a>
+            <div class="d-flex align-items-center gap-2" sec:authorize="isAuthenticated()">
+                <a class="btn btn-info btn-sm" th:href="@{/profile}">Мой профиль</a>
             </div>
         </div>
     </div>
@@ -25,14 +25,15 @@
 <div class="container my-5">
     <div class="p-5 mb-4 bg-white rounded-3 shadow-sm border text-center">
         <div class="container-fluid py-5">
-            <h1 class="display-4 fw-bold text-dark">Добро пожаловать в Merchly, <strong th:text="${username}">Пользователь</strong>!</h1>
+            <h1 class="display-4 fw-bold text-dark">Добро пожаловать в Merchly, <strong th:text="${username}">Пользователь</strong>!
+            </h1>
             <p class="col-md-8 fs-5 mx-auto text-muted mt-3">
                 Лучший маркетплейс для покупки эксклюзивного мерча и стильных вещей. Наслаждайтесь, выбирайте и
                 делайте свой имидж еще ярче.
             </p>
             <div class="d-flex justify-content-center gap-3 mt-4">
-                <a th:href="@{/catalogue/products/list}" class="btn btn-primary btn-lg px-4">Перейти в каталог</a>
-                <a th:href="@{/profile}" class="btn btn-outline-secondary btn-lg px-4">Личный кабинет</a>
+                <a class="btn btn-primary btn-lg px-4" th:href="@{/catalogue/products/list}">Перейти в каталог</a>
+                <a class="btn btn-outline-secondary btn-lg px-4" th:href="@{/profile}">Личный кабинет</a>
             </div>
         </div>
     </div>

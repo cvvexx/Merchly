@@ -87,8 +87,7 @@ public class RestClientBeans {
                         "Bearer " + client.getAccessToken().getTokenValue()
                 );
             }
-        }
-        else if (authentication instanceof KeycloakJwtAuthenticationToken jwtToken) {
+        } else if (authentication instanceof KeycloakJwtAuthenticationToken jwtToken) {
             if (jwtToken.getCredentials() != null) {
                 request.getHeaders().add(
                         HttpHeaders.AUTHORIZATION,

@@ -4,7 +4,6 @@ import io.cvvexxx.frontend.dto.CreatedUserDto;
 import io.cvvexxx.frontend.dto.NewUserDto;
 import io.cvvexxx.frontend.dto.UserInfoDto;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
 import org.springframework.web.client.RestClient;
 
 @RequiredArgsConstructor

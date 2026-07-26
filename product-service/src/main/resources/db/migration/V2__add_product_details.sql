@@ -12,4 +12,4 @@ ALTER TABLE product
 ALTER TABLE product
     ADD COLUMN is_available BOOLEAN NOT NULL DEFAULT TRUE;
 
-CREATE INDEX idx_product_created_by ON product(created_by);
+CREATE INDEX idx_product_created_by ON product (created_by);

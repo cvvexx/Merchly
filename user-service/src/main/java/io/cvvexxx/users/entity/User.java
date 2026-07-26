@@ -2,10 +2,10 @@ package io.cvvexxx.users.entity;
 
 import io.cvvexxx.users.domain.Gender;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.springframework.data.domain.Persistable;
 
 import java.time.LocalDate;
@@ -44,6 +44,8 @@ public class User implements Persistable<UUID> {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+    @Transient
+    private boolean isNew = true;
 
     public User(UUID id, String username, String email, Gender gender, LocalDate birthDate, Set<Role> roles) {
         this.id = id;
@@ -53,9 +55,6 @@ public class User implements Persistable<UUID> {
         this.birthDate = birthDate;
         this.roles = roles;
     }
-
-    @Transient
-    private boolean isNew = true;
 
     @Override
     public boolean isNew() {

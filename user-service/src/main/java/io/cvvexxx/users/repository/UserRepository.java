@@ -1,6 +1,5 @@
 package io.cvvexxx.users.repository;
 
-import io.cvvexxx.users.dto.UserProductOwnerDto;
 import io.cvvexxx.users.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;

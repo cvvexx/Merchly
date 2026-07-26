@@ -39,7 +39,7 @@ public class Product {
     @Column(name = "price", nullable = false)
     private BigDecimal price;
 
-    @Column(name = "created_by",  nullable = false)
+    @Column(name = "created_by", nullable = false)
     private UUID createdBy;
 
     @CreationTimestamp
@@ -47,10 +47,10 @@ public class Product {
     private Instant createdAt;
 
     @UpdateTimestamp
-    @Column(name = "updated_at",  nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
     @Builder.Default
-    @Column(name = "is_available",  nullable = false)
+    @Column(name = "is_available", nullable = false)
     private boolean isAvailable = true;
 }

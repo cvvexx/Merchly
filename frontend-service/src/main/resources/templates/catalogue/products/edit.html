@@ -10,7 +10,7 @@
 <nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
     <div class="container">
         <a class="navbar-brand fw-bold text-primary" th:href="@{/}">Merchly</a>
-        <a th:href="@{/profile}" class="btn btn-outline-info btn-sm">В профиль</a>
+        <a class="btn btn-outline-info btn-sm" th:href="@{/profile}">В профиль</a>
     </div>
 </nav>
 
@@ -18,7 +18,8 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="mb-3">
-                <a th:href="@{/catalogue/products/{productId}(productId=${product.id})}" class="text-decoration-none text-secondary">&larr; Вернуться к товару</a>
+                <a class="text-decoration-none text-secondary"
+                   th:href="@{/catalogue/products/{productId}(productId=${product.id})}">&larr; Вернуться к товару</a>
             </div>
 
             <div class="card shadow-sm border-0">
@@ -27,34 +28,38 @@
                 </div>
                 <div class="card-body p-4">
 
-                    <div th:if="${errors}" class="alert alert-danger" role="alert">
+                    <div class="alert alert-danger" role="alert" th:if="${errors}">
                         <h5 class="alert-heading small fw-bold">Возникли ошибки:</h5>
                         <ul class="mb-0 px-3 small">
                             <li th:each="error: ${errors}" th:text="${error}"></li>
                         </ul>
                     </div>
 
-                    <form th:action="@{/catalogue/products/{productId}/edit(productId=${product.id})}" method="post">
+                    <form method="post" th:action="@{/catalogue/products/{productId}/edit(productId=${product.id})}">
                         <div class="mb-3">
                             <label class="form-label fw-bold">Название товара</label>
-                            <input th:value="${payload != null ? payload.title : product.title}" name="title" type="text" class="form-control">
+                            <input class="form-control" name="title"
+                                   th:value="${payload != null ? payload.title : product.title}" type="text">
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Цена</label>
                             <div class="input-group">
                                 <span class="input-group-text">₽</span>
-                                <input th:value="${payload != null ? payload.price : product.price()}" name="price" type="number" step="0.01" min="0.01" class="form-control" placeholder="0.00" required>
+                                <input class="form-control" min="0.01"
+                                       name="price" placeholder="0.00" required step="0.01" th:value="${payload != null ? payload.price : product.price()}"
+                                       type="number">
                             </div>
                             <div class="form-text">Цена должна быть больше нуля.</div>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Описание</label>
-                            <textarea th:text="${payload != null ? payload.description : product.description}" name="description" class="form-control" rows="4"></textarea>
+                            <textarea class="form-control"
+                                      name="description" rows="4" th:text="${payload != null ? payload.description : product.description}"></textarea>
                         </div>
                         <div class="d-grid gap-2 mt-4">
-                            <button type="submit" class="btn btn-warning fw-bold">Сохранить изменения</button>
+                            <button class="btn btn-warning fw-bold" type="submit">Сохранить изменения</button>
                         </div>
                     </form>
                 </div>

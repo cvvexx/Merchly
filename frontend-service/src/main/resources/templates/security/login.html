@@ -11,7 +11,7 @@
     <div class="col-md-4">
 
         <div class="text-center mb-4">
-            <a th:href="@{/}" class="text-decoration-none h2 fw-bold text-primary">Merchly</a>
+            <a class="text-decoration-none h2 fw-bold text-primary" th:href="@{/}">Merchly</a>
         </div>
 
         <div class="card shadow-sm border-0">
@@ -36,31 +36,35 @@
 
                 <form method="post" th:action="@{/do-login}">
                     <!-- CSRF Токен -->
-                    <input type="hidden" th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                    <input th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden"/>
                     <input name="target" th:value="${target}" type="hidden"/>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Имя пользователя / Email</label>
-                        <input name="login" placeholder="Введите логин..." required type="text" class="form-control form-control-lg fs-6"/>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Имя пользователя /
+                            Email</label>
+                        <input class="form-control form-control-lg fs-6" name="login" placeholder="Введите логин..." required
+                               type="text"/>
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted text-uppercase">Пароль</label>
-                        <input name="password" placeholder="••••••••" required type="password" class="form-control form-control-lg fs-6"/>
+                        <input class="form-control form-control-lg fs-6" name="password" placeholder="••••••••" required
+                               type="password"/>
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-lg w-100 shadow-sm mb-3">Войти</button>
+                    <button class="btn btn-primary btn-lg w-100 shadow-sm mb-3" type="submit">Войти</button>
                 </form>
 
                 <div class="text-center mt-3">
                     <span class="text-muted small">Нет аккаунта?</span>
-                    <a th:href="@{/registration(target=${target})}" class="text-decoration-none small fw-bold text-primary">Зарегистрироваться</a>
+                    <a class="text-decoration-none small fw-bold text-primary"
+                       th:href="@{/registration(target=${target})}">Зарегистрироваться</a>
                 </div>
             </div>
         </div>
 
         <div class="text-center mt-4">
-            <a th:href="@{/}" class="text-muted small text-decoration-none">&larr; Вернуться на главную</a>
+            <a class="text-muted small text-decoration-none" th:href="@{/}">&larr; Вернуться на главную</a>
         </div>
     </div>
 </div>

@@ -13,7 +13,7 @@ public interface ProductsRestClient {
 
     Optional<Product> findProductById(int productId);
 
-    Product createProduct(String title, String description, BigDecimal price,  UUID createdBy);
+    Product createProduct(String title, String description, BigDecimal price, UUID createdBy);
 
     void deleteProduct(int productId);
 

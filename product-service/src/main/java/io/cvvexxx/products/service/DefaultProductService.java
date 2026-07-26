@@ -21,9 +21,9 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class DefaultProductService implements ProductService {
 
-    private final ProductRepository productRepository;
     public static final String CACHE_PRODUCTS_LIST_NAME = "productList";
     public static final String CACHE_PRODUCT_NAME = "product";
+    private final ProductRepository productRepository;
 
     @Override
     @Cacheable(value = CACHE_PRODUCTS_LIST_NAME, key = "#filter != null ? #filter : 'ALL'")

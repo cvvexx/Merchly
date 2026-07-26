@@ -1,4 +1,5 @@
-ALTER TABLE product RENAME TO products;
+ALTER TABLE product
+    RENAME TO products;
 
 ALTER TABLE products
     ALTER COLUMN created_by DROP DEFAULT;

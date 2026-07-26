@@ -11,8 +11,6 @@ import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
 import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
