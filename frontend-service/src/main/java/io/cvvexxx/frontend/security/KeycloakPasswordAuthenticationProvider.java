@@ -41,6 +41,7 @@ public class KeycloakPasswordAuthenticationProvider implements AuthenticationPro
             return new KeycloakJwtAuthenticationToken(
                     username,
                     tokenResponse.accessToken(),
+                    tokenResponse.refreshToken(),
                     authorities
             );
         } catch (Exception e) {

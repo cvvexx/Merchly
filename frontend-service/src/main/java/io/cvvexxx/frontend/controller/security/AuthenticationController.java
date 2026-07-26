@@ -81,12 +81,13 @@ public class AuthenticationController {
             HttpServletRequest request
     ) {
         try {
-            log.info("Received request to login user {}", loginUserDto);
             KeycloakTokenResponse tokenResponse = keycloakClient.login(loginUserDto.login(), loginUserDto.password());
-            log.info("Successfully login user: {}", loginUserDto.login());
-            log.info("Access token: {}", tokenResponse.accessToken());
-            authenticateUserInSession(loginUserDto.login(), tokenResponse.accessToken(), request);
-            log.info("Target: {}", target);
+            authenticateUserInSession(
+                    loginUserDto.login(),
+                    tokenResponse.accessToken(),
+                    tokenResponse.refreshToken(),
+                    request
+            );
             return (target != null && !target.isBlank()) ? "redirect:" + target : "redirect:/catalogue/products/list";
 
         } catch (Exception e) {
@@ -95,14 +96,19 @@ public class AuthenticationController {
         }
     }
 
-    private void authenticateUserInSession(String username, String accessToken, HttpServletRequest request) {
-
+    private void authenticateUserInSession(
+            String username,
+            String accessToken,
+            String refreshToken,
+            HttpServletRequest request
+    ) {
         log.info("Trying to authenticate user: {}", username);
         List<GrantedAuthority> authorities = extractAuthorities(accessToken);
         log.info("Authorities: {}", authorities);
         KeycloakJwtAuthenticationToken authToken = new KeycloakJwtAuthenticationToken(
                 username,
                 accessToken,
+                refreshToken,
                 authorities
         );
         log.info("Authentication token: {}", authToken);
