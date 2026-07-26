@@ -24,10 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 @Controller
 @RequiredArgsConstructor
@@ -105,8 +102,10 @@ public class AuthenticationController {
         log.info("Trying to authenticate user: {}", username);
         List<GrantedAuthority> authorities = extractAuthorities(accessToken);
         log.info("Authorities: {}", authorities);
+        UUID userId = extractUserId(accessToken);
         KeycloakJwtAuthenticationToken authToken = new KeycloakJwtAuthenticationToken(
                 username,
+                userId,
                 accessToken,
                 refreshToken,
                 authorities
@@ -143,6 +142,18 @@ public class AuthenticationController {
         } catch (Exception e) {
             log.error("Failed to parse roles from token", e);
             return Collections.emptyList();
+        }
+    }
+
+    private UUID extractUserId(String accessToken) {
+        try {
+            String[] chunks = accessToken.split("\\.");
+            String payloadJson = new String(Base64.getUrlDecoder().decode(chunks[1]));
+            JsonNode rootNode = objectMapper.readTree(payloadJson);
+            return UUID.fromString(rootNode.path("sub").asText());
+        } catch (Exception e) {
+            log.error("Failed to parse 'sub' from access token", e);
+            return null;
         }
     }
 }

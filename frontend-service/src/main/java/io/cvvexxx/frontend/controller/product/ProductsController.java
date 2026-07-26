@@ -8,6 +8,7 @@ import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.dto.Product;
 import io.cvvexxx.frontend.dto.ProductOwnerDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
 import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -73,10 +74,10 @@ public class ProductsController {
     public String createProduct(
             NewProductPayload payload,
             Model model,
-            @AuthenticationPrincipal Jwt jwt
+            KeycloakJwtAuthenticationToken token
     ) {
         try {
-            UUID userId = UUID.fromString(jwt.getSubject());//TODO(NULL POINTER)
+            UUID userId = token.getUserId();
 
             Product createdProduct = productsRestClient.createProduct(
                     payload.title(),

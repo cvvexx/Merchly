@@ -1,9 +1,9 @@
 package io.cvvexxx.frontend.security;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cvvexxx.frontend.client.keycloak.KeycloakRestClient;
 import io.cvvexxx.frontend.dto.KeycloakTokenResponse;
+import io.cvvexxx.frontend.utils.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -20,7 +21,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Base64;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -28,7 +31,7 @@ import java.util.Base64;
 public class KeycloakTokenRefreshFilter extends OncePerRequestFilter {
 
     private final KeycloakRestClient keycloakClient;
-    private final ObjectMapper objectMapper;
+    private final JwtUtils jwtUtils;
 
     @Override
     protected void doFilterInternal(
@@ -40,28 +43,34 @@ public class KeycloakTokenRefreshFilter extends OncePerRequestFilter {
         Authentication authentication = context.getAuthentication();
 
         if (authentication instanceof KeycloakJwtAuthenticationToken jwtAuth) {
-            // Проверяем срок жизни токена
-            if (isTokenExpired(jwtAuth.getCredentials().toString())) {
+            // Проверяем истечение токена (с буфером в 10 секунд)
+            if (jwtUtils.isTokenExpired(jwtAuth.getCredentials().toString(), 10)) {
                 log.info("Access token is expired. Refreshing session for user: {}", jwtAuth.getName());
                 try {
-                    // Обращаемся к Keycloak за новыми токенами
                     KeycloakTokenResponse refreshed = keycloakClient.refresh(jwtAuth.getRefreshToken());
 
-                    // Создаем новый токен с обновленными данными
+                    JsonNode payloadNode = jwtUtils.parsePayload(refreshed.accessToken());
+
+                    UUID userId = jwtUtils.extractUserId(payloadNode);
+                    if (userId == null) userId = jwtAuth.getUserId();
+
+                    List<GrantedAuthority> authorities = jwtUtils.extractAuthorities(payloadNode);
+                    if (authorities.isEmpty()) authorities = new ArrayList<>(jwtAuth.getAuthorities());
+
                     KeycloakJwtAuthenticationToken newToken = new KeycloakJwtAuthenticationToken(
                             jwtAuth.getName(),
+                            userId,
                             refreshed.accessToken(),
                             refreshed.refreshToken(),
-                            jwtAuth.getAuthorities()
+                            authorities
                     );
 
-                    // Обновляем контекст и сессию
                     context.setAuthentication(newToken);
                     HttpSession session = request.getSession(false);
                     if (session != null) {
                         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
                     }
-                    log.info("Token successfully refreshed!");
+                    log.info("Token successfully refreshed for user: {}", jwtAuth.getName());
 
                 } catch (Exception e) {
                     log.error("Failed to refresh token, forcing logout", e);
@@ -75,19 +84,5 @@ public class KeycloakTokenRefreshFilter extends OncePerRequestFilter {
             }
         }
         filterChain.doFilter(request, response);
-    }
-
-    private boolean isTokenExpired(String accessToken) {
-        try {
-            String[] chunks = accessToken.split("\\.");
-            String payloadJson = new String(Base64.getUrlDecoder().decode(chunks[1]));
-            JsonNode rootNode = objectMapper.readTree(payloadJson);
-            long exp = rootNode.path("exp").asLong();
-            long currentTime = System.currentTimeMillis() / 1000;
-
-            return exp <= (currentTime + 10);
-        } catch (Exception e) {
-            return true;
-        }
     }
 }
