@@ -56,7 +56,8 @@ public class ProductsController {
         List<ProductOwnerViewModel> viewModels = products.stream()
                 .map(product -> new ProductOwnerViewModel(
                         product,
-                        creatorsMap.get(product.createdBy())
+                        creatorsMap.get(product.createdBy()),
+                        product.getImageUrl()
                 ))
                 .toList();
 

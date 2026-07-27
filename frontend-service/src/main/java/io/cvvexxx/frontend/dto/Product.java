@@ -10,7 +10,15 @@ public record Product(
         String title,
         String description,
         BigDecimal price,
-        MultipartFile image,
+        String imageFileName,
         UUID createdBy
 ) {
+
+    public String getImageUrl() {
+        if (this.imageFileName == null || this.imageFileName.isBlank()) {
+            return "/images/default-product-image.png";
+        }
+        return "http://localhost:9000/merchly-products/" + this.imageFileName;
+    }
+
 }

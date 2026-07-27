@@ -5,6 +5,7 @@ import io.cvvexxx.frontend.dto.ProductOwnerDto;
 
 public record ProductOwnerViewModel(
         Product product,
-        ProductOwnerDto user
+        ProductOwnerDto user,
+        String imageUrl
 ) {
 }
