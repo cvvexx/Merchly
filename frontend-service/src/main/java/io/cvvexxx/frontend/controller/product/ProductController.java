@@ -41,7 +41,14 @@ public class ProductController {
             Model model
     ) {
         ProductOwnerDto user = userInternalRestClient.findUserById(product.createdBy());
-        ProductOwnerViewModel productOwnerViewModel = new ProductOwnerViewModel(product, user, product.getImageUrl());
+
+        String displayImageUrl = (product.imageFileName() != null && !product.imageFileName().isBlank())
+                ? product.getImageUrl()
+                : "/images/default-product-image.png";
+
+        //TODO(ПОЧИНИТЬ МАКСИМАЛЬНЫЙ РАЗМЕР ФАЙЛА)
+
+        ProductOwnerViewModel productOwnerViewModel = new ProductOwnerViewModel(product, user, displayImageUrl);
         log.info("getProductPage product owner: {}", productOwnerViewModel);
         model.addAttribute("data", productOwnerViewModel);
 

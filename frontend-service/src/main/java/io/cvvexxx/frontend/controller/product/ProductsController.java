@@ -57,7 +57,7 @@ public class ProductsController {
                 .map(product -> new ProductOwnerViewModel(
                         product,
                         creatorsMap.get(product.createdBy()),
-                        product.getImageUrl()
+                        getImageUrl(product)
                 ))
                 .toList();
 
@@ -97,5 +97,11 @@ public class ProductsController {
             model.addAttribute("errors", exception.getErrors());
             return "catalogue/products/new_product";
         }
+    }
+
+    private String getImageUrl(Product product) {
+        return (product.imageFileName() != null && !product.imageFileName().isBlank())
+                ? product.getImageUrl()
+                : "/images/default-product-image.png";
     }
 }

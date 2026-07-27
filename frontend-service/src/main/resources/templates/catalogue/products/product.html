@@ -24,7 +24,7 @@
 
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4">
-                    <img th:src="${data.imageUrl}" class="card-img-top img-fluid" alt="Изображение товара">
+                    <img th:src="@{${data.imageUrl}}" class="card-img-top img-fluid" alt="Изображение товара">
                     <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
                         <div>
                             <span class="badge bg-secondary mb-2">ID: [[${data.product.id}]]</span>
