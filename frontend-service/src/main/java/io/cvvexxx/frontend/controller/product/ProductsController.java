@@ -11,12 +11,14 @@ import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
 import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,7 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("catalogue/products")
 @RequiredArgsConstructor
+@Slf4j
 public class ProductsController {
 
     private final ProductsRestClient productsRestClient;
@@ -71,16 +74,19 @@ public class ProductsController {
     @PostMapping("create")
     public String createProduct(
             NewProductPayload payload,
+            MultipartFile image,
             Model model,
             KeycloakJwtAuthenticationToken token
     ) {
         try {
+            log.info("image {}", image);
             UUID userId = token.getUserId();
 
             Product createdProduct = productsRestClient.createProduct(
                     payload.title(),
                     payload.description(),
                     payload.price(),
+                    image,
                     userId
             );
 

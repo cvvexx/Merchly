@@ -9,6 +9,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.Comparator;
@@ -24,6 +25,7 @@ public class DefaultProductService implements ProductService {
     public static final String CACHE_PRODUCTS_LIST_NAME = "productList";
     public static final String CACHE_PRODUCT_NAME = "product";
     private final ProductRepository productRepository;
+    private final MinioService minioService;
 
     @Override
     @Cacheable(value = CACHE_PRODUCTS_LIST_NAME, key = "#filter != null ? #filter : 'ALL'")
@@ -48,13 +50,24 @@ public class DefaultProductService implements ProductService {
     @Override
     @Transactional
     @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
-    public Product createProduct(String title, String description, BigDecimal price, UUID createdBy) {
+    public Product createProduct(
+            String title, String description, BigDecimal price,
+            UUID createdBy, MultipartFile image
+    ) {
+        String imageFileName = null;
+        log.info("image {}", image);
+        if (image != null && !image.isEmpty()) {
+            imageFileName = minioService.upload(image);
+            log.info("imageFileName: {}", imageFileName);
+        }
+
         return productRepository.save(
                 Product.builder()
                         .title(title)
                         .description(description)
                         .price(price)
                         .createdBy(createdBy)
+                        .imageFileName(imageFileName)
                         .build()
         );
     }

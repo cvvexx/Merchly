@@ -34,6 +34,9 @@ public class User implements Persistable<UUID> {
     @Column(name = "gender", nullable = false)
     private Gender gender;
 
+    @Column(name = "avatar_file_name", nullable = true)
+    private String avatarFileName;
+
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
 
