@@ -3,13 +3,12 @@ package io.cvvexxx.frontend.controller.product;
 
 import io.cvvexxx.frontend.client.product.ProductsRestClient;
 import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
-import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.dto.Product;
 import io.cvvexxx.frontend.dto.ProductOwnerDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
-import io.cvvexxx.frontend.formater.ImageUrlFormatter;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
+import io.cvvexxx.frontend.utils.ImageUrlFormatter;
 import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +17,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Map;
@@ -54,13 +52,17 @@ public class ProductsController {
                 .collect(Collectors.toMap(ProductOwnerDto::id, Function.identity()));
 
         List<ProductOwnerViewModel> viewModels = products.stream()
-                .map(product -> new ProductOwnerViewModel(
-                        product,
-                        creatorsMap.get(product.createdBy()),
-                        getImageUrl(product)
-                ))
+                .map(product -> {
+                    var creator = creatorsMap.get(product.createdBy()) != null ?  creatorsMap.get(product.createdBy()) : null;
+                    return new ProductOwnerViewModel(
+                            product,
+                            creator,
+                            getImageUrl(product),
+                            getUserAvatarUrl(creator)
+                    );
+                })
                 .toList();
-
+        log.info("viewModels: {}", viewModels);
         model.addAttribute("products", viewModels);
         model.addAttribute("filter", filter);
 
@@ -101,8 +103,15 @@ public class ProductsController {
 
     private String getImageUrl(Product product) {
         return (product.imageFileName() != null && !product.imageFileName().isBlank())
-                ? imageUrlFormatter.getImageUrl(product.imageFileName())
+                ? imageUrlFormatter.getProductImageUrl(product.imageFileName())
                 : "/images/default-product-image.png";
+    }
+
+    private String getUserAvatarUrl(ProductOwnerDto creator) {
+        if (creator == null || creator.avatarFileName() == null || creator.avatarFileName().isBlank()) {
+            return "/images/default-user-avatar.png";
+        }
+        return imageUrlFormatter.getUserAvatarUrl(creator.avatarFileName());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

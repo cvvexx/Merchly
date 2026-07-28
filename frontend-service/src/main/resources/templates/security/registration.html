@@ -18,38 +18,40 @@
             <div class="card-body p-4">
                 <h3 class="card-title text-center mb-4 fw-bold">Регистрация</h3>
 
-                <form id="registrationForm" method="post" th:action="@{/do-register}">
+                <form id="registrationForm" method="post" enctype="multipart/form-data" th:action="@{/do-register}">
                     <!-- CSRF Токен -->
                     <input th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden"/>
                     <input name="target" th:value="${target}" type="hidden"/>
 
-                    <!-- Логин -->
+                    <!-- Имя и Фамилия -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Имя</label>
-                        <input class="form-control form-control-lg fs-6" name="firstName" placeholder="ivan" required
-                               type="text"/>
+                        <input class="form-control form-control-lg fs-6" name="firstName" placeholder="Иван" required type="text"/>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Фамилия</label>
-                        <input class="form-control form-control-lg fs-6" name="lastName" placeholder="merch" required
-                               type="text"/>
+                        <input class="form-control form-control-lg fs-6" name="lastName" placeholder="Иванов" required type="text"/>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Имя пользователя</label>
-                        <input class="form-control form-control-lg fs-6" name="username" placeholder="ivan_merch" required
-                               type="text"/>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Имя пользователя (Логин)</label>
+                        <input class="form-control form-control-lg fs-6" name="username" placeholder="ivan_merch" required type="text"/>
                     </div>
 
                     <!-- Email -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Email</label>
-                        <input class="form-control form-control-lg fs-6" name="email" placeholder="example@mail.com" required
-                               type="email"/>
+                        <input class="form-control form-control-lg fs-6" name="email" placeholder="example@mail.com" required type="email"/>
                     </div>
 
-                    <!-- Пол и Дата рождения (Кастомные поля для локальной БД) -->
+                    <!-- Загрузка аватарки -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Аватар профиля</label>
+                        <input class="form-control form-control-lg fs-6" name="userAvatar" type="file" accept="image/*"/>
+                    </div>
+
+                    <!-- Пол и Дата рождения -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-muted text-uppercase">Пол</label>
@@ -67,32 +69,28 @@
                     <!-- Пароль -->
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Придумайте пароль</label>
-                        <input class="form-control form-control-lg fs-6" id="password" name="password" placeholder="Минимум 8 символов" required
-                               type="password"/>
+                        <input class="form-control form-control-lg fs-6" id="password" name="password" placeholder="Минимум 8 символов" required type="password"/>
                     </div>
 
                     <!-- Подтверждение пароля -->
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted text-uppercase">Повторите пароль</label>
-                        <input class="form-control form-control-lg fs-6" id="confirmPassword" placeholder="Повторите введенный пароль" required
-                               type="password"/>
+                        <input class="form-control form-control-lg fs-6" id="confirmPassword" placeholder="Повторите введенный пароль" required type="password"/>
                         <div class="invalid-feedback" id="passwordMismatch">Пароли не совпадают!</div>
                     </div>
 
-                    <button class="btn btn-success btn-lg w-100 shadow-sm mb-3" type="submit">Зарегистрироваться
-                    </button>
+                    <button class="btn btn-success btn-lg w-100 shadow-sm mb-3" type="submit">Зарегистрироваться</button>
                 </form>
 
                 <div class="text-center mt-3">
                     <span class="text-muted small">Уже есть аккаунт?</span>
-                    <a class="text-decoration-none small fw-bold text-success" th:href="@{/login(target=${target})}">Войти
-                        в кабинет</a>
+                    <a class="text-decoration-none small fw-bold text-success" th:href="@{/login(target=${target})}">Войти в профиль</a>
                 </div>
             </div>
         </div>
 
         <div class="text-center mt-4">
-            <a class="text-muted small text-decoration-none" th:href="@{/}">&larr; Отмена</a>
+            <a class="text-muted small text-decoration-none" th:href="@{/}">&larr; На главную</a>
         </div>
     </div>
 </div>

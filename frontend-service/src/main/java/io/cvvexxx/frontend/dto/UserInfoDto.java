@@ -9,6 +9,7 @@ public record UserInfoDto(
         String email,
         String gender,
         LocalDate birthDate,
-        Set<String> roles
+        Set<String> roles,
+        String userAvatarUrl
 ) {
 }

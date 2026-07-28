@@ -23,6 +23,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 
@@ -57,11 +58,12 @@ public class AuthenticationController {
     @PostMapping("/do-register")
     public String registerUser(
             NewUserDto newUserDto,
+            MultipartFile userAvatar,
             @RequestParam(name = "target", required = false) String target,
             Model model
     ) {
         try {
-            CreatedUserDto createdUserDto = userRestClient.registerUser(newUserDto);
+            CreatedUserDto createdUserDto = userRestClient.registerUser(newUserDto, userAvatar);
             log.info("Successfully registered user: {}", createdUserDto.username());
             model.addAttribute("target", target);
             return "redirect:/login";

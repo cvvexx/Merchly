@@ -18,7 +18,7 @@ public class MainPageController {
             Model model
     ) {
         if (userDto != null) {
-            model.addAttribute("username", userDto.username()); // Вызываем рекорд-метод login()
+            model.addAttribute("username", userDto.username());
         } else {
             model.addAttribute("username", DEFAULT_USERNAME);
         }

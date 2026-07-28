@@ -20,6 +20,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,12 +33,13 @@ public class UserService {
     private final Keycloak keycloak;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
+    private final MinioService minioService;
 
     @Value("${keycloak.realm}")
     private String realm;
 
     @Transactional
-    public UserCreatedDto registerUserInKeycloakAndLocalDb(NewUserDto newUserDto) {
+    public UserCreatedDto registerUserInKeycloakAndLocalDb(NewUserDto newUserDto, MultipartFile userAvatar) {
         log.info("Received request to register user in keycloak and local db {}", newUserDto);
 
         UserRepresentation user = getUserRepresentation(newUserDto);
@@ -60,13 +62,20 @@ public class UserService {
 
             Set<Role> roles = Set.of(roleRepository.findByRole("USER"));
 
+            String userAvatarFileName = null;
+
+            if (userAvatar != null &&  !userAvatar.isEmpty()) {
+                userAvatarFileName = minioService.upload(userAvatar);
+            }
+
             User localUser = new User(
                     UUID.fromString(keycloakUserId),
                     newUserDto.username(),
                     newUserDto.email(),
                     newUserDto.gender(),
                     newUserDto.birthDate(),
-                    roles
+                    roles,
+                    userAvatarFileName
             );
 
             User savedUser = userRepository.save(localUser);
@@ -77,6 +86,7 @@ public class UserService {
                     savedUser.getUsername()
             );
         } catch (Exception e) {
+            //TODO(ОТМЕНИТЬ ИЗМЕНЕНИЯ ПРИ ОТКАТЕ ТРАНЗАКЦИИ)
             log.error("Error during user registration: {}", e.getMessage(), e);
             throw e;
         }
@@ -117,7 +127,8 @@ public class UserService {
                 user.getEmail(),
                 user.getGender().name(),
                 user.getBirthDate(),
-                cleanRoles
+                cleanRoles,
+                user.getAvatarFileName()
         );
     }
 
@@ -155,7 +166,8 @@ public class UserService {
         return userRepository.findAllByIdIn(validIds).stream()
                 .map(user -> new UserProductOwnerDto(
                         user.getId(),
-                        user.getUsername()
+                        user.getUsername(),
+                        user.getAvatarFileName()
                 ))
                 .toList();
     }
@@ -165,13 +177,14 @@ public class UserService {
     public UserProductOwnerDto findUserById(UUID userId) {
 
         if (userId == null) {
-            return new UserProductOwnerDto(null, "Неизвестен");
+            return new UserProductOwnerDto(null, "Неизвестен", "/images/default-user-avatar.png");
         }
         User user = findUser(userId);
 
         return new UserProductOwnerDto(
                 user.getId(),
-                user.getUsername()
+                user.getUsername(),
+                user.getAvatarFileName()
         );
     }
 }

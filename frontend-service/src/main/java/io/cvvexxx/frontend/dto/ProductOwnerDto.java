@@ -4,6 +4,7 @@ import java.util.UUID;
 
 public record ProductOwnerDto(
         UUID id,
-        String username
+        String username,
+        String avatarFileName
 ) {
 }

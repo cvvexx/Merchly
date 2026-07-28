@@ -6,7 +6,7 @@ import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
 import io.cvvexxx.frontend.dto.Product;
 import io.cvvexxx.frontend.dto.ProductOwnerDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
-import io.cvvexxx.frontend.formater.ImageUrlFormatter;
+import io.cvvexxx.frontend.utils.ImageUrlFormatter;
 import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -45,13 +45,15 @@ public class ProductController {
     ) {
         ProductOwnerDto user = userInternalRestClient.findUserById(product.createdBy());
 
-        String displayImageUrl = (product.imageFileName() != null && !product.imageFileName().isBlank())
-                ? imageUrlFormatter.getImageUrl(product.imageFileName())
-                : "/images/default-product-image.png";
+        String userAvatarUrl = imageUrlFormatter.getUserAvatarUrl(user.avatarFileName());
+        String productImageUrl = imageUrlFormatter.getProductImageUrl(product.imageFileName());
 
-        //TODO(ПОЧИНИТЬ МАКСИМАЛЬНЫЙ РАЗМЕР ФАЙЛА)
-
-        ProductOwnerViewModel productOwnerViewModel = new ProductOwnerViewModel(product, user, displayImageUrl);
+        ProductOwnerViewModel productOwnerViewModel = new ProductOwnerViewModel(
+                product,
+                user,
+                productImageUrl,
+                userAvatarUrl
+        );
         log.info("getProductPage product owner: {}", productOwnerViewModel);
         model.addAttribute("data", productOwnerViewModel);
 

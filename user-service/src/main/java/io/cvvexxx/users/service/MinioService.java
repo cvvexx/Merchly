@@ -49,20 +49,20 @@ public class MinioService {
         }
     }
 
-    public void deleteAvatar(String fileName) {
+    public void removeObject(String fileName) {
         if (fileName == null || fileName.isBlank()) {
+            log.warn("Attempted to delete a file with null or empty fileName from bucket: {}", bucketName);
             return;
         }
         try {
-            minioClient.removeObject(
-                    RemoveObjectArgs.builder()
-                            .bucket(bucketName)
-                            .object(fileName)
-                            .build()
-            );
-            log.info("Аватар удален из MinIO: {}", fileName);
+            minioClient.removeObject(RemoveObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(fileName)
+                    .build());
+            log.info("File successfully deleted from MinIO: {}/{}", bucketName, fileName);
         } catch (Exception e) {
-            log.error("Ошибка при удалении аватара из MinIO: {}", fileName, e);
+            log.error("Error deleting file from MinIO: {} from bucket: {}", fileName, bucketName, e);
+            throw new RuntimeException("Cannot delete file from MinIO", e);
         }
     }
 
