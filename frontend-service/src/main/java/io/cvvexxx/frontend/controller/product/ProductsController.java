@@ -15,11 +15,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Map;
@@ -104,5 +103,15 @@ public class ProductsController {
         return (product.imageFileName() != null && !product.imageFileName().isBlank())
                 ? imageUrlFormatter.getImageUrl(product.imageFileName())
                 : "/images/default-product-image.png";
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public String handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException e,
+            Model model
+    ) {
+        log.warn("Попытка загрузки слишком большого файла: {}", e.getMessage());
+        model.addAttribute("errors", List.of("Размер загружаемого файла не должен превышать 10 МБ."));
+        return "catalogue/products/new_product";
     }
 }

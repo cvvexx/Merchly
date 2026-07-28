@@ -24,6 +24,6 @@ public interface ProductsRestClient {
 
     void deleteProduct(int productId);
 
-    void updateProduct(int productId, String title, String description, BigDecimal price);
+    void updateProduct(int productId, String title, String description, BigDecimal price, MultipartFile image);
 
 }

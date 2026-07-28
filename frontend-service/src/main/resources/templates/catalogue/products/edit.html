@@ -29,13 +29,13 @@
                 <div class="card-body p-4">
 
                     <div class="alert alert-danger" role="alert" th:if="${errors}">
-                        <h5 class="alert-heading small fw-bold">Возникли ошибки:</h5>
+                        <h5 class="alert-heading small fw-bold">Ошибки формы:</h5>
                         <ul class="mb-0 px-3 small">
                             <li th:each="error: ${errors}" th:text="${error}"></li>
                         </ul>
                     </div>
 
-                    <form method="post" th:action="@{/catalogue/products/{productId}/edit(productId=${product.id})}">
+                    <form method="post" th:action="@{/catalogue/products/{productId}/edit(productId=${product.id})}" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label class="form-label fw-bold">Название товара</label>
                             <input class="form-control" name="title"
@@ -47,7 +47,8 @@
                             <div class="input-group">
                                 <span class="input-group-text">₽</span>
                                 <input class="form-control" min="0.01"
-                                       name="price" placeholder="0.00" required step="0.01" th:value="${payload != null ? payload.price : product.price()}"
+                                       name="price" placeholder="0.00" required step="0.01"
+                                       th:value="${payload != null ? payload.price : product.price()}"
                                        type="number">
                             </div>
                             <div class="form-text">Цена должна быть больше нуля.</div>
@@ -56,8 +57,23 @@
                         <div class="mb-3">
                             <label class="form-label fw-bold">Описание</label>
                             <textarea class="form-control"
-                                      name="description" rows="4" th:text="${payload != null ? payload.description : product.description}"></textarea>
+                                      name="description" rows="4"
+                                      th:text="${payload != null ? payload.description : product.description}"></textarea>
                         </div>
+
+                        <div class="mb-3">
+                            <label for="image" class="form-label fw-bold">Новое изображение товара</label>
+                            <input class="form-control"
+                                   type="file"
+                                   id="image"
+                                   name="image"
+                                   accept="image/png, image/jpeg, image/webp"
+                                   onchange="validateFileSize(this)">
+                            <div id="fileSizeError" class="text-danger small mt-1 d-none">
+                                Размер файла не должен превышать 10 МБ.
+                            </div>
+                        </div>
+
                         <div class="d-grid gap-2 mt-4">
                             <button class="btn btn-warning fw-bold" type="submit">Сохранить изменения</button>
                         </div>
@@ -69,4 +85,24 @@
 </div>
 
 </body>
+
+<script>
+    function validateFileSize(input) {
+        const maxSizeBytes = 10 * 1024 * 1024; // 10 MB
+        const errorDiv = document.getElementById('fileSizeError');
+        const submitBtn = input.form.querySelector('button[type="submit"]');
+
+        if (input.files && input.files[0]) {
+            if (input.files[0].size > maxSizeBytes) {
+                errorDiv.classList.remove('d-none');
+                input.value = '';
+                submitBtn.disabled = true;
+            } else {
+                errorDiv.classList.add('d-none');
+                submitBtn.disabled = false;
+            }
+        }
+    }
+</script>
+
 </html>

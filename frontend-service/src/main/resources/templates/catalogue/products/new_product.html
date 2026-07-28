@@ -18,8 +18,7 @@
     <div class="row justify-content-center">
         <div class="col-md-6">
             <div class="mb-3">
-                <a class="text-decoration-none text-secondary" th:href="@{/catalogue/products/list}">&larr; В
-                    каталог</a>
+                <a class="text-decoration-none text-secondary" th:href="@{/catalogue/products/list}">&larr; В каталог</a>
             </div>
 
             <div class="card shadow-sm border-0">
@@ -36,13 +35,11 @@
                     </div>
 
                     <form method="post" th:action="@{/catalogue/products/create}" enctype="multipart/form-data">
-                        <!-- Название -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">Название товара</label>
                             <input class="form-control" name="title" placeholder="Введите название..." th:value="${payload?.title}" type="text">
                         </div>
 
-                        <!-- Цена -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">Цена</label>
                             <div class="input-group">
@@ -52,16 +49,22 @@
                             <div class="form-text">Цена должна быть больше нуля.</div>
                         </div>
 
-                        <!-- Описание -->
                         <div class="mb-3">
                             <label class="form-label fw-bold">Описание</label>
                             <textarea class="form-control" name="description" placeholder="Введите описание товара..." rows="4" th:text="${payload?.description}"></textarea>
                         </div>
 
-                        <!-- Изображение -->
                         <div class="mb-3">
                             <label for="image" class="form-label fw-bold">Изображение товара</label>
-                            <input class="form-control" type="file" id="image" name="image" accept="image/png, image/jpeg, image/webp">
+                            <input class="form-control"
+                                   type="file"
+                                   id="image"
+                                   name="image"
+                                   accept="image/png, image/jpeg, image/webp"
+                                   onchange="validateFileSize(this)">
+                            <div id="fileSizeError" class="text-danger small mt-1 d-none">
+                                Размер файла не должен превышать 10 МБ.
+                            </div>
                         </div>
 
                         <div class="d-grid gap-2 mt-4">
@@ -73,6 +76,23 @@
         </div>
     </div>
 </div>
-
 </body>
+<script>
+    function validateFileSize(input) {
+        const maxSizeBytes = 10 * 1024 * 1024; // 10 MB
+        const errorDiv = document.getElementById('fileSizeError');
+        const submitBtn = input.form.querySelector('button[type="submit"]');
+
+        if (input.files && input.files[0]) {
+            if (input.files[0].size > maxSizeBytes) {
+                errorDiv.classList.remove('d-none');
+                input.value = '';
+                submitBtn.disabled = true;
+            } else {
+                errorDiv.classList.add('d-none');
+                submitBtn.disabled = false;
+            }
+        }
+    }
+</script>
 </html>

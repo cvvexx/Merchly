@@ -17,6 +17,6 @@ public interface ProductService {
 
     void deleteProduct(Integer productId);
 
-    void updateProduct(Integer productId, String title, String description, BigDecimal price);
+    void updateProduct(Integer productId, String title, String description, BigDecimal price, MultipartFile imageFileName);
 
 }

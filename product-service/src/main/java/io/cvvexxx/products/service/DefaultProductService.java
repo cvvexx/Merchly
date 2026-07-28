@@ -91,10 +91,29 @@ public class DefaultProductService implements ProductService {
             @CacheEvict(value = CACHE_PRODUCT_NAME, key = "#productId"),
             @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
     })
-    public void updateProduct(Integer productId, String title, String description, BigDecimal price) {
+    public void updateProduct(Integer productId, String title, String description, BigDecimal price, MultipartFile image) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
 
+        log.info("update product {}", product);
+
+        String oldImageFileName = product.getImageFileName();
+        log.info("New image {}", image);
+        log.info("oldImageFileName {}", oldImageFileName);
+        if (image != null && !image.isEmpty()) {
+            String newImageFileName = minioService.upload(image);
+            log.info("Uploaded new image: {}", newImageFileName);
+
+            product.setImageFileName(newImageFileName);
+
+            if (oldImageFileName != null && !oldImageFileName.isBlank()) {
+                try {
+                    minioService.removeObject(oldImageFileName);
+                } catch (Exception e) {
+                    log.error("Failed to delete old image {} from MinIO for product {}", oldImageFileName, productId, e);
+                }
+            }
+        }
         product.setTitle(title);
         product.setDescription(description);
         product.setPrice(price);

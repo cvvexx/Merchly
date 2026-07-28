@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -65,6 +66,7 @@ public class ProductController {
     @PostMapping("edit")
     public String updateProduct(
             @ModelAttribute("product") Product product,
+            MultipartFile image,
             UpdateProductPayload payload,
             Model model
     ) {
@@ -73,7 +75,8 @@ public class ProductController {
                     product.id(),
                     payload.title(),
                     payload.description(),
-                    payload.price()
+                    payload.price(),
+                    image
             );
             return "redirect:/catalogue/products/%d".formatted(product.id());
         } catch (BadRequestException exception) {

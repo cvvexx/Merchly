@@ -1,9 +1,6 @@
 package io.cvvexxx.products.service;
 
-import io.minio.BucketExistsArgs;
-import io.minio.MakeBucketArgs;
-import io.minio.MinioClient;
-import io.minio.PutObjectArgs;
+import io.minio.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,7 +50,23 @@ public class MinioService {
         }
     }
 
-    
+    public void removeObject(String fileName) {
+        if (fileName == null || fileName.isBlank()) {
+            log.warn("Attempted to delete a file with null or empty fileName from bucket: {}", bucketName);
+            return;
+        }
+        try {
+            minioClient.removeObject(RemoveObjectArgs.builder()
+                    .bucket(bucketName)
+                    .object(fileName)
+                    .build());
+            log.info("File successfully deleted from MinIO: {}/{}", bucketName, fileName);
+        } catch (Exception e) {
+            log.error("Error deleting file from MinIO: {} from bucket: {}", fileName, bucketName, e);
+            throw new RuntimeException("Cannot delete file from MinIO", e);
+        }
+    }
+
     private PutObjectArgs putObjectInBucket(
             MultipartFile file,
             String bucketName,

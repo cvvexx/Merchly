@@ -96,13 +96,20 @@ public class RestClientProductsRestClient implements ProductsRestClient {
     }
 
     @Override
-    public void updateProduct(int productId, String title, String description, BigDecimal price) {
+    public void updateProduct(int productId, String title, String description, BigDecimal price, MultipartFile image) {
+        MultipartBodyBuilder builder = new MultipartBodyBuilder();
+        builder.part("payload", new UpdateProductPayload(title, description, price));
+        log.info("image {}", image);
+        if (image != null && !image.isEmpty()) {
+            builder.part("image", image.getResource());
+        }
+
         try {
             restClient
                     .patch()
                     .uri("/api/products/{productId}", productId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(new UpdateProductPayload(title, description, price))
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(builder.build())
                     .retrieve()
                     .toBodilessEntity();
         } catch (HttpClientErrorException.BadRequest exception) {

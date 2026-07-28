@@ -5,6 +5,7 @@ import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -19,6 +21,7 @@ import java.util.NoSuchElementException;
 @RestController
 @RequestMapping("api/products/{productId:\\d+}")
 @RequiredArgsConstructor
+@Slf4j
 public class ProductRestController {
 
     private final ProductService productService;
@@ -35,7 +38,8 @@ public class ProductRestController {
     @PatchMapping
     public ResponseEntity<Void> updateProduct(
             @PathVariable("productId") int productId,
-            @Valid @RequestBody UpdateProductPayload payload,
+            @Valid @RequestPart("payload") UpdateProductPayload payload,
+            @RequestPart(value = "image", required = false ) MultipartFile image,
             BindingResult bindingResult
     ) throws BindException {
         if (bindingResult.hasErrors()) {
@@ -44,8 +48,8 @@ public class ProductRestController {
             }
             throw new BindException(bindingResult);
         }
-
-        productService.updateProduct(productId, payload.title(), payload.description(), payload.price());
+        log.info("Updating product with id {}", productId);
+        productService.updateProduct(productId, payload.title(), payload.description(), payload.price(), image);
         return ResponseEntity.noContent().build();
     }
 
