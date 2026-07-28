@@ -6,6 +6,7 @@ import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
 import io.cvvexxx.frontend.dto.Product;
 import io.cvvexxx.frontend.dto.ProductOwnerDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.formater.ImageUrlFormatter;
 import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class ProductController {
     private final ProductsRestClient productsRestClient;
     private final UserInternalRestClient userInternalRestClient;
     private final MessageSource messageSource;
+    private final ImageUrlFormatter imageUrlFormatter;
 
     @ModelAttribute("product")
     public Product product(@PathVariable("productId") int productId) {
@@ -43,7 +45,7 @@ public class ProductController {
         ProductOwnerDto user = userInternalRestClient.findUserById(product.createdBy());
 
         String displayImageUrl = (product.imageFileName() != null && !product.imageFileName().isBlank())
-                ? product.getImageUrl()
+                ? imageUrlFormatter.getImageUrl(product.imageFileName())
                 : "/images/default-product-image.png";
 
         //TODO(ПОЧИНИТЬ МАКСИМАЛЬНЫЙ РАЗМЕР ФАЙЛА)

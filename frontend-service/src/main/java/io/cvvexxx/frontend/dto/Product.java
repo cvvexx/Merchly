@@ -1,5 +1,6 @@
 package io.cvvexxx.frontend.dto;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -14,11 +15,5 @@ public record Product(
         UUID createdBy
 ) {
 
-    public String getImageUrl() {
-        if (this.imageFileName == null || this.imageFileName.isBlank()) {
-            return "/images/default-product-image.png";
-        }
-        return "http://localhost:9000/merchly-products/" + this.imageFileName;
-    }
 
 }

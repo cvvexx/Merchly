@@ -8,6 +8,7 @@ import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.dto.Product;
 import io.cvvexxx.frontend.dto.ProductOwnerDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.formater.ImageUrlFormatter;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
 import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +34,8 @@ import java.util.stream.Collectors;
 public class ProductsController {
 
     private final ProductsRestClient productsRestClient;
-    private final UserPublicRestClient userPublicRestClient;
     private final UserInternalRestClient userInternalRestClient;
+    private final ImageUrlFormatter imageUrlFormatter;
 
     @GetMapping("list")
     public String getProductsList(
@@ -101,7 +102,7 @@ public class ProductsController {
 
     private String getImageUrl(Product product) {
         return (product.imageFileName() != null && !product.imageFileName().isBlank())
-                ? product.getImageUrl()
+                ? imageUrlFormatter.getImageUrl(product.imageFileName())
                 : "/images/default-product-image.png";
     }
 }
