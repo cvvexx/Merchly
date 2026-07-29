@@ -1,6 +1,6 @@
 package io.cvvexxx.frontend.client.user.internal;
 
-import io.cvvexxx.frontend.dto.ProductOwnerDto;
+import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.StringUtils;

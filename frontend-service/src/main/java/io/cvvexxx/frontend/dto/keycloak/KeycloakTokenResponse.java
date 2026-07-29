@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.dto;
+package io.cvvexxx.frontend.dto.keycloak;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

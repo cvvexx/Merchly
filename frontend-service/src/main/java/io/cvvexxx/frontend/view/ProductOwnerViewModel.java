@@ -1,7 +1,7 @@
 package io.cvvexxx.frontend.view;
 
-import io.cvvexxx.frontend.dto.Product;
-import io.cvvexxx.frontend.dto.ProductOwnerDto;
+import io.cvvexxx.frontend.dto.product.Product;
+import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
 
 public record ProductOwnerViewModel(
         Product product,

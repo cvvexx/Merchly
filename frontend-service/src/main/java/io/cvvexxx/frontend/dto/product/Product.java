@@ -1,7 +1,4 @@
-package io.cvvexxx.frontend.dto;
-
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.multipart.MultipartFile;
+package io.cvvexxx.frontend.dto.product;
 
 import java.math.BigDecimal;
 import java.util.UUID;

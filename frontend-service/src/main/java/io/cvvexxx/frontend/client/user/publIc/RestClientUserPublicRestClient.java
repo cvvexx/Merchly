@@ -1,12 +1,13 @@
 package io.cvvexxx.frontend.client.user.publIc;
 
-import io.cvvexxx.frontend.dto.CreatedUserDto;
-import io.cvvexxx.frontend.dto.NewUserDto;
-import io.cvvexxx.frontend.dto.UserInfoDto;
+import io.cvvexxx.frontend.dto.user.CreatedUserDto;
+import io.cvvexxx.frontend.dto.user.NewUserDto;
+import io.cvvexxx.frontend.dto.user.UpdateUserDto;
+import io.cvvexxx.frontend.dto.user.UserInfoDto;
+import io.cvvexxx.frontend.utils.MultipartBodyBuilderUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
-import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class RestClientUserPublicRestClient implements UserPublicRestClient {
 
     private final RestClient restClient;
+    private final MultipartBodyBuilderUtils builderUtils = new MultipartBodyBuilderUtils();
 
     @Override
     public UserInfoDto getUserInfo() {
@@ -27,12 +29,7 @@ public class RestClientUserPublicRestClient implements UserPublicRestClient {
 
     @Override
     public CreatedUserDto registerUser(NewUserDto newUserDto, MultipartFile userAvatar) {
-        MultipartBodyBuilder builder = new MultipartBodyBuilder();
-        builder.part("payload", newUserDto, MediaType.APPLICATION_JSON);
-        log.info("image {}", userAvatar);
-        if (userAvatar != null && !userAvatar.isEmpty()) {
-            builder.part("image", userAvatar.getResource());
-        }
+        var builder = builderUtils.multipartBodyBuilder(newUserDto, userAvatar);
 
         return restClient
                 .post()
@@ -43,5 +40,16 @@ public class RestClientUserPublicRestClient implements UserPublicRestClient {
                 .body(CreatedUserDto.class);
     }
 
+    @Override
+    public void updateUserInfo(UpdateUserDto updateUserDto, MultipartFile userAvatar) {
+        var builder = builderUtils.multipartBodyBuilder(updateUserDto, userAvatar);
 
+        restClient
+                .post()
+                .uri("/api/users/edit")
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(builder.build())
+                .retrieve()
+                .toBodilessEntity();
+    }
 }

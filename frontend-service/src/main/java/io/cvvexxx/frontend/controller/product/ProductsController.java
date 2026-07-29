@@ -4,8 +4,8 @@ package io.cvvexxx.frontend.controller.product;
 import io.cvvexxx.frontend.client.product.ProductsRestClient;
 import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
-import io.cvvexxx.frontend.dto.Product;
-import io.cvvexxx.frontend.dto.ProductOwnerDto;
+import io.cvvexxx.frontend.dto.product.Product;
+import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
 import io.cvvexxx.frontend.utils.ImageUrlFormatter;
@@ -62,7 +62,6 @@ public class ProductsController {
                     );
                 })
                 .toList();
-        log.info("viewModels: {}", viewModels);
         model.addAttribute("products", viewModels);
         model.addAttribute("filter", filter);
 

@@ -1,7 +1,7 @@
 package io.cvvexxx.frontend.controller.main;
 
 
-import io.cvvexxx.frontend.dto.UserDto;
+import io.cvvexxx.frontend.dto.user.UserDto;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

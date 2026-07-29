@@ -1,6 +1,6 @@
 package io.cvvexxx.frontend.client.user.internal;
 
-import io.cvvexxx.frontend.dto.ProductOwnerDto;
+import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
 
 import java.util.List;
 import java.util.UUID;

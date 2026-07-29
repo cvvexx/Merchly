@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.dto;
+package io.cvvexxx.frontend.dto.product;
 
 import java.util.UUID;
 

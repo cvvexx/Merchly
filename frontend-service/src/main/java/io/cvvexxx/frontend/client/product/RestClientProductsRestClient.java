@@ -2,8 +2,9 @@ package io.cvvexxx.frontend.client.product;
 
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
-import io.cvvexxx.frontend.dto.Product;
+import io.cvvexxx.frontend.dto.product.Product;
 import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.utils.MultipartBodyBuilderUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -30,6 +31,7 @@ public class RestClientProductsRestClient implements ProductsRestClient {
             };
 
     private final RestClient restClient;
+    private final MultipartBodyBuilderUtils builderUtils = new MultipartBodyBuilderUtils();
 
     @Override
     public List<Product> findAllProducts(String filter) {
@@ -60,14 +62,9 @@ public class RestClientProductsRestClient implements ProductsRestClient {
             String title, String description, BigDecimal price,
             MultipartFile image, UUID createdBy
     ) {
-        MultipartBodyBuilder builder = new MultipartBodyBuilder();
-        builder.part("payload", new NewProductPayload(title, description, price, createdBy));
-
-        if (image != null && !image.isEmpty()) {
-            builder.part("image", image.getResource());
-        }
-
-        log.info("builder: {}", builder);
+        var builder = builderUtils.multipartBodyBuilder(
+                new NewProductPayload(title, description, price, createdBy), image
+        );
         try {
             return restClient
                     .post()
@@ -97,12 +94,9 @@ public class RestClientProductsRestClient implements ProductsRestClient {
 
     @Override
     public void updateProduct(int productId, String title, String description, BigDecimal price, MultipartFile image) {
-        MultipartBodyBuilder builder = new MultipartBodyBuilder();
-        builder.part("payload", new UpdateProductPayload(title, description, price));
-        log.info("image {}", image);
-        if (image != null && !image.isEmpty()) {
-            builder.part("image", image.getResource());
-        }
+        var builder = builderUtils.multipartBodyBuilder(
+                new UpdateProductPayload(title, description, price), image
+        );
 
         try {
             restClient

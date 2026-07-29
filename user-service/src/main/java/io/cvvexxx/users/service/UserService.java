@@ -1,9 +1,7 @@
 package io.cvvexxx.users.service;
 
-import io.cvvexxx.users.dto.NewUserDto;
-import io.cvvexxx.users.dto.UserCreatedDto;
-import io.cvvexxx.users.dto.UserInfoDto;
-import io.cvvexxx.users.dto.UserProductOwnerDto;
+import io.cvvexxx.users.domain.Gender;
+import io.cvvexxx.users.dto.*;
 import io.cvvexxx.users.entity.Role;
 import io.cvvexxx.users.entity.User;
 import io.cvvexxx.users.repository.RoleRepository;
@@ -64,7 +62,7 @@ public class UserService {
 
             String userAvatarFileName = null;
 
-            if (userAvatar != null &&  !userAvatar.isEmpty()) {
+            if (userAvatar != null && !userAvatar.isEmpty()) {
                 userAvatarFileName = minioService.upload(userAvatar);
             }
 
@@ -109,9 +107,9 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "user_info", key = "#username")
-    public UserInfoDto getUserInfo(String username) {
-        User user = findUser(username);
+    @Cacheable(value = "user_info", key = "#userId")
+    public UserInfoDto getUserInfo(UUID userId) {
+        User user = findUser(userId);
 
         Set<String> cleanRoles = mapRoleToString(user.getRoles())
                 .stream()
@@ -130,26 +128,6 @@ public class UserService {
                 cleanRoles,
                 user.getAvatarFileName()
         );
-    }
-
-
-    protected User findUser(String login) {
-        return userRepository.findByUsernameOrEmail(login, login)
-                .orElseThrow(() -> new UsernameNotFoundException("Not found user with login: %s"
-                        .formatted(login)));
-    }
-
-    protected User findUser(UUID userId) {
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("Not found user with login: %s"
-                        .formatted(userId)));
-    }
-
-    private Set<String> mapRoleToString(Set<Role> roles) {
-        return roles.stream()
-                .map(Role::getRole)
-                .map(role -> "ROLE_" + role)
-                .collect(Collectors.toSet());
     }
 
     @Transactional(readOnly = true)
@@ -186,5 +164,68 @@ public class UserService {
                 user.getUsername(),
                 user.getAvatarFileName()
         );
+    }
+
+    @Transactional
+    public void updateUserInfo(
+            UUID userId,
+            UpdateUserDto updateUserDto,
+            MultipartFile userAvatar
+    ) {
+        User user = findUser(userId);
+
+        updateKeycloakUser(user.getId().toString(), updateUserDto);
+
+        String oldImageFileName = user.getAvatarFileName();
+
+        if (userAvatar != null && !userAvatar.isEmpty()) {
+            String newImageFileName = minioService.upload(userAvatar);
+            user.setAvatarFileName(newImageFileName);
+
+            if (oldImageFileName != null && !oldImageFileName.isBlank()) {
+                try {
+                    minioService.removeObject(oldImageFileName);
+                } catch (Exception e) {
+                    log.error("Failed to delete old avatar {} from MinIO for user {}",
+                            oldImageFileName, user.getUsername(), e);
+                }
+            }
+        }
+
+        user.setUsername(updateUserDto.username());
+        user.setEmail(updateUserDto.email());
+        user.setGender(Gender.valueOf(updateUserDto.gender()));
+        user.setBirthDate(updateUserDto.birthDate());
+    }
+
+    private void updateKeycloakUser(String keycloakUserId, UpdateUserDto updateUserDto) {
+        try {
+            var userResource = keycloak.realm(realm).users().get(keycloakUserId);
+
+            UserRepresentation userRep = userResource.toRepresentation();
+
+            userRep.setUsername(updateUserDto.username());
+            userRep.setEmail(updateUserDto.email());
+
+            userResource.update(userRep);
+            log.info("Successfully updated Keycloak user with ID: {}", keycloakUserId);
+        } catch (Exception e) {
+            log.error("Failed to update user in Keycloak for ID {}: {}", keycloakUserId, e.getMessage(), e);
+            throw new RuntimeException("Failed to update user in Keycloak", e);
+        }
+    }
+
+
+    private User findUser(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("Not found user with login: %s"
+                        .formatted(userId)));
+    }
+
+    private Set<String> mapRoleToString(Set<Role> roles) {
+        return roles.stream()
+                .map(Role::getRole)
+                .map(role -> "ROLE_" + role)
+                .collect(Collectors.toSet());
     }
 }
