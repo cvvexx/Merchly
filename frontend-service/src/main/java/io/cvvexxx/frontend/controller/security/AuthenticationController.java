@@ -8,6 +8,7 @@ import io.cvvexxx.frontend.dto.user.CreatedUserDto;
 import io.cvvexxx.frontend.dto.keycloak.KeycloakTokenResponse;
 import io.cvvexxx.frontend.dto.user.LoginUserDto;
 import io.cvvexxx.frontend.dto.user.NewUserDto;
+import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -67,6 +68,10 @@ public class AuthenticationController {
             log.info("Successfully registered user: {}", createdUserDto.username());
             model.addAttribute("target", target);
             return "redirect:/login";
+        } catch (BadRequestException exception) {
+            model.addAttribute("payload", newUserDto);
+            model.addAttribute("errors", exception.getErrors());
+            return "security/registration";
         } catch (Exception e) {
             log.error("Ошибка при регистрации: {}", e.getMessage());
             return "redirect:/registration?error=invalid_data";

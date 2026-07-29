@@ -18,6 +18,12 @@
             width: auto;
             object-fit: contain;
         }
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            object-fit: cover;
+            border-radius: 50%;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -38,22 +44,43 @@
 
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4">
+                    <!-- Изображение товара -->
                     <div class="product-detail-img-wrapper rounded mb-4">
                         <img th:src="@{${data.productImageUrl}}" class="img-fluid" alt="Изображение товара">
                     </div>
 
+                    <!-- Заголовок, продавец и цена -->
                     <div class="d-flex justify-content-between align-items-start border-bottom pb-3 mb-3">
                         <div>
-                            <span class="badge bg-secondary mb-2">ID: [[${data.product.id}]]</span>
-                            <span class="badge bg-info text-dark mb-2 ms-2">Владелец: [[${data.user != null ? data.user.username : 'Неизвестен'}]]</span>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="badge bg-secondary">ID: [[${data.product.id}]]</span>
+
+                                <span class="badge bg-info text-dark d-inline-flex align-items-center gap-2 py-1 px-2">
+                                    <span>Продавец: [[${data.user != null ? data.user.username : 'Неизвестен'}]]</span>
+                                    <img th:if="${data.user != null and data.userAvatarUrl != null}"
+                                         th:src="@{${data.userAvatarUrl}}"
+                                         alt="Аватар"
+                                         class="user-avatar border border-white">
+                                </span>
+                            </div>
                             <h1 class="h2 fw-bold text-dark m-0" th:text="${data.product.title}">Название товара</h1>
+                        </div>
+
+                        <!-- Цена товара -->
+                        <div class="text-end ms-3">
+                            <span class="fs-3 fw-bold text-success"
+                                  th:text="${data.product.price != null ? #numbers.formatDecimal(data.product.price, 1, 'DEFAULT', 2, 'DEFAULT') + ' ₽' : 'Цена не указана'}">
+                                0.00 ₽
+                            </span>
                         </div>
                     </div>
 
+                    <!-- Описание товара -->
                     <h5 class="fw-bold text-muted">Описание товара</h5>
                     <p class="text-dark bg-light p-3 rounded"
                        th:text="${data.product.description != null ? data.product.description : 'Описание отсутствует.'}"></p>
 
+                    <!-- Панель управления (для админа) -->
                     <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top"
                          sec:authorize="hasRole('ADMIN')">
                         <a class="btn btn-warning px-4"

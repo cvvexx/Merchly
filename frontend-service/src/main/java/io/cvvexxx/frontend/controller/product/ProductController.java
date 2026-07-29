@@ -54,7 +54,6 @@ public class ProductController {
                 productImageUrl,
                 userAvatarUrl
         );
-        log.info("getProductPage product owner: {}", productOwnerViewModel);
         model.addAttribute("data", productOwnerViewModel);
 
         return "catalogue/products/product";

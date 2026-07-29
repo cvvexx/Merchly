@@ -194,7 +194,7 @@ public class UserService {
 
         user.setUsername(updateUserDto.username());
         user.setEmail(updateUserDto.email());
-        user.setGender(Gender.valueOf(updateUserDto.gender()));
+        user.setGender(updateUserDto.gender());
         user.setBirthDate(updateUserDto.birthDate());
     }
 

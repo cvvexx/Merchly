@@ -4,6 +4,7 @@ package io.cvvexxx.frontend.controller.user;
 import io.cvvexxx.frontend.client.user.publIc.RestClientUserPublicRestClient;
 import io.cvvexxx.frontend.dto.user.UpdateUserDto;
 import io.cvvexxx.frontend.dto.user.UserInfoDto;
+import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.utils.ImageUrlFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,9 +51,16 @@ public class UserController {
             UpdateUserDto updateUserDto,
             Model model
     ) {
-        restClient.updateUserInfo(updateUserDto, userAvatar);
+        try {
+            restClient.updateUserInfo(updateUserDto, userAvatar);
 
-        return "redirect:/profile";
+            return "redirect:/profile";
+        } catch (BadRequestException exception) {
+            model.addAttribute("userAvatar",  imageUrlFormatter.getUserAvatarUrl(userInfo.userAvatarUrl()));
+            model.addAttribute("payload", updateUserDto);
+            model.addAttribute("errors", exception.getErrors());
+            return "user/edit";
+        }
     }
 }
 
