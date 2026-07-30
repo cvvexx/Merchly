@@ -1,7 +1,7 @@
 package io.cvvexxx.frontend.controller.product;
 
 
-import io.cvvexxx.frontend.client.product.ProductsRestClient;
+import io.cvvexxx.frontend.client.product.publIc.ProductsPublicRestClient;
 import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.dto.product.Product;
@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ProductsController {
 
-    private final ProductsRestClient productsRestClient;
+    private final ProductsPublicRestClient productsPublicRestClient;
     private final UserInternalRestClient userInternalRestClient;
     private final ImageUrlFormatter imageUrlFormatter;
 
@@ -39,7 +39,7 @@ public class ProductsController {
             Model model,
             @RequestParam(name = "filter", required = false) String filter
     ) {
-        List<Product> products = this.productsRestClient.findAllProducts(filter);
+        List<Product> products = this.productsPublicRestClient.findAllProducts(filter);
 
         List<UUID> creatorIds = products.stream()
                 .map(Product::createdBy)
@@ -84,7 +84,7 @@ public class ProductsController {
             log.info("image {}", image);
             UUID userId = token.getUserId();
 
-            Product createdProduct = productsRestClient.createProduct(
+            Product createdProduct = productsPublicRestClient.createProduct(
                     payload.title(),
                     payload.description(),
                     payload.price(),

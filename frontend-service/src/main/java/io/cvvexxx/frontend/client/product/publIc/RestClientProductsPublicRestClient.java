@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.client.product;
+package io.cvvexxx.frontend.client.product.publIc;
 
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
@@ -10,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
-import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
@@ -24,7 +23,7 @@ import java.util.UUID;
 
 @RequiredArgsConstructor
 @Slf4j
-public class RestClientProductsRestClient implements ProductsRestClient {
+public class RestClientProductsPublicRestClient implements ProductsPublicRestClient {
 
     private static final ParameterizedTypeReference<List<Product>> PRODUCT_LIST_TYPE =
             new ParameterizedTypeReference<>() {

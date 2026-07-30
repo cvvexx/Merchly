@@ -1,4 +1,4 @@
-package io.cvvexxx.products.controller;
+package io.cvvexxx.products.controller.publIc;
 
 
 import io.cvvexxx.products.controller.payload.NewProductPayload;

@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.client.product;
+package io.cvvexxx.frontend.client.product.publIc;
 
 import io.cvvexxx.frontend.dto.product.Product;
 import org.springframework.web.multipart.MultipartFile;
@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ProductsRestClient {
+public interface ProductsPublicRestClient {
 
     List<Product> findAllProducts(String filter);
 

@@ -2,6 +2,7 @@ package io.cvvexxx.users.service;
 
 import io.cvvexxx.users.domain.Gender;
 import io.cvvexxx.users.dto.*;
+import io.cvvexxx.users.dto.cart.AddToCartDto;
 import io.cvvexxx.users.entity.Role;
 import io.cvvexxx.users.entity.User;
 import io.cvvexxx.users.repository.RoleRepository;

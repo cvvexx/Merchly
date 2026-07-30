@@ -1,6 +1,6 @@
 package io.cvvexxx.frontend.controller.product;
 
-import io.cvvexxx.frontend.client.product.ProductsRestClient;
+import io.cvvexxx.frontend.client.product.publIc.ProductsPublicRestClient;
 import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
 import io.cvvexxx.frontend.dto.product.Product;
@@ -28,14 +28,14 @@ import java.util.UUID;
 @Slf4j
 public class ProductController {
 
-    private final ProductsRestClient productsRestClient;
+    private final ProductsPublicRestClient productsPublicRestClient;
     private final UserInternalRestClient userInternalRestClient;
     private final MessageSource messageSource;
     private final ImageUrlFormatter imageUrlFormatter;
 
     @ModelAttribute("product")
     public Product product(@PathVariable("productId") UUID productId) {
-        return productsRestClient.findProductById(productId)
+        return productsPublicRestClient.findProductById(productId)
                 .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
     }
 
@@ -73,7 +73,7 @@ public class ProductController {
             Model model
     ) {
         try {
-            productsRestClient.updateProduct(
+            productsPublicRestClient.updateProduct(
                     product.id(),
                     payload.title(),
                     payload.description(),
@@ -91,7 +91,7 @@ public class ProductController {
 
     @PostMapping("delete")//TODO(ПЕРЕПИСАТЬ НОРМАЛЬНО)
     public String deleteProduct(@ModelAttribute Product product) {
-        productsRestClient.deleteProduct(product.id());
+        productsPublicRestClient.deleteProduct(product.id());
         return "redirect:/catalogue/products/list";
     }
 

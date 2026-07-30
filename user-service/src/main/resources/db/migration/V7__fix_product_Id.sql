@@ -1,0 +1,4 @@
+TRUNCATE TABLE cart_items;
+
+ALTER TABLE cart_items
+    ALTER COLUMN product_id SET DATA TYPE UUID USING NULL;

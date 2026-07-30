@@ -19,4 +19,5 @@ public interface ProductService {
 
     void updateProduct(UUID productId, String title, String description, BigDecimal price, MultipartFile imageFileName);
 
+    List<Product> findAllByIdIn(List<UUID> ids);
 }

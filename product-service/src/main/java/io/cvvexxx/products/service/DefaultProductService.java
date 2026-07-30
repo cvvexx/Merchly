@@ -2,8 +2,8 @@ package io.cvvexxx.products.service;
 
 import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.repository.ProductRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -118,5 +118,12 @@ public class DefaultProductService implements ProductService {
         product.setTitle(title);
         product.setDescription(description);
         product.setPrice(price);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true, key = "#ids")
+    public List<Product> findAllByIdIn(List<UUID> ids) {
+        return productRepository.findAllById(ids);
     }
 }

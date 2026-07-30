@@ -1,5 +1,7 @@
 package io.cvvexxx.frontend.client.user.publIc;
 
+import io.cvvexxx.frontend.dto.product.AddToCartDto;
+import io.cvvexxx.frontend.dto.product.CartItemDto;
 import io.cvvexxx.frontend.dto.user.CreatedUserDto;
 import io.cvvexxx.frontend.dto.user.NewUserDto;
 import io.cvvexxx.frontend.dto.user.UpdateUserDto;
@@ -8,6 +10,7 @@ import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.utils.MultipartBodyBuilderUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.client.HttpClientErrorException;
@@ -27,7 +30,7 @@ public class RestClientUserPublicRestClient implements UserPublicRestClient {
     public UserInfoDto getUserInfo() {
         return restClient
                 .get()
-                .uri("api/users/me")
+                .uri("/api/users/me")
                 .retrieve()
                 .body(UserInfoDto.class);
     }
@@ -66,5 +69,25 @@ public class RestClientUserPublicRestClient implements UserPublicRestClient {
             ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
             throw new BadRequestException((List<String>) problemDetail.getProperties().get("errors"));
         }
+    }
+
+    @Override
+    public void addProductToCart(AddToCartDto addToCartDto) {
+        restClient
+                .post()
+                .uri("/api/users/cart")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(addToCartDto)
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    @Override
+    public List<CartItemDto> getCartItems() {
+        return restClient
+                .get()
+                .uri("/api/users/cart")
+                .retrieve()
+                .body(new ParameterizedTypeReference<List<CartItemDto>>() {});
     }
 }
