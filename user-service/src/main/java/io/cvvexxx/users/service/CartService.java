@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,5 +55,13 @@ public class CartService {
                         cartItem.getQuantity()
                 ))
                 .toList();
+    }
+
+    @Transactional
+    public void deleterItemFromCart(UUID productId, UUID currentUserId) {
+        CartItem cartItem = cartItemRepository.findByUserIdAndProductId(currentUserId, productId)
+                .orElseThrow(() -> new NoSuchElementException("errors.404.header"));
+
+        cartItemRepository.delete(cartItem);//TODO(переделать)
     }
 }

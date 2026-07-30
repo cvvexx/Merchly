@@ -47,4 +47,16 @@ public class CartController {
         return ResponseEntity.ok().build();
     }
 
+    @DeleteMapping("{productId}")
+    public ResponseEntity<Void> removeProductFromCart(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable UUID productId
+    ) {
+        UUID currentUserId = UUID.fromString(jwt.getClaimAsString("sub"));
+
+        cartService.deleterItemFromCart(productId, currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }

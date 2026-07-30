@@ -18,6 +18,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Slf4j
@@ -88,6 +89,16 @@ public class RestClientUserPublicRestClient implements UserPublicRestClient {
                 .get()
                 .uri("/api/users/cart")
                 .retrieve()
-                .body(new ParameterizedTypeReference<List<CartItemDto>>() {});
+                .body(new ParameterizedTypeReference<List<CartItemDto>>() {
+                });
+    }
+
+    @Override
+    public void deleteProductFromCart(UUID productId) {
+        restClient
+                .delete()
+                .uri("/api/users/cart/{productId}", productId)
+                .retrieve()
+                .toBodilessEntity();
     }
 }

@@ -1,6 +1,7 @@
 package io.cvvexxx.frontend.controller.cart;
 
 import io.cvvexxx.frontend.client.product.internal.ProductsInternalRestClient;
+import io.cvvexxx.frontend.client.product.publIc.ProductsPublicRestClient;
 import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
 import io.cvvexxx.frontend.dto.product.AddToCartDto;
 import io.cvvexxx.frontend.dto.product.CartItemDto;
@@ -34,13 +35,10 @@ public class CartController {
 
     @GetMapping
     public String getCartPage(Model model) {
-        log.info("Request received to render cart page");
 
         List<CartItemDto> cartItems = userPublicRestClient.getCartItems();
-        log.debug("Retrieved {} items from user cart service", cartItems.size());
 
         if (cartItems.isEmpty()) {
-            log.info("Cart is empty for current user");
             model.addAttribute("items", List.of());
             model.addAttribute("totalPrice", BigDecimal.ZERO);
             return "cart/cart";
@@ -50,9 +48,7 @@ public class CartController {
                 .map(CartItemDto::productId)
                 .toList();
 
-        log.debug("Fetching details for product IDs: {}", productIds);
         List<Product> products = productsInternalRestClient.findAllProductsByIds(productIds);
-        log.debug("Successfully fetched {} products from product service", products.size());
 
         Map<UUID, Product> productMap = products.stream()
                 .collect(Collectors.toMap(Product::id, Function.identity()));
@@ -92,5 +88,15 @@ public class CartController {
 
         log.info("Product successfully added to cart for productId={}", addToCartDto.productId());
         return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("{productId}")
+    @ResponseBody
+    public ResponseEntity<Void> deleteProductFromCart(@PathVariable("productId") UUID productId) {
+        log.info("Request to delete product from cart for productId={}", productId);
+
+        userPublicRestClient.deleteProductFromCart(productId);
+
+        return ResponseEntity.noContent().build();
     }
 }

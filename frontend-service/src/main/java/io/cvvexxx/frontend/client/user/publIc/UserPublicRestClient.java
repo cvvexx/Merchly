@@ -9,6 +9,7 @@ import io.cvvexxx.frontend.dto.user.UserInfoDto;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface UserPublicRestClient {
 
@@ -21,4 +22,6 @@ public interface UserPublicRestClient {
     void addProductToCart(AddToCartDto addToCartDto);
 
     List<CartItemDto> getCartItems();
+
+    void deleteProductFromCart(UUID productId);
 }
