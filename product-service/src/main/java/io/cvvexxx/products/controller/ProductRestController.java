@@ -17,9 +17,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Locale;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @RestController
-@RequestMapping("api/products/{productId:\\d+}")
+@RequestMapping("api/products/{productId}")
 @RequiredArgsConstructor
 @Slf4j
 public class ProductRestController {
@@ -28,7 +29,7 @@ public class ProductRestController {
     private final MessageSource messageSource;
 
     @GetMapping
-    public Product findProduct(@PathVariable("productId") int productId) {
+    public Product findProduct(@PathVariable("productId") UUID productId) {
         // Запрос сразу идет в сервис.
         // Если в кэше Redis есть данные — сервис отдает их.
         // Если нет в БД — сервис бросает NoSuchElementException.
@@ -37,7 +38,7 @@ public class ProductRestController {
 
     @PatchMapping
     public ResponseEntity<Void> updateProduct(
-            @PathVariable("productId") int productId,
+            @PathVariable("productId") UUID productId,
             @Valid @RequestPart("payload") UpdateProductPayload payload,
             @RequestPart(value = "image", required = false ) MultipartFile image,
             BindingResult bindingResult
@@ -55,7 +56,7 @@ public class ProductRestController {
 
     @DeleteMapping
     public ResponseEntity<Void> deleteProduct(
-            @PathVariable("productId") int productId
+            @PathVariable("productId") UUID productId
     ) {
         productService.deleteProduct(productId);
         return ResponseEntity.noContent().build();

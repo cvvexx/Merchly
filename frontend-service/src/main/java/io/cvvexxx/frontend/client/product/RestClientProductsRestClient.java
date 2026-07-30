@@ -43,7 +43,7 @@ public class RestClientProductsRestClient implements ProductsRestClient {
     }
 
     @Override
-    public Optional<Product> findProductById(int productId) {
+    public Optional<Product> findProductById(UUID productId) {
         try {
             return Optional.ofNullable(restClient
                     .get()
@@ -80,7 +80,7 @@ public class RestClientProductsRestClient implements ProductsRestClient {
     }
 
     @Override
-    public void deleteProduct(int productId) {
+    public void deleteProduct(UUID productId) {
         try {
             restClient
                     .delete()
@@ -93,7 +93,7 @@ public class RestClientProductsRestClient implements ProductsRestClient {
     }
 
     @Override
-    public void updateProduct(int productId, String title, String description, BigDecimal price, MultipartFile image) {
+    public void updateProduct(UUID productId, String title, String description, BigDecimal price, MultipartFile image) {
         var builder = builderUtils.multipartBodyBuilder(
                 new UpdateProductPayload(title, description, price), image
         );

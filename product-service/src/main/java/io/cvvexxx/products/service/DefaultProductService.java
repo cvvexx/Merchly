@@ -35,13 +35,13 @@ public class DefaultProductService implements ProductService {
         if (filter != null && !filter.isBlank()) {
             return productRepository.findAllByTitleContainingIgnoreCase(filter);
         } else {
-            return productRepository.findAll().stream().sorted(Comparator.comparing(Product::getId)).toList();
+            return productRepository.findAll().stream().sorted(Comparator.comparing(Product::getCreatedAt)).toList();
         }
     }
 
     @Override
     @Cacheable(value = CACHE_PRODUCT_NAME, key = "#productId", unless = "#result == null")
-    public Product findProductById(int productId) {
+    public Product findProductById(UUID productId) {
         log.info("Find product by id {}", productId);
         return productRepository.findById(productId)
                 .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
@@ -63,6 +63,7 @@ public class DefaultProductService implements ProductService {
 
         return productRepository.save(
                 Product.builder()
+                        .id(UUID.randomUUID())
                         .title(title)
                         .description(description)
                         .price(price)
@@ -78,7 +79,7 @@ public class DefaultProductService implements ProductService {
             @CacheEvict(value = CACHE_PRODUCT_NAME, key = "#productId"),
             @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
     })
-    public void deleteProduct(Integer productId) {
+    public void deleteProduct(UUID productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
 
@@ -91,7 +92,7 @@ public class DefaultProductService implements ProductService {
             @CacheEvict(value = CACHE_PRODUCT_NAME, key = "#productId"),
             @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
     })
-    public void updateProduct(Integer productId, String title, String description, BigDecimal price, MultipartFile image) {
+    public void updateProduct(UUID productId, String title, String description, BigDecimal price, MultipartFile image) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
 

@@ -11,12 +11,12 @@ public interface ProductService {
 
     List<Product> findAllProducts(String filter);
 
-    Product findProductById(int productId);
+    Product findProductById(UUID productId);
 
     Product createProduct(String title, String description, BigDecimal price, UUID createdBy, MultipartFile imageFileName);
 
-    void deleteProduct(Integer productId);
+    void deleteProduct(UUID productId);
 
-    void updateProduct(Integer productId, String title, String description, BigDecimal price, MultipartFile imageFileName);
+    void updateProduct(UUID productId, String title, String description, BigDecimal price, MultipartFile imageFileName);
 
 }

@@ -20,9 +20,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Locale;
 import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @Controller
-@RequestMapping("catalogue/products/{productId:\\d+}")
+@RequestMapping("catalogue/products/{productId}")
 @RequiredArgsConstructor
 @Slf4j
 public class ProductController {
@@ -33,7 +34,7 @@ public class ProductController {
     private final ImageUrlFormatter imageUrlFormatter;
 
     @ModelAttribute("product")
-    public Product product(@PathVariable("productId") int productId) {
+    public Product product(@PathVariable("productId") UUID productId) {
         return productsRestClient.findProductById(productId)
                 .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
     }
@@ -79,7 +80,7 @@ public class ProductController {
                     payload.price(),
                     image
             );
-            return "redirect:/catalogue/products/%d".formatted(product.id());
+            return "redirect:/catalogue/products/%s".formatted(product.id());
         } catch (BadRequestException exception) {
             model.addAttribute("payload", payload);
             model.addAttribute("errors", exception.getErrors());
