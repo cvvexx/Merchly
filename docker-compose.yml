@@ -68,8 +68,24 @@ services:
     depends_on:
       - keycloak_db
 
+  minio:
+    image: minio/minio:latest
+    container_name: merchly_minio
+    restart: always
+    ports:
+      - "9000:9000" 
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+
+
 volumes:
   pgdata_users:
   pgdata_products:
   redisdata:
   pgdata_keycloak:
+  minio_data:

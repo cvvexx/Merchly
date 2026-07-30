@@ -2,19 +2,21 @@ package io.cvvexxx.frontend.controller.product;
 
 import io.cvvexxx.frontend.client.product.ProductsRestClient;
 import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
-import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
-import io.cvvexxx.frontend.dto.Product;
-import io.cvvexxx.frontend.dto.ProductOwnerDto;
+import io.cvvexxx.frontend.dto.product.Product;
+import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.utils.ImageUrlFormatter;
 import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Locale;
 import java.util.NoSuchElementException;
@@ -22,12 +24,13 @@ import java.util.NoSuchElementException;
 @Controller
 @RequestMapping("catalogue/products/{productId:\\d+}")
 @RequiredArgsConstructor
+@Slf4j
 public class ProductController {
 
     private final ProductsRestClient productsRestClient;
-    private final UserPublicRestClient userPublicRestClient;
     private final UserInternalRestClient userInternalRestClient;
     private final MessageSource messageSource;
+    private final ImageUrlFormatter imageUrlFormatter;
 
     @ModelAttribute("product")
     public Product product(@PathVariable("productId") int productId) {
@@ -42,7 +45,16 @@ public class ProductController {
     ) {
         ProductOwnerDto user = userInternalRestClient.findUserById(product.createdBy());
 
-        model.addAttribute("data", new ProductOwnerViewModel(product, user));
+        String userAvatarUrl = imageUrlFormatter.getUserAvatarUrl(user.avatarFileName());
+        String productImageUrl = imageUrlFormatter.getProductImageUrl(product.imageFileName());
+
+        ProductOwnerViewModel productOwnerViewModel = new ProductOwnerViewModel(
+                product,
+                user,
+                productImageUrl,
+                userAvatarUrl
+        );
+        model.addAttribute("data", productOwnerViewModel);
 
         return "catalogue/products/product";
     }
@@ -55,6 +67,7 @@ public class ProductController {
     @PostMapping("edit")
     public String updateProduct(
             @ModelAttribute("product") Product product,
+            MultipartFile image,
             UpdateProductPayload payload,
             Model model
     ) {
@@ -63,7 +76,8 @@ public class ProductController {
                     product.id(),
                     payload.title(),
                     payload.description(),
-                    payload.price()
+                    payload.price(),
+                    image
             );
             return "redirect:/catalogue/products/%d".formatted(product.id());
         } catch (BadRequestException exception) {

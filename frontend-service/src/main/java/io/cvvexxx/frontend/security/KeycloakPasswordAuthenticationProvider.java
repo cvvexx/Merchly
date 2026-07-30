@@ -2,7 +2,7 @@ package io.cvvexxx.frontend.security;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import io.cvvexxx.frontend.client.keycloak.KeycloakRestClient;
-import io.cvvexxx.frontend.dto.KeycloakTokenResponse;
+import io.cvvexxx.frontend.dto.keycloak.KeycloakTokenResponse;
 import io.cvvexxx.frontend.utils.JwtUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

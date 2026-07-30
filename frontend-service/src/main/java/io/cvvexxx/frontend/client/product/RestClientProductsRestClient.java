@@ -2,14 +2,18 @@ package io.cvvexxx.frontend.client.product;
 
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
-import io.cvvexxx.frontend.dto.Product;
+import io.cvvexxx.frontend.dto.product.Product;
 import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.utils.MultipartBodyBuilderUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -19,6 +23,7 @@ import java.util.UUID;
 
 
 @RequiredArgsConstructor
+@Slf4j
 public class RestClientProductsRestClient implements ProductsRestClient {
 
     private static final ParameterizedTypeReference<List<Product>> PRODUCT_LIST_TYPE =
@@ -26,6 +31,7 @@ public class RestClientProductsRestClient implements ProductsRestClient {
             };
 
     private final RestClient restClient;
+    private final MultipartBodyBuilderUtils builderUtils = new MultipartBodyBuilderUtils();
 
     @Override
     public List<Product> findAllProducts(String filter) {
@@ -52,13 +58,19 @@ public class RestClientProductsRestClient implements ProductsRestClient {
     }
 
     @Override
-    public Product createProduct(String title, String description, BigDecimal price, UUID createdBy) {
+    public Product createProduct(
+            String title, String description, BigDecimal price,
+            MultipartFile image, UUID createdBy
+    ) {
+        var builder = builderUtils.multipartBodyBuilder(
+                new NewProductPayload(title, description, price, createdBy), image
+        );
         try {
             return restClient
                     .post()
                     .uri("/api/products")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(new NewProductPayload(title, description, price, createdBy))
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(builder.build())
                     .retrieve()
                     .body(Product.class);
         } catch (HttpClientErrorException.BadRequest exception) {
@@ -81,13 +93,17 @@ public class RestClientProductsRestClient implements ProductsRestClient {
     }
 
     @Override
-    public void updateProduct(int productId, String title, String description, BigDecimal price) {
+    public void updateProduct(int productId, String title, String description, BigDecimal price, MultipartFile image) {
+        var builder = builderUtils.multipartBodyBuilder(
+                new UpdateProductPayload(title, description, price), image
+        );
+
         try {
             restClient
                     .patch()
                     .uri("/api/products/{productId}", productId)
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(new UpdateProductPayload(title, description, price))
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(builder.build())
                     .retrieve()
                     .toBodilessEntity();
         } catch (HttpClientErrorException.BadRequest exception) {

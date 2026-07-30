@@ -3,20 +3,20 @@ package io.cvvexxx.frontend.controller.product;
 
 import io.cvvexxx.frontend.client.product.ProductsRestClient;
 import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
-import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
-import io.cvvexxx.frontend.dto.Product;
-import io.cvvexxx.frontend.dto.ProductOwnerDto;
+import io.cvvexxx.frontend.dto.product.Product;
+import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
+import io.cvvexxx.frontend.utils.ImageUrlFormatter;
 import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -27,11 +27,12 @@ import java.util.stream.Collectors;
 @Controller
 @RequestMapping("catalogue/products")
 @RequiredArgsConstructor
+@Slf4j
 public class ProductsController {
 
     private final ProductsRestClient productsRestClient;
-    private final UserPublicRestClient userPublicRestClient;
     private final UserInternalRestClient userInternalRestClient;
+    private final ImageUrlFormatter imageUrlFormatter;
 
     @GetMapping("list")
     public String getProductsList(
@@ -51,12 +52,16 @@ public class ProductsController {
                 .collect(Collectors.toMap(ProductOwnerDto::id, Function.identity()));
 
         List<ProductOwnerViewModel> viewModels = products.stream()
-                .map(product -> new ProductOwnerViewModel(
-                        product,
-                        creatorsMap.get(product.createdBy())
-                ))
+                .map(product -> {
+                    var creator = creatorsMap.get(product.createdBy()) != null ?  creatorsMap.get(product.createdBy()) : null;
+                    return new ProductOwnerViewModel(
+                            product,
+                            creator,
+                            getImageUrl(product),
+                            getUserAvatarUrl(creator)
+                    );
+                })
                 .toList();
-
         model.addAttribute("products", viewModels);
         model.addAttribute("filter", filter);
 
@@ -71,16 +76,19 @@ public class ProductsController {
     @PostMapping("create")
     public String createProduct(
             NewProductPayload payload,
+            MultipartFile image,
             Model model,
             KeycloakJwtAuthenticationToken token
     ) {
         try {
+            log.info("image {}", image);
             UUID userId = token.getUserId();
 
             Product createdProduct = productsRestClient.createProduct(
                     payload.title(),
                     payload.description(),
                     payload.price(),
+                    image,
                     userId
             );
 
@@ -90,5 +98,28 @@ public class ProductsController {
             model.addAttribute("errors", exception.getErrors());
             return "catalogue/products/new_product";
         }
+    }
+
+    private String getImageUrl(Product product) {
+        return (product.imageFileName() != null && !product.imageFileName().isBlank())
+                ? imageUrlFormatter.getProductImageUrl(product.imageFileName())
+                : "/images/default-product-image.png";
+    }
+
+    private String getUserAvatarUrl(ProductOwnerDto creator) {
+        if (creator == null || creator.avatarFileName() == null || creator.avatarFileName().isBlank()) {
+            return "/images/default-user-avatar.png";
+        }
+        return imageUrlFormatter.getUserAvatarUrl(creator.avatarFileName());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public String handleMaxUploadSizeExceededException(
+            MaxUploadSizeExceededException e,
+            Model model
+    ) {
+        log.warn("Попытка загрузки слишком большого файла: {}", e.getMessage());
+        model.addAttribute("errors", List.of("Размер загружаемого файла не должен превышать 10 МБ."));
+        return "catalogue/products/new_product";
     }
 }

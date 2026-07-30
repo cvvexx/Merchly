@@ -42,6 +42,9 @@ public class Product {
     @Column(name = "created_by", nullable = false)
     private UUID createdBy;
 
+    @Column(name = "image_file_name", nullable = true)
+    private String imageFileName;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

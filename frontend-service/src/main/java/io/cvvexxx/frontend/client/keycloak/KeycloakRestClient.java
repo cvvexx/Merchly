@@ -1,6 +1,6 @@
 package io.cvvexxx.frontend.client.keycloak;
 
-import io.cvvexxx.frontend.dto.KeycloakTokenResponse;
+import io.cvvexxx.frontend.dto.keycloak.KeycloakTokenResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;

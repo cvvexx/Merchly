@@ -6,10 +6,12 @@ import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.service.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
@@ -29,9 +31,10 @@ public class ProductsRestController {
         return ResponseEntity.ok(productService.findAllProducts(filter));
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createProduct(
-            @Valid @RequestBody NewProductPayload payload,
+            @Valid @RequestPart("payload") NewProductPayload payload,
+            @RequestPart(value = "image", required = false ) MultipartFile image,
             UriComponentsBuilder uriComponentsBuilder,
             BindingResult bindingResult
     ) throws BindException {
@@ -46,7 +49,8 @@ public class ProductsRestController {
                     payload.title(),
                     payload.description(),
                     payload.price(),
-                    payload.createdBy()
+                    payload.createdBy(),
+                    image
             );
 
             return ResponseEntity.created(

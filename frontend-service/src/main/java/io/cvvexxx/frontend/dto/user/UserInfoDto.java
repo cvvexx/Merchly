@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.dto;
+package io.cvvexxx.frontend.dto.user;
 
 
 import java.time.LocalDate;
@@ -9,6 +9,7 @@ public record UserInfoDto(
         String email,
         String gender,
         LocalDate birthDate,
-        Set<String> roles
+        Set<String> roles,
+        String userAvatarUrl
 ) {
 }

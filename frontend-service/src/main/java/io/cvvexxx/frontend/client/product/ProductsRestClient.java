@@ -1,6 +1,7 @@
 package io.cvvexxx.frontend.client.product;
 
-import io.cvvexxx.frontend.dto.Product;
+import io.cvvexxx.frontend.dto.product.Product;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -13,10 +14,16 @@ public interface ProductsRestClient {
 
     Optional<Product> findProductById(int productId);
 
-    Product createProduct(String title, String description, BigDecimal price, UUID createdBy);
+    Product createProduct(
+            String title,
+            String description,
+            BigDecimal price,
+            MultipartFile image,
+            UUID createdBy
+    );
 
     void deleteProduct(int productId);
 
-    void updateProduct(int productId, String title, String description, BigDecimal price);
+    void updateProduct(int productId, String title, String description, BigDecimal price, MultipartFile image);
 
 }

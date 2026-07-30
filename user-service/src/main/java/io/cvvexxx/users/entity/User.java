@@ -34,6 +34,9 @@ public class User implements Persistable<UUID> {
     @Column(name = "gender", nullable = false)
     private Gender gender;
 
+    @Column(name = "avatar_file_name", nullable = true)
+    private String avatarFileName;
+
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
 
@@ -47,13 +50,14 @@ public class User implements Persistable<UUID> {
     @Transient
     private boolean isNew = true;
 
-    public User(UUID id, String username, String email, Gender gender, LocalDate birthDate, Set<Role> roles) {
+    public User(UUID id, String username, String email, Gender gender, LocalDate birthDate, Set<Role> roles,  String avatarFileName) {
         this.id = id;
         this.username = username;
         this.email = email;
         this.gender = gender;
         this.birthDate = birthDate;
         this.roles = roles;
+        this.avatarFileName = avatarFileName;
     }
 
     @Override

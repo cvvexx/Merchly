@@ -78,6 +78,11 @@
             <artifactId>keycloak-admin-client</artifactId>
             <version>24.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>io.minio</groupId>
+            <artifactId>minio</artifactId>
+            <version>8.5.7</version>
+        </dependency>
     </dependencies>
 
     <build>
