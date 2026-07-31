@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.client.product;
+package io.cvvexxx.frontend.client.product.publIc;
 
 import io.cvvexxx.frontend.dto.product.Product;
 import org.springframework.web.multipart.MultipartFile;
@@ -8,11 +8,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface ProductsRestClient {
+public interface ProductsPublicRestClient {
 
     List<Product> findAllProducts(String filter);
 
-    Optional<Product> findProductById(int productId);
+    Optional<Product> findProductById(UUID productId);
 
     Product createProduct(
             String title,
@@ -22,8 +22,8 @@ public interface ProductsRestClient {
             UUID createdBy
     );
 
-    void deleteProduct(int productId);
+    void deleteProduct(UUID productId);
 
-    void updateProduct(int productId, String title, String description, BigDecimal price, MultipartFile image);
+    void updateProduct(UUID productId, String title, String description, BigDecimal price, MultipartFile image);
 
 }

@@ -26,8 +26,7 @@ import java.util.UUID;
 public class Product {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    private UUID id;
 
     @NotNull
     @Size(min = 3, max = 50)

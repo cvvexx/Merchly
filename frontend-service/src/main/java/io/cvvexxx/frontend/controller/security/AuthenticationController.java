@@ -86,6 +86,7 @@ public class AuthenticationController {
     ) {
         try {
             KeycloakTokenResponse tokenResponse = keycloakClient.login(loginUserDto.login(), loginUserDto.password());
+            log.info("access token {}", tokenResponse.accessToken());
             authenticateUserInSession(
                     loginUserDto.login(),
                     tokenResponse.accessToken(),
