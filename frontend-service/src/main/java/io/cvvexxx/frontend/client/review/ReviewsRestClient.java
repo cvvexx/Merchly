@@ -20,7 +20,7 @@ public interface ReviewsRestClient {
 
     void  deleteReview(UUID id);
 
-    ReviewStatsDto getProductReviewStatsFor(UUID id);
+    ReviewStatsDto getProductReviewStats(UUID id);
 
     List<ReviewStatsDto> getProductsReviewStats(List<UUID> productIds);
 }

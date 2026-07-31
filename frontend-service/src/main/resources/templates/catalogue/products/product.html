@@ -85,6 +85,22 @@
                     <p class="text-dark bg-light p-3 rounded"
                        th:text="${data.product.description != null ? data.product.description : 'Описание отсутствует.'}"></p>
 
+                    <!-- Вывод самих отзывов -->
+                    <div th:each="review : ${data.reviews()}" class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="card-subtitle text-muted" th:text="'Пользователь: ' + ${review.userId}">User ID</h6>
+                                <span class="badge bg-warning text-dark" th:text="${review.rating} + ' ★'">5 ★</span>
+                            </div>
+                            <p class="card-text mt-2" th:text="${review.comment}">Текст отзыва...</p>
+                        </div>
+                    </div>
+
+                    <!-- Если отзывов нет -->
+                    <div th:if="${data.reviews().isEmpty()}" class="alert alert-secondary">
+                        У этого товара пока нет отзывов.
+                    </div>
+
                     <!-- Панель управления (для админа) -->
                     <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top"
                          sec:authorize="hasRole('ADMIN')">

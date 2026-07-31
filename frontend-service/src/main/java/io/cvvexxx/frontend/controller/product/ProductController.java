@@ -1,17 +1,23 @@
 package io.cvvexxx.frontend.controller.product;
 
 import io.cvvexxx.frontend.client.product.publIc.ProductsPublicRestClient;
+import io.cvvexxx.frontend.client.review.ReviewsRestClient;
 import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
 import io.cvvexxx.frontend.dto.product.Product;
 import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
+import io.cvvexxx.frontend.dto.review.ReviewDto;
+import io.cvvexxx.frontend.dto.review.ReviewStatsDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.utils.ImageUrlFormatter;
-import io.cvvexxx.frontend.view.ProductOwnerViewModel;
+import io.cvvexxx.frontend.view.ProductDetailsViewModel;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -30,6 +36,7 @@ public class ProductController {
 
     private final ProductsPublicRestClient productsPublicRestClient;
     private final UserInternalRestClient userInternalRestClient;
+    private final ReviewsRestClient reviewsRestClient;
     private final MessageSource messageSource;
     private final ImageUrlFormatter imageUrlFormatter;
 
@@ -42,20 +49,29 @@ public class ProductController {
     @GetMapping
     public String getProductPage(
             @ModelAttribute("product") Product product,
+            @PageableDefault(size = 5) Pageable pageable,
             Model model
     ) {
         ProductOwnerDto user = userInternalRestClient.findUserById(product.createdBy());
 
-        String userAvatarUrl = imageUrlFormatter.getUserAvatarUrl(user.avatarFileName());
-        String productImageUrl = imageUrlFormatter.getProductImageUrl(product.imageFileName());
+        Page<ReviewDto> reviewsPage = reviewsRestClient.getReviews(product.id(), pageable);
 
-        ProductOwnerViewModel productOwnerViewModel = new ProductOwnerViewModel(
+        ReviewStatsDto stats = reviewsRestClient.getProductReviewStats(product.id());
+
+        long totalReviews = (stats != null) ? stats.totalReviews() : 0L;
+        double avgRating = (stats != null) ? stats.averageRating() : 0.0;
+
+        ProductDetailsViewModel viewModel = new ProductDetailsViewModel(
                 product,
                 user,
-                productImageUrl,
-                userAvatarUrl
+                getImageUrl(product),
+                getUserAvatarUrl(user),
+                reviewsPage,
+                totalReviews,
+                avgRating
         );
-        model.addAttribute("data", productOwnerViewModel);
+
+        model.addAttribute("data", viewModel);
 
         return "catalogue/products/product";
     }
@@ -86,11 +102,10 @@ public class ProductController {
             model.addAttribute("errors", exception.getErrors());
             return "catalogue/products/edit";
         }
-
     }
 
-    @PostMapping("delete")//TODO(ПЕРЕПИСАТЬ НОРМАЛЬНО)
-    public String deleteProduct(@ModelAttribute Product product) {
+    @PostMapping("delete")
+    public String deleteProduct(@ModelAttribute("product") Product product) {
         productsPublicRestClient.deleteProduct(product.id());
         return "redirect:/catalogue/products/list";
     }
@@ -107,11 +122,24 @@ public class ProductController {
                 messageSource.getMessage(exception.getMessage(), new Object[0],
                         exception.getMessage(), locale));
 
-        return "errors/404";
+        return "error/404";
     }
 
     @RequestMapping("error-403")
     public String accessDenied() {
         return "error/403";
+    }
+
+    private String getImageUrl(Product product) {
+        return (product != null && product.imageFileName() != null && !product.imageFileName().isBlank())
+                ? imageUrlFormatter.getProductImageUrl(product.imageFileName())
+                : "/images/default-product-image.png";
+    }
+
+    private String getUserAvatarUrl(ProductOwnerDto creator) {
+        if (creator == null || creator.avatarFileName() == null || creator.avatarFileName().isBlank()) {
+            return "/images/default-user-avatar.png";
+        }
+        return imageUrlFormatter.getUserAvatarUrl(creator.avatarFileName());
     }
 }

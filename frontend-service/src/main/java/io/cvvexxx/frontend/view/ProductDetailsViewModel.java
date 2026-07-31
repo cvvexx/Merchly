@@ -3,15 +3,14 @@ package io.cvvexxx.frontend.view;
 import io.cvvexxx.frontend.dto.product.Product;
 import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
 import io.cvvexxx.frontend.dto.review.ReviewDto;
-import io.cvvexxx.frontend.dto.review.ReviewStatsDto;
+import org.springframework.data.domain.Page;
 
-import java.util.List;
-
-public record ProductOwnerViewModel(
+public record ProductDetailsViewModel(
         Product product,
         ProductOwnerDto user,
         String productImageUrl,
         String userAvatarUrl,
+        Page<ReviewDto> reviews,
         long reviewsCount,
         double averageRating
 ) {

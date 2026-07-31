@@ -87,7 +87,7 @@ public class RestClientReviewsRestClient implements ReviewsRestClient {
     }
 
     @Override
-    public ReviewStatsDto getProductReviewStatsFor(UUID id) {
+    public ReviewStatsDto getProductReviewStats(UUID id) {
         return restClient
                 .get()
                 .uri("%s/{productId}/stats".formatted(DEFAULT_API_URI), id)

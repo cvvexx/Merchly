@@ -2,10 +2,13 @@ package io.cvvexxx.frontend.controller.product;
 
 
 import io.cvvexxx.frontend.client.product.publIc.ProductsPublicRestClient;
+import io.cvvexxx.frontend.client.review.ReviewsRestClient;
 import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
 import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.dto.product.Product;
 import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
+import io.cvvexxx.frontend.dto.review.ReviewDto;
+import io.cvvexxx.frontend.dto.review.ReviewStatsDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
 import io.cvvexxx.frontend.utils.ImageUrlFormatter;
@@ -20,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -32,6 +36,7 @@ public class ProductsController {
 
     private final ProductsPublicRestClient productsPublicRestClient;
     private final UserInternalRestClient userInternalRestClient;
+    private final ReviewsRestClient reviewsRestClient;
     private final ImageUrlFormatter imageUrlFormatter;
 
     @GetMapping("list")
@@ -41,27 +46,50 @@ public class ProductsController {
     ) {
         List<Product> products = this.productsPublicRestClient.findAllProducts(filter);
 
+        if (products.isEmpty()) {
+            model.addAttribute("products", List.of());
+            model.addAttribute("filter", filter);
+            return "catalogue/products/list";
+        }
+
         List<UUID> creatorIds = products.stream()
                 .map(Product::createdBy)
+                .filter(Objects::nonNull)
                 .distinct()
                 .toList();
 
         List<ProductOwnerDto> creators = this.userInternalRestClient.findAllUsersByIds(creatorIds);
-
         Map<UUID, ProductOwnerDto> creatorsMap = creators.stream()
                 .collect(Collectors.toMap(ProductOwnerDto::id, Function.identity()));
 
+        List<UUID> productIds = products.stream()
+                .map(Product::id)
+                .toList();
+
+        List<ReviewStatsDto> reviewStatsList = this.reviewsRestClient.getProductsReviewStats(productIds);
+
+        Map<UUID, ReviewStatsDto> statsMap = (reviewStatsList != null ? reviewStatsList : List.<ReviewStatsDto>of())
+                .stream()
+                .collect(Collectors.toMap(ReviewStatsDto::productId, Function.identity()));
+
         List<ProductOwnerViewModel> viewModels = products.stream()
                 .map(product -> {
-                    var creator = creatorsMap.get(product.createdBy()) != null ?  creatorsMap.get(product.createdBy()) : null;
+                    ProductOwnerDto creator = creatorsMap.get(product.createdBy());
+                    ReviewStatsDto stats = statsMap.getOrDefault(
+                            product.id(),
+                            new ReviewStatsDto(product.id(), 0.0, 0L)
+                    );
                     return new ProductOwnerViewModel(
                             product,
                             creator,
                             getImageUrl(product),
-                            getUserAvatarUrl(creator)
+                            getUserAvatarUrl(creator),
+                            stats.totalReviews(),
+                            stats.averageRating()
                     );
                 })
                 .toList();
+
         model.addAttribute("products", viewModels);
         model.addAttribute("filter", filter);
 

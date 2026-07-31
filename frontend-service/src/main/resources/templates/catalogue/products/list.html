@@ -23,6 +23,9 @@
             border-radius: 50%;
             object-fit: cover;
         }
+        .rating-block {
+            font-size: 0.9rem;
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -33,7 +36,7 @@
         <a class="navbar-brand fw-bold text-primary" th:href="@{/}">Merchly</a>
 
         <div class="d-flex align-items-center gap-2">
-            <!-- Кнопка перехода в корзину -->
+            <!-- Кнопки корзины и профиля -->
             <a class="btn btn-outline-light btn-sm me-2" th:href="@{/cart}">
                 <i class="bi bi-cart3 me-1"></i> Корзина
             </a>
@@ -64,6 +67,13 @@
 
     <!-- Сетка товаров -->
     <div class="row row-cols-1 row-cols-md-3 g-4">
+        <!-- Блок, если товаров нет -->
+        <div th:if="${products.isEmpty()}" class="col-12">
+            <div class="alert alert-info text-center">
+                Товары не найдены.
+            </div>
+        </div>
+
         <div class="col" th:each="item : ${products}">
             <div class="card h-100 shadow-sm border-0">
                 <!-- Картинка товара -->
@@ -72,16 +82,29 @@
                 </div>
 
                 <div class="card-body d-flex flex-column">
-                    <!-- Инфо / Создатель -->
+                    <!-- Мета / Создатель -->
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="text-muted small">ID: <span th:text="${item.product.id}"></span></span>
 
                         <div class="d-flex align-items-center gap-1">
                             <img th:src="@{${item.userAvatarUrl}}" class="creator-avatar border" alt="Аватар автора">
                             <span class="text-muted small">
-                                <span class="fw-bold" th:text="${item.user != null ? item.user.username : 'Неизвестный'}"></span>
+                                <span class="fw-bold" th:text="${item.user != null ? item.user.username : 'Неизвестен'}"></span>
                             </span>
                         </div>
+                    </div>
+
+                    <!-- Рейтинг и отзывы (НОВЫЙ БЛОК) -->
+                    <div class="mb-2 rating-block">
+                        <th:block th:if="${item.reviewsCount > 0}">
+                            <i class="bi bi-star-fill text-warning"></i>
+                            <span class="fw-bold" th:text="${#numbers.formatDecimal(item.averageRating, 1, 1)}">4.5</span>
+                            <span class="text-muted ms-1" th:text="'(' + ${item.reviewsCount} + ')'">(12)</span>
+                        </th:block>
+                        <th:block th:if="${item.reviewsCount == 0}">
+                            <i class="bi bi-star text-muted"></i>
+                            <span class="text-muted ms-1">Нет отзывов</span>
+                        </th:block>
                     </div>
 
                     <!-- Цена -->
@@ -101,7 +124,6 @@
                             Подробнее
                         </a>
 
-                        <!-- FIXED: Using th:data-product-id instead of th:onclick with dynamic string concatenation -->
                         <button class="btn btn-success"
                                 type="button"
                                 th:data-product-id="${item.product.id}"
@@ -115,10 +137,9 @@
     </div>
 </div>
 
-<!-- JS скрипт для отправки AJAX запроса добавления в корзину -->
+<!-- JS скрипт для добавления AJAX запросом в корзину -->
 <script>
     async function addToCart(buttonElement) {
-        // Read the product ID from the data attribute
         const productId = buttonElement.getAttribute('data-product-id');
         const originalText = buttonElement.innerHTML;
 
@@ -139,7 +160,7 @@
 
             if (response.ok) {
                 buttonElement.className = 'btn btn-outline-success';
-                buttonElement.innerHTML = 'В корзине';
+                buttonElement.innerHTML = '<i class="bi bi-check2"></i> В корзине';
 
                 setTimeout(() => {
                     buttonElement.className = 'btn btn-success';
