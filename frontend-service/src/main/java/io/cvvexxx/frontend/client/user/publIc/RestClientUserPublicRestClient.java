@@ -2,10 +2,7 @@ package io.cvvexxx.frontend.client.user.publIc;
 
 import io.cvvexxx.frontend.dto.product.AddToCartDto;
 import io.cvvexxx.frontend.dto.product.CartItemDto;
-import io.cvvexxx.frontend.dto.user.CreatedUserDto;
-import io.cvvexxx.frontend.dto.user.NewUserDto;
-import io.cvvexxx.frontend.dto.user.UpdateUserDto;
-import io.cvvexxx.frontend.dto.user.UserInfoDto;
+import io.cvvexxx.frontend.dto.user.*;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.utils.MultipartBodyBuilderUtils;
 import lombok.RequiredArgsConstructor;
@@ -100,5 +97,14 @@ public class RestClientUserPublicRestClient implements UserPublicRestClient {
                 .uri("/api/users/cart/{productId}", productId)
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    @Override
+    public UserProfilePublicDto getUserProfile(String username) {
+        return restClient
+                .get()
+                .uri("/api/users/{username}", username)
+                .retrieve()
+                .body(UserProfilePublicDto.class);
     }
 }

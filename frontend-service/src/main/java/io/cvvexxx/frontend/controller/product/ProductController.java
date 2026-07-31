@@ -3,11 +3,13 @@ package io.cvvexxx.frontend.controller.product;
 import io.cvvexxx.frontend.client.product.publIc.ProductsPublicRestClient;
 import io.cvvexxx.frontend.client.review.ReviewsRestClient;
 import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
+import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
 import io.cvvexxx.frontend.dto.product.Product;
 import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
 import io.cvvexxx.frontend.dto.review.ReviewDto;
 import io.cvvexxx.frontend.dto.review.ReviewStatsDto;
+import io.cvvexxx.frontend.dto.review.UserReviewDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.utils.ImageUrlFormatter;
 import io.cvvexxx.frontend.view.ProductDetailsViewModel;
@@ -24,9 +26,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Locale;
-import java.util.NoSuchElementException;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("catalogue/products/{productId}")
@@ -36,6 +37,7 @@ public class ProductController {
 
     private final ProductsPublicRestClient productsPublicRestClient;
     private final UserInternalRestClient userInternalRestClient;
+    private final UserPublicRestClient userPublicRestClient;
     private final ReviewsRestClient reviewsRestClient;
     private final MessageSource messageSource;
     private final ImageUrlFormatter imageUrlFormatter;
@@ -54,7 +56,35 @@ public class ProductController {
     ) {
         ProductOwnerDto user = userInternalRestClient.findUserById(product.createdBy());
 
-        Page<ReviewDto> reviewsPage = reviewsRestClient.getReviews(product.id(), pageable);
+        Page<ReviewDto> reviews = reviewsRestClient.getReviews(product.id(), pageable);
+
+        List<UUID> reviewerIds = reviews.getContent().stream()
+                .map(ReviewDto::userId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+
+        Map<UUID, String> usernamesMap;
+
+        if (!reviewerIds.isEmpty()) {
+            usernamesMap = userInternalRestClient.findAllUsersByIds(reviewerIds).stream()
+                    .collect(Collectors.toMap(
+                            ProductOwnerDto::id,
+                            ProductOwnerDto::username
+                    ));
+        } else {
+            usernamesMap = Map.of();
+        }
+
+        Page<UserReviewDto> reviewsPage = reviews.map(reviewDto -> new UserReviewDto(
+                reviewDto.reviewId(),
+                reviewDto.productId(),
+                reviewDto.userId(),
+                usernamesMap.get(reviewDto.userId()),
+                reviewDto.rating(),
+                reviewDto.comment()
+        ));
+        log.info("reviewsPage {}", reviewsPage);
 
         ReviewStatsDto stats = reviewsRestClient.getProductReviewStats(product.id());
 

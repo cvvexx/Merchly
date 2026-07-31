@@ -1,9 +1,6 @@
 package io.cvvexxx.users.controller;
 
-import io.cvvexxx.users.dto.NewUserDto;
-import io.cvvexxx.users.dto.UpdateUserDto;
-import io.cvvexxx.users.dto.UserCreatedDto;
-import io.cvvexxx.users.dto.UserInfoDto;
+import io.cvvexxx.users.dto.*;
 import io.cvvexxx.users.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -70,5 +67,11 @@ public class UsersController {
             userService.updateUserInfo(currentUserId, updateUserDto, userAvatar);
             return ResponseEntity.noContent().build();
         }
+    }
+
+    @GetMapping("{username}")
+    public ResponseEntity<UserProfilePublicDto> getPublicUserProfile(@PathVariable("username") String username) {
+        UserProfilePublicDto profile = userService.getPublicUserProfile(username);
+        return ResponseEntity.ok(profile);
     }
 }

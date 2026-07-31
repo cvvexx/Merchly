@@ -14,11 +14,13 @@
             justify-content: center;
             align-items: center;
         }
+
         .product-detail-img-wrapper img {
             max-height: 450px;
             width: auto;
             object-fit: contain;
         }
+
         .user-avatar {
             width: 32px;
             height: 32px;
@@ -45,7 +47,8 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="mb-3">
-                <a class="text-decoration-none text-secondary" th:href="@{/catalogue/products/list}">&larr; Вернуться в каталог</a>
+                <a class="text-decoration-none text-secondary" th:href="@{/catalogue/products/list}">&larr; Вернуться в
+                    каталог</a>
             </div>
 
             <!-- Карточка товара -->
@@ -90,7 +93,8 @@
                     <!-- Панель управления товаром (для ADMIN) -->
                     <div class="d-flex gap-2 mt-4 pt-3 border-top" sec:authorize="hasRole('ADMIN')">
                         <a class="btn btn-warning px-4"
-                           th:href="@{/catalogue/products/{productId}/edit(productId=${data.product.id})}">Редактировать товар</a>
+                           th:href="@{/catalogue/products/{productId}/edit(productId=${data.product.id})}">Редактировать
+                            товар</a>
 
                         <form class="m-0"
                               method="post" onsubmit="return confirm('Вы уверены, что хотите удалить этот товар?');"
@@ -115,7 +119,8 @@
             <div class="card shadow-sm border-0 mb-4 bg-light">
                 <div class="card-body">
                     <h5 class="card-title mb-3">Оставить отзыв</h5>
-                    <form th:action="@{/catalogue/reviews/{productId}/create(productId=${data.product.id})}" method="post">
+                    <form th:action="@{/catalogue/reviews/{productId}/create(productId=${data.product.id})}"
+                          method="post">
                         <!-- Скрытое поле с ID товара для DTO -->
                         <input type="hidden" name="productId" th:value="${data.product.id}">
 
@@ -131,7 +136,8 @@
                         </div>
                         <div class="mb-3">
                             <label for="comment" class="form-label">Ваш комментарий</label>
-                            <textarea class="form-control" id="comment" name="comment" rows="3" required placeholder="Напишите, что вы думаете об этом товаре..."></textarea>
+                            <textarea class="form-control" id="comment" name="comment" rows="3" required
+                                      placeholder="Напишите, что вы думаете об этом товаре..."></textarea>
                         </div>
                         <button type="submit" class="btn btn-primary">Отправить отзыв</button>
                     </form>
@@ -148,22 +154,27 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
-                            <h6 class="card-subtitle text-dark fw-bold mb-1" th:text="'Пользователь ID: ' + ${review.userId}">User ID</h6>
+                            <a th:href="@{/users/{username}(username=${review.username})}"
+                               class="text-decoration-none">
+                                <span th:text="${review.username}">Username</span>
+                            </a>
                             <span class="badge bg-warning text-dark mb-2">
                                 <i class="bi bi-star-fill"></i> <span th:text="${review.rating} + ' / 5'">5 / 5</span>
                             </span>
                         </div>
 
-                        <!-- Кнопки управления отзывом (Временно доступны всем, как вы и просили) -->
+                        <!-- Кнопки управления отзывом -->
                         <div class="d-flex gap-2">
                             <!-- Кнопка вызывает модальное окно редактирования -->
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" th:data-bs-target="'#editReviewModal-' + ${review.reviewId}">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                                    th:data-bs-target="'#editReviewModal-' + ${review.reviewId}">
                                 <i class="bi bi-pencil"></i>
                             </button>
 
                             <!-- Форма удаления отзыва (используем th:method="delete") -->
                             <form th:action="@{/catalogue/reviews/{productId}/{reviewId}(productId=${data.product.id}, reviewId=${review.reviewId})}"
-                                  th:method="delete" class="m-0" onsubmit="return confirm('Вы действительно хотите удалить этот отзыв?');">
+                                  th:method="delete" class="m-0"
+                                  onsubmit="return confirm('Вы действительно хотите удалить этот отзыв?');">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -175,12 +186,14 @@
                 </div>
 
                 <!-- Модальное окно редактирования для конкретного отзыва -->
-                <div class="modal fade" th:id="'editReviewModal-' + ${review.reviewId}" tabindex="-1" aria-hidden="true">
+                <div class="modal fade" th:id="'editReviewModal-' + ${review.reviewId}" tabindex="-1"
+                     aria-hidden="true">
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h5 class="modal-title">Редактировать отзыв</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                        aria-label="Закрыть"></button>
                             </div>
                             <!-- Форма обновления отзыва (используем th:method="patch") -->
                             <form th:action="@{/catalogue/reviews/edit}" th:method="patch">
@@ -203,11 +216,13 @@
                                     </div>
                                     <div class="mb-3">
                                         <label class="form-label">Комментарий</label>
-                                        <textarea class="form-control" name="comment" rows="3" required th:text="${review.comment}"></textarea>
+                                        <textarea class="form-control" name="comment" rows="3" required
+                                                  th:text="${review.comment}"></textarea>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена
+                                    </button>
                                     <button type="submit" class="btn btn-primary">Сохранить изменения</button>
                                 </div>
                             </form>

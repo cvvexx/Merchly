@@ -15,7 +15,9 @@ import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -138,7 +140,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "user_info", key = "#userId")
+    @Cacheable(value = "private_user_info", key = "#userId")
     public UserInfoDto getUserInfo(UUID userId) {
         User user = findUser(userId);
 
@@ -198,6 +200,11 @@ public class UserService {
     }
 
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "private_user_info", key = "#userId"),
+            @CacheEvict(value = "users_owner", key = "#userId"),
+            @CacheEvict(value = "public_user_info", key = "#updateUserDto.username")
+    })
     public void updateUserInfo(
             UUID userId,
             UpdateUserDto updateUserDto,
@@ -229,6 +236,19 @@ public class UserService {
         user.setBirthDate(updateUserDto.birthDate());
     }
 
+    @Transactional
+    @Cacheable(value = "public_user_info", key = "#username")
+    public UserProfilePublicDto getPublicUserProfile(String username) {
+        User user = findUser(username);
+        return new UserProfilePublicDto(
+                user.getId(),
+                user.getUsername(),
+                user.getGender().toString(),
+                user.getBirthDate(),
+                user.getAvatarFileName()
+        );
+    }
+
     private void updateKeycloakUser(String keycloakUserId, UpdateUserDto updateUserDto) {
         try {
             var userResource = keycloak.realm(realm).users().get(keycloakUserId);
@@ -249,8 +269,14 @@ public class UserService {
 
     private User findUser(UUID userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new UsernameNotFoundException("Not found user with login: %s"
+                .orElseThrow(() -> new UsernameNotFoundException("Not found user with id: %s"
                         .formatted(userId)));
+    }
+
+    private User findUser(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Not found user with login: %s"
+                        .formatted(username)));
     }
 
     private Set<String> mapRoleToString(Set<Role> roles) {
