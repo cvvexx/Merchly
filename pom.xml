@@ -21,6 +21,7 @@
         <module>product-service</module>
         <module>frontend-service</module>
         <module>user-service</module>
+        <module>review-service</module>
     </modules>
 
     <properties>

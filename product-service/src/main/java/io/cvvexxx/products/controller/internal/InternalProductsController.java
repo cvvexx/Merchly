@@ -26,8 +26,12 @@ public class InternalProductsController {
     @GetMapping
     @PreAuthorize("hasRole('INTERNAL_SERVICE')")
     public ResponseEntity<List<Product>> findAllProducts(
-            @RequestParam("ids") List<UUID> ids
+            @RequestParam(required = false, name = "ids") List<UUID> ids
     ) {//TODO(Сменить на DTO)
+        if (ids.isEmpty() || ids == null) {
+            return ResponseEntity.ok(List.of());
+        }
+
         return ResponseEntity.ok(productService.findAllByIdIn(ids));
     }
 

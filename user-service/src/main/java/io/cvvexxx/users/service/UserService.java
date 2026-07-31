@@ -42,10 +42,20 @@ public class UserService {
         log.info("Received request to register user in keycloak and local db {}", newUserDto);
 
         UserRepresentation user = getUserRepresentation(newUserDto);
-
         UsersResource usersResource = keycloak.realm(realm).users();
+
+        String keycloakUserId;
+
+        // 1. Создаем пользователя в Keycloak
         try (Response response = usersResource.create(user)) {
             log.info("Keycloak response status: {}", response.getStatus());
+
+            if (response.getStatus() == 409) {
+                throw new IllegalArgumentException(
+                        "User with username '%s' or email '%s' already exists"
+                                .formatted(newUserDto.username(), newUserDto.email())
+                );
+            }
 
             if (response.getStatus() != 201) {
                 throw new RuntimeException("Failed to create user in Keycloak. Status: " + response.getStatus());
@@ -56,15 +66,21 @@ public class UserService {
                 throw new IllegalStateException("Keycloak response did not include a Location header");
             }
 
-            String keycloakUserId = locationHeader.substring(locationHeader.lastIndexOf("/") + 1);
+            keycloakUserId = locationHeader.substring(locationHeader.lastIndexOf("/") + 1);
             log.info("Keycloak User ID {}", keycloakUserId);
+        }
 
-            Set<Role> roles = Set.of(roleRepository.findByRole("USER"));
+        // 2. Загружаем аватар только ПОСЛЕ успешного создания в Keycloak
+        String userAvatarFileName = null;
+        if (userAvatar != null && !userAvatar.isEmpty()) {
+            userAvatarFileName = minioService.upload(userAvatar);
+        }
 
-            String userAvatarFileName = null;
-
-            if (userAvatar != null && !userAvatar.isEmpty()) {
-                userAvatarFileName = minioService.upload(userAvatar);
+        // 3. Сохраняем в локальную БД с откатом Keycloak при ошибке
+        try {
+            Role defaultRole = roleRepository.findByRole("USER");
+            if (defaultRole == null) {
+                throw new IllegalStateException("Default role 'USER' not found in database");
             }
 
             User localUser = new User(
@@ -73,20 +89,34 @@ public class UserService {
                     newUserDto.email(),
                     newUserDto.gender(),
                     newUserDto.birthDate(),
-                    roles,
+                    Set.of(defaultRole),
                     userAvatarFileName
             );
 
             User savedUser = userRepository.save(localUser);
             log.info("Saved user {}", savedUser);
 
-            return new UserCreatedDto(
-                    savedUser.getId(),
-                    savedUser.getUsername()
-            );
+            return new UserCreatedDto(savedUser.getId(), savedUser.getUsername());
+
         } catch (Exception e) {
-            //TODO(ОТМЕНИТЬ ИЗМЕНЕНИЯ ПРИ ОТКАТЕ ТРАНЗАКЦИИ)
-            log.error("Error during user registration: {}", e.getMessage(), e);
+            log.error("Failed to save user in local DB. Rolling back Keycloak user {}", keycloakUserId, e);
+
+            // Компенсирующее действие: удаляем юзера из Keycloak, если локальная БД упала
+            try {
+                usersResource.get(keycloakUserId).remove();
+            } catch (Exception ex) {
+                log.error("Failed to rollback Keycloak user deletion for ID: {}", keycloakUserId, ex);
+            }
+
+            // Если файл успел загрузиться в MinIO — чистим
+            if (userAvatarFileName != null) {
+                try {
+                    minioService.removeObject(userAvatarFileName);
+                } catch (Exception ex) {
+                    log.error("Failed to cleanup MinIO file {}", userAvatarFileName, ex);
+                }
+            }
+
             throw e;
         }
     }
