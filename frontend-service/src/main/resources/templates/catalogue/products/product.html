@@ -164,17 +164,18 @@
                         </div>
 
                         <!-- Кнопки управления отзывом -->
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2"
+                             th:if="${isAdmin or review.username == authUsername}">
                             <!-- Кнопка вызывает модальное окно редактирования -->
-                            <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal"
+                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                    data-bs-toggle="modal"
                                     th:data-bs-target="'#editReviewModal-' + ${review.reviewId}">
                                 <i class="bi bi-pencil"></i>
                             </button>
 
-                            <!-- Форма удаления отзыва (используем th:method="delete") -->
                             <form th:action="@{/catalogue/reviews/{productId}/{reviewId}(productId=${data.product.id}, reviewId=${review.reviewId})}"
                                   th:method="delete" class="m-0"
-                                  onsubmit="return confirm('Вы действительно хотите удалить этот отзыв?');">
+                                  onsubmit="return confirm('Удалить отзыв?');">
                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                     <i class="bi bi-trash"></i>
                                 </button>

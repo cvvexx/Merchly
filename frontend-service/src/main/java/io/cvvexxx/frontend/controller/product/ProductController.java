@@ -11,6 +11,7 @@ import io.cvvexxx.frontend.dto.review.ReviewDto;
 import io.cvvexxx.frontend.dto.review.ReviewStatsDto;
 import io.cvvexxx.frontend.dto.review.UserReviewDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
 import io.cvvexxx.frontend.utils.ImageUrlFormatter;
 import io.cvvexxx.frontend.view.ProductDetailsViewModel;
 import jakarta.servlet.http.HttpServletResponse;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -52,7 +54,8 @@ public class ProductController {
     public String getProductPage(
             @ModelAttribute("product") Product product,
             @PageableDefault(size = 5) Pageable pageable,
-            Model model
+            Model model,
+            KeycloakJwtAuthenticationToken token
     ) {
         ProductOwnerDto user = userInternalRestClient.findUserById(product.createdBy());
 
@@ -101,6 +104,12 @@ public class ProductController {
                 avgRating
         );
 
+        boolean isAdmin = token.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        String authUsername = token.getName();
+
+        model.addAttribute("isAdmin", isAdmin);
+        model.addAttribute("authUsername", authUsername);
         model.addAttribute("data", viewModel);
 
         return "catalogue/products/product";
