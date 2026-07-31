@@ -7,8 +7,11 @@ import io.cvvexxx.reviews.dto.UpdateReviewDto;
 import io.cvvexxx.reviews.entity.Review;
 import io.cvvexxx.reviews.repository.ReviewRepository;
 import jakarta.validation.Valid;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
@@ -24,8 +27,11 @@ import java.util.UUID;
 public class ReviewService {
 
     private final ReviewRepository reviewRepository;
+    private static final String CACHE_PRODUCT_NAME = "product";
+    private static final String CACHE_PRODUCT_STATS = "productStats";
 
     @Transactional
+    @CacheEvict(value = CACHE_PRODUCT_STATS, key = "#newReviewDto.productId()")
     public ReviewDto createReview(NewReviewDto newReviewDto, UUID userId) {
         if (reviewRepository.existsByProductIdAndUserId(newReviewDto.productId(), userId)) {
             throw new IllegalStateException("Вы уже оставляли отзыв на этот товар");
@@ -43,10 +49,10 @@ public class ReviewService {
     }
 
     @Transactional
+    @CacheEvict(value = CACHE_PRODUCT_STATS, key = "#result.productId()")
     public ReviewDto updateReview(UpdateReviewDto updateReviewDto, UUID userId, boolean isAdmin) {
         var review = reviewRepository.findById(updateReviewDto.reviewId())
-                        .orElseThrow(() -> new NoSuchElementException("Review with id %s not found"
-                                .formatted(updateReviewDto.reviewId())));
+                .orElseThrow(() -> new NoSuchElementException("Review with id %s not found".formatted(updateReviewDto.reviewId())));
 
         if (!isAdmin && !review.getUserId().equals(userId)) {
             throw new AccessDeniedException("You are not allowed to update this review");
@@ -54,23 +60,27 @@ public class ReviewService {
 
         review.setRating(updateReviewDto.rating());
         review.setComment(updateReviewDto.comment());
+
         return toDto(review);
     }
 
     @Transactional
-    public void deleteReview(UUID reviewId, UUID userId, boolean isAdmin) {
-        var review = reviewRepository.findById(reviewId)
-                .orElseThrow(() -> new NoSuchElementException("Review with id %s not found"
-                        .formatted(reviewId)));
+    @CacheEvict(value = CACHE_PRODUCT_STATS, key = "#result")
+    public UUID deleteReview(UUID reviewId, UUID userId, boolean isAdmin) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new NoSuchElementException("Review with id %s not found".formatted(reviewId)));
 
         if (!isAdmin && !review.getUserId().equals(userId)) {
             throw new AccessDeniedException("You are not allowed to delete this review");
         }
 
         reviewRepository.delete(review);
+        
+        return review.getProductId();
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = CACHE_PRODUCT_STATS, key = "#productId")
     public ReviewStatsDto getProductStats(UUID productId) {
         return reviewRepository.getProductStats(productId)
                 .orElse(new ReviewStatsDto(productId, 0.0, 0L));
