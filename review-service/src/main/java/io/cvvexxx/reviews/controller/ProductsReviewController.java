@@ -93,6 +93,13 @@ public class ProductsReviewController {
         return ResponseEntity.ok(reviewService.getProductStats(productId));
     }
 
+    @PostMapping("/stats")
+    public ResponseEntity<List<ReviewStatsDto>> getProductsStats(
+            @RequestBody List<UUID> productIds
+    ) {
+        return ResponseEntity.ok(reviewService.getProductsStats(productIds));
+    }
+
 
     private boolean hasAdminRole(Jwt jwt) {
         Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");

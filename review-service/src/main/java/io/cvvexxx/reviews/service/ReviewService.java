@@ -18,8 +18,12 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -84,6 +88,21 @@ public class ReviewService {
     public ReviewStatsDto getProductStats(UUID productId) {
         return reviewRepository.getProductStats(productId)
                 .orElse(new ReviewStatsDto(productId, 0.0, 0L));
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReviewStatsDto> getProductsStats(List<UUID> productIds) {
+        if (productIds == null || productIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<ReviewStatsDto> stats = reviewRepository.getProductsStats(productIds);
+        Map<UUID, ReviewStatsDto> statsMap = stats.stream()
+                .collect(Collectors.toMap(ReviewStatsDto::productId, Function.identity()));
+
+        return productIds.stream()
+                .map(id -> statsMap.getOrDefault(id, new ReviewStatsDto(id, 0.0, 0L)))
+                .toList();
     }
 
     private ReviewDto toDto(Review review) {

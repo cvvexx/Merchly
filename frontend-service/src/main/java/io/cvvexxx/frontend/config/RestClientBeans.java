@@ -3,6 +3,7 @@ package io.cvvexxx.frontend.config;
 import io.cvvexxx.frontend.client.keycloak.KeycloakRestClient;
 import io.cvvexxx.frontend.client.product.internal.RestClientProductsInternalRestClient;
 import io.cvvexxx.frontend.client.product.publIc.RestClientProductsPublicRestClient;
+import io.cvvexxx.frontend.client.review.RestClientReviewsRestClient;
 import io.cvvexxx.frontend.client.user.internal.RestClientUserInternalRestClient;
 import io.cvvexxx.frontend.client.user.publIc.RestClientUserPublicRestClient;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
@@ -164,6 +165,21 @@ public class RestClientBeans {
                 RestClient.builder()
                         .baseUrl(restClientUri)
                         .requestInterceptor(interceptor)
+                        .build()
+        );
+    }
+
+    @Bean
+    public RestClientReviewsRestClient restClientReviewsRestClient(
+            @Value("${spring.restclient.uri.reviews_service}") String restClientUri,
+            OAuth2AuthorizedClientManager authorizedClientManager
+    ) {
+        return new RestClientReviewsRestClient(
+                RestClient.builder()
+                        .baseUrl(restClientUri)
+                        .requestInterceptor((request, body, execution) ->
+                                getClientHttpRequestInterceptor(request, body, execution, authorizedClientManager)
+                        )
                         .build()
         );
     }
