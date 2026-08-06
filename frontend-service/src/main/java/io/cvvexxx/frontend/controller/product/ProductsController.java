@@ -29,7 +29,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Controller
-@RequestMapping("catalogue/products")
+@RequestMapping("/catalogue/products")
 @RequiredArgsConstructor
 @Slf4j
 public class ProductsController {
@@ -39,7 +39,7 @@ public class ProductsController {
     private final ReviewsRestClient reviewsRestClient;
     private final ImageUrlFormatter imageUrlFormatter;
 
-    @GetMapping("list")
+    @GetMapping("/list")
     public String getProductsList(
             Model model,
             @RequestParam(name = "filter", required = false) String filter
@@ -96,12 +96,12 @@ public class ProductsController {
         return "catalogue/products/list";
     }
 
-    @GetMapping("create")
+    @GetMapping("/create")
     public String getNewProductPage() {
         return "catalogue/products/new_product";
     }
 
-    @PostMapping("create")
+    @PostMapping("/create")
     public String createProduct(
             NewProductPayload payload,
             MultipartFile image,
