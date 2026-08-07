@@ -146,12 +146,23 @@
         buttonElement.disabled = true;
         buttonElement.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
 
+        // Получаем CSRF-токены из meta-тегов
+        const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
+        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
+
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+
+        // Прокидываем CSRF-заголовок, если он присутствует в DOM
+        if (csrfToken && csrfHeader) {
+            headers[csrfHeader] = csrfToken;
+        }
+
         try {
             const response = await fetch('/cart/add', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: headers, // Используем сформированные заголовки
                 body: JSON.stringify({
                     productId: productId,
                     quantity: 1

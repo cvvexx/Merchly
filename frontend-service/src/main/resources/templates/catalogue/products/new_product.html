@@ -86,16 +86,19 @@
     function validateFileSize(input) {
         const maxSizeBytes = 10 * 1024 * 1024; // 10 MB
         const errorDiv = document.getElementById('fileSizeError');
-        const submitBtn = input.form.querySelector('button[type="submit"]');
+
+        // Безопасный поиск кнопки submit
+        const form = input.form || input.closest('form');
+        const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
 
         if (input.files && input.files[0]) {
             if (input.files[0].size > maxSizeBytes) {
-                errorDiv.classList.remove('d-none');
-                input.value = '';
-                submitBtn.disabled = true;
+                if (errorDiv) errorDiv.classList.remove('d-none');
+                input.value = ''; // Сбрасываем выбранный файл
+                if (submitBtn) submitBtn.disabled = true;
             } else {
-                errorDiv.classList.add('d-none');
-                submitBtn.disabled = false;
+                if (errorDiv) errorDiv.classList.add('d-none');
+                if (submitBtn) submitBtn.disabled = false;
             }
         }
     }

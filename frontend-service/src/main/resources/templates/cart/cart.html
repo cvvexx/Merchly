@@ -107,7 +107,6 @@
 <!-- Скрипт для асинхронного удаления -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Получаем токены CSRF из meta-тегов (если Spring Security включен на фронтенде)
         const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
         const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
 
@@ -116,10 +115,9 @@
         deleteButtons.forEach(button => {
             button.addEventListener('click', function() {
                 const productId = this.getAttribute('data-product-id');
-                const subtotal = parseFloat(this.getAttribute('data-subtotal'));
+                const subtotal = parseFloat(this.getAttribute('data-subtotal')) || 0;
                 const buttonElement = this;
 
-                // Блокируем кнопку, чтобы избежать двойных кликов
                 buttonElement.disabled = true;
 
                 const headers = {};
@@ -127,45 +125,38 @@
                     headers[csrfHeader] = csrfToken;
                 }
 
-                // Отправляем DELETE запрос на ваш CartController (@DeleteMapping("{productId}"))
                 fetch(`/cart/${productId}`, {
                     method: 'DELETE',
                     headers: headers
                 })
                     .then(response => {
-                        // Сервер возвращает 204 No Content
                         if (response.ok) {
-                            // 1. Удаляем строку товара из таблицы
                             const itemRow = document.getElementById(`cart-item-${productId}`);
                             if (itemRow) {
                                 itemRow.remove();
                             }
 
-                            // 2. Обновляем общую стоимость
                             const totalEl = document.getElementById('total-price-value');
                             if (totalEl) {
-                                let currentTotal = parseFloat(totalEl.getAttribute('data-total'));
+                                let currentTotal = parseFloat(totalEl.getAttribute('data-total')) || 0;
                                 let newTotal = currentTotal - subtotal;
 
-                                // Защита от отрицательных значений
                                 if (newTotal < 0) newTotal = 0;
 
                                 totalEl.setAttribute('data-total', newTotal);
-                                totalEl.innerText = newTotal + ' ₽';
+                                totalEl.innerText = newTotal.toFixed(2) + ' ₽';
                             }
 
-                            // 3. Если удалили последний товар, перезагружаем страницу
-                            // чтобы отрендерился блок "Ваша корзина пока пуста"
                             if (document.querySelectorAll('.delete-btn').length === 0) {
                                 window.location.reload();
                             }
                         } else {
-                            throw new Error('Ошибка удаления');
+                            throw new Error('Ошибка сервера');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('Не удалось удалить товар из корзины. Попробуйте позже.');
+                        alert('Не удалось удалить товар из корзины. Попробуйте снова.');
                         buttonElement.disabled = false;
                     });
             });
