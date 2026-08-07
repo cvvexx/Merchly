@@ -1,4 +1,4 @@
-package io.cvvexxx.products.service;
+package io.cvvexxx.users.service.minio;
 
 import io.minio.*;
 import lombok.RequiredArgsConstructor;
@@ -13,13 +13,14 @@ import java.util.UUID;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class MinioService {
+public class DefaultMinioService implements  MinioService {
 
     private final MinioClient minioClient;
 
-    @Value("${minio.bucket.products}")
+    @Value("${minio.bucket.users}")
     private String bucketName;
 
+    @Override
     public String upload(MultipartFile file) {
         if (file.isEmpty() || file.getOriginalFilename() == null) {
             throw new IllegalArgumentException("Файл не может быть пустым");
@@ -45,11 +46,11 @@ public class MinioService {
             log.info("File successfully uploaded in MinIO: {}", fileName);
             return fileName;
         } catch (Exception e) {
-            log.error("Error uploading file to MinIO: {}", fileName, e);
-            throw new RuntimeException("Cannot upload file in MinIO", e);
+            throw new RuntimeException(e);
         }
     }
 
+    @Override
     public void removeObject(String fileName) {
         if (fileName == null || fileName.isBlank()) {
             log.warn("Attempted to delete a file with null or empty fileName from bucket: {}", bucketName);
@@ -81,5 +82,5 @@ public class MinioService {
                 .contentType(contentType)
                 .build();
     }
-}
 
+}

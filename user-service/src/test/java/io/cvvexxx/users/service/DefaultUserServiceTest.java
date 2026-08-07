@@ -6,6 +6,8 @@ import io.cvvexxx.users.entity.Role;
 import io.cvvexxx.users.entity.User;
 import io.cvvexxx.users.repository.RoleRepository;
 import io.cvvexxx.users.repository.UserRepository;
+import io.cvvexxx.users.service.minio.DefaultMinioService;
+import io.cvvexxx.users.service.user.DefaultUserService;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class UserServiceTest {
+class DefaultUserServiceTest {
 
     @Mock
     private Keycloak keycloak;
@@ -42,7 +44,7 @@ class UserServiceTest {
     @Mock
     private RoleRepository roleRepository;
     @Mock
-    private MinioService minioService;
+    private DefaultMinioService defaultMinioService;
 
     @Mock
     private RealmResource realmResource;
@@ -56,7 +58,7 @@ class UserServiceTest {
     private MultipartFile avatarFile;
 
     @InjectMocks
-    private UserService userService;
+    private DefaultUserService defaultUserService;
 
     private final String REALM = "test-realm";
     private final UUID USER_ID = UUID.randomUUID();
@@ -64,7 +66,7 @@ class UserServiceTest {
 
     @BeforeEach
     void setUp() {
-        ReflectionTestUtils.setField(userService, "realm", REALM);
+        ReflectionTestUtils.setField(defaultUserService, "realm", REALM);
     }
 
     @Nested
@@ -89,7 +91,7 @@ class UserServiceTest {
             when(keycloakResponse.getHeaderString("Location")).thenReturn("http://localhost/auth/admin/realms/" + REALM + "/users/" + KEYCLOAK_ID);
 
             when(avatarFile.isEmpty()).thenReturn(false);
-            when(minioService.upload(avatarFile)).thenReturn("avatar.png");
+            when(defaultMinioService.upload(avatarFile)).thenReturn("avatar.png");
 
             Role role = new Role();
             role.setRole("USER");
@@ -99,14 +101,14 @@ class UserServiceTest {
             when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
             // when
-            UserCreatedDto result = userService.registerUserInKeycloakAndLocalDb(newUserDto, avatarFile);
+            UserCreatedDto result = defaultUserService.registerUserInKeycloakAndLocalDb(newUserDto, avatarFile);
 
             // then
             assertNotNull(result);
             assertEquals(UUID.fromString(KEYCLOAK_ID), result.id());
             assertEquals("testuser", result.username());
 
-            verify(minioService, times(1)).upload(avatarFile);
+            verify(defaultMinioService, times(1)).upload(avatarFile);
             verify(userRepository, times(1)).save(any(User.class));
         }
 
@@ -120,11 +122,11 @@ class UserServiceTest {
             // when & then
             IllegalArgumentException ex = assertThrows(
                     IllegalArgumentException.class,
-                    () -> userService.registerUserInKeycloakAndLocalDb(newUserDto, null)
+                    () -> defaultUserService.registerUserInKeycloakAndLocalDb(newUserDto, null)
             );
 
             assertTrue(ex.getMessage().contains("already exists"));
-            verifyNoInteractions(userRepository, minioService);
+            verifyNoInteractions(userRepository, defaultMinioService);
         }
 
         @Test
@@ -136,7 +138,7 @@ class UserServiceTest {
             when(keycloakResponse.getHeaderString("Location")).thenReturn("http://localhost:8090/" + KEYCLOAK_ID);
 
             when(avatarFile.isEmpty()).thenReturn(false);
-            when(minioService.upload(avatarFile)).thenReturn("avatar.png");
+            when(defaultMinioService.upload(avatarFile)).thenReturn("avatar.png");
 
             when(roleRepository.findByRole("USER")).thenReturn(null);
 
@@ -145,11 +147,11 @@ class UserServiceTest {
             // when & then
             IllegalStateException ex = assertThrows(
                     IllegalStateException.class,
-                    () -> userService.registerUserInKeycloakAndLocalDb(newUserDto, avatarFile)
+                    () -> defaultUserService.registerUserInKeycloakAndLocalDb(newUserDto, avatarFile)
             );
 
             verify(userResource, times(1)).remove();
-            verify(minioService, times(1)).removeObject("avatar.png");
+            verify(defaultMinioService, times(1)).removeObject("avatar.png");
         }
     }
 
@@ -175,7 +177,7 @@ class UserServiceTest {
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
             // when
-            UserInfoDto result = userService.getUserInfo(USER_ID);
+            UserInfoDto result = defaultUserService.getUserInfo(USER_ID);
 
             // then
             assertEquals("testuser", result.username());
@@ -210,18 +212,18 @@ class UserServiceTest {
             when(userResource.toRepresentation()).thenReturn(new UserRepresentation());
 
             when(avatarFile.isEmpty()).thenReturn(false);
-            when(minioService.upload(avatarFile)).thenReturn("new_avatar.png");
+            when(defaultMinioService.upload(avatarFile)).thenReturn("new_avatar.png");
 
             // when
-            userService.updateUserInfo(USER_ID, updateDto, avatarFile);
+            defaultUserService.updateUserInfo(USER_ID, updateDto, avatarFile);
 
             // then
             ArgumentCaptor<UserRepresentation> repCaptor = ArgumentCaptor.forClass(UserRepresentation.class);
             verify(userResource, times(1)).update(repCaptor.capture());
             assertEquals("new_username", repCaptor.getValue().getUsername());
 
-            verify(minioService, times(1)).upload(avatarFile);
-            verify(minioService, times(1)).removeObject("old_avatar.png");
+            verify(defaultMinioService, times(1)).upload(avatarFile);
+            verify(defaultMinioService, times(1)).removeObject("old_avatar.png");
 
             assertEquals("new_avatar.png", user.getAvatarFileName());
             assertEquals("new_username", user.getUsername());
@@ -240,7 +242,7 @@ class UserServiceTest {
             // when & then
             RuntimeException ex = assertThrows(
                     RuntimeException.class,
-                    () -> userService.updateUserInfo(USER_ID, updateDto, null)
+                    () -> defaultUserService.updateUserInfo(USER_ID, updateDto, null)
             );
 
             assertTrue(ex.getMessage().contains("Failed to update user in Keycloak"));
@@ -262,7 +264,7 @@ class UserServiceTest {
             when(userRepository.findAllByIdIn(List.of(USER_ID))).thenReturn(List.of(user));
 
             // when
-            List<UserProductOwnerDto> result = userService.findUsersByIds(Arrays.asList(USER_ID, null));
+            List<UserProductOwnerDto> result = defaultUserService.findUsersByIds(Arrays.asList(USER_ID, null));
 
             // then
             assertEquals(1, result.size());
@@ -272,7 +274,7 @@ class UserServiceTest {
         @Test
         @DisplayName("findUsersByIds: если передан пустой список валидных ID, возвращает пустой список")
         void findUsersByIds_EmptyValidIds_ReturnsEmpty() {
-            List<UserProductOwnerDto> result = userService.findUsersByIds(Collections.singletonList(null));
+            List<UserProductOwnerDto> result = defaultUserService.findUsersByIds(Collections.singletonList(null));
             assertTrue(result.isEmpty());
             verifyNoInteractions(userRepository);
         }
@@ -280,7 +282,7 @@ class UserServiceTest {
         @Test
         @DisplayName("findUserById: если ID null, возвращает анонимного пользователя")
         void findUserById_NullId_ReturnsAnonymous() {
-            UserProductOwnerDto result = userService.findUserById(null);
+            UserProductOwnerDto result = defaultUserService.findUserById(null);
             assertEquals("Неизвестен", result.username());
             assertNull(result.id());
         }
@@ -302,7 +304,7 @@ class UserServiceTest {
             when(userRepository.findByUsername("public_user")).thenReturn(Optional.of(user));
 
             // when
-            UserProfilePublicDto result = userService.getPublicUserProfile("public_user");
+            UserProfilePublicDto result = defaultUserService.getPublicUserProfile("public_user");
 
             // then
             assertEquals(USER_ID, result.id());
@@ -316,7 +318,7 @@ class UserServiceTest {
 
             assertThrows(
                     UsernameNotFoundException.class,
-                    () -> userService.getPublicUserProfile("unknown")
+                    () -> defaultUserService.getPublicUserProfile("unknown")
             );
         }
     }

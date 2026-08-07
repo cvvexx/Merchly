@@ -1,13 +1,8 @@
 package io.cvvexxx.frontend.controller.cart;
 
-import io.cvvexxx.frontend.client.product.internal.ProductsInternalRestClient;
-import io.cvvexxx.frontend.client.product.publIc.ProductsPublicRestClient;
 import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
 import io.cvvexxx.frontend.dto.product.AddToCartDto;
-import io.cvvexxx.frontend.dto.product.CartItemDto;
-import io.cvvexxx.frontend.dto.product.Product;
-import io.cvvexxx.frontend.service.CartService;
-import io.cvvexxx.frontend.utils.ImageUrlFormatter;
+import io.cvvexxx.frontend.service.cart.DefaultCartService;
 import io.cvvexxx.frontend.view.CartItemView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,12 +12,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/cart")
@@ -31,11 +22,11 @@ import java.util.stream.Collectors;
 public class CartController {
 
     private final UserPublicRestClient userPublicRestClient;
-    private final CartService cartService;
+    private final DefaultCartService defaultCartService;
 
     @GetMapping
     public String getCartPage(Model model) {
-        var cartPageData = cartService.getCartPage();
+        var cartPageData = defaultCartService.getCartPage();
         List<CartItemView> viewItems = cartPageData.viewItems();
         BigDecimal totalCartPrice = cartPageData.totalCartPrice();
 

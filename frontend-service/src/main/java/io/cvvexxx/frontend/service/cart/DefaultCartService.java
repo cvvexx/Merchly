@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.service;
+package io.cvvexxx.frontend.service.cart;
 
 import io.cvvexxx.frontend.client.product.internal.ProductsInternalRestClient;
 import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
@@ -22,12 +22,13 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CartService {
+public class DefaultCartService implements  CartService {
 
     private final UserPublicRestClient userPublicRestClient;
     private final ProductsInternalRestClient productsInternalRestClient;
     private final ImageUrlFormatter imageUrlFormatter;
 
+    @Override
     public CartPageData getCartPage() {
         List<CartItemDto> cartItems = userPublicRestClient.getCartItems();
 

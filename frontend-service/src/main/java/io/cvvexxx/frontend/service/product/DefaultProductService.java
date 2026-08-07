@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.service;
+package io.cvvexxx.frontend.service.product;
 
 import io.cvvexxx.frontend.client.product.publIc.ProductsPublicRestClient;
 import io.cvvexxx.frontend.client.review.ReviewsRestClient;
@@ -30,13 +30,14 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class ProductService {
+public class DefaultProductService implements ProductService {
 
     private final ProductsPublicRestClient productsPublicRestClient;
     private final UserInternalRestClient userInternalRestClient;
     private final ReviewsRestClient reviewsRestClient;
     private final ImageUrlFormatter imageUrlFormatter;
 
+    @Override
     public ProductListData getProductsList(String filter) {
         List<Product> products = this.productsPublicRestClient.findAllProducts(filter);
 
@@ -85,6 +86,7 @@ public class ProductService {
         return new ProductListData(viewModels);
     }
 
+    @Override
     public ProductPageData getProductPage(Product product, Pageable pageable, KeycloakJwtAuthenticationToken token) {
         ProductOwnerDto user = userInternalRestClient.findUserById(product.createdBy());
 

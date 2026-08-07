@@ -1,8 +1,9 @@
-package io.cvvexxx.products.service;
+package io.cvvexxx.products.service.product;
 
 import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.repository.ProductRepository;
+import io.cvvexxx.products.service.minio.DefaultMinioService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -26,7 +27,7 @@ public class DefaultProductService implements ProductService {
     public static final String CACHE_PRODUCTS_LIST_NAME = "productList";
     public static final String CACHE_PRODUCT_NAME = "product";
     private final ProductRepository productRepository;
-    private final MinioService minioService;
+    private final DefaultMinioService defaultMinioService;
 
     @Override
     @Cacheable(value = CACHE_PRODUCTS_LIST_NAME, key = "#filter != null ? #filter : 'ALL'")
@@ -62,7 +63,7 @@ public class DefaultProductService implements ProductService {
         String imageFileName = null;
         log.info("image {}", image);
         if (image != null && !image.isEmpty()) {
-            imageFileName = minioService.upload(image);
+            imageFileName = defaultMinioService.upload(image);
             log.info("imageFileName: {}", imageFileName);
         }
 
@@ -109,14 +110,14 @@ public class DefaultProductService implements ProductService {
         log.info("New image {}", image);
         log.info("oldImageFileName {}", oldImageFileName);
         if (image != null && !image.isEmpty()) {
-            String newImageFileName = minioService.upload(image);
+            String newImageFileName = defaultMinioService.upload(image);
             log.info("Uploaded new image: {}", newImageFileName);
 
             product.setImageFileName(newImageFileName);
 
             if (oldImageFileName != null && !oldImageFileName.isBlank()) {
                 try {
-                    minioService.removeObject(oldImageFileName);
+                    defaultMinioService.removeObject(oldImageFileName);
                 } catch (Exception e) {
                     log.error("Failed to delete old image {} from MinIO for product {}", oldImageFileName, productId, e);
                 }

@@ -3,8 +3,7 @@ package io.cvvexxx.users.controller.cart;
 
 import io.cvvexxx.users.dto.cart.AddToCartDto;
 import io.cvvexxx.users.dto.cart.CartItemDto;
-import io.cvvexxx.users.entity.CartItem;
-import io.cvvexxx.users.service.CartService;
+import io.cvvexxx.users.service.cart.DefaultCartService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +20,7 @@ import java.util.UUID;
 @Slf4j
 public class CartController {
 
-    private final CartService cartService;
+    private final DefaultCartService cartService;
 
     @GetMapping
     public ResponseEntity<List<CartItemDto>> getCartItems(

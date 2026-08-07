@@ -6,7 +6,7 @@ import io.cvvexxx.frontend.controller.product.payload.NewProductPayload;
 import io.cvvexxx.frontend.dto.product.Product;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
-import io.cvvexxx.frontend.service.ProductService;
+import io.cvvexxx.frontend.service.product.DefaultProductService;
 import io.cvvexxx.frontend.view.ProductOwnerViewModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ import java.util.UUID;
 public class ProductsController {
 
     private final ProductsPublicRestClient productsPublicRestClient;
-    private final ProductService productService;
+    private final DefaultProductService defaultProductService;
 
     @GetMapping("/list")
     public String getProductsList(
@@ -34,7 +34,7 @@ public class ProductsController {
             @RequestParam(name = "filter", required = false) String filter
     ) {
         List<ProductOwnerViewModel> viewModels =
-                productService.getProductsList(filter).viewModels();
+                defaultProductService.getProductsList(filter).viewModels();
 
         model.addAttribute("products", viewModels);
         model.addAttribute("filter", filter);

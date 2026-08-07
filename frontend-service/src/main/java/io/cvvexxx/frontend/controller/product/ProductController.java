@@ -6,7 +6,7 @@ import io.cvvexxx.frontend.dto.product.Product;
 import io.cvvexxx.frontend.dto.product.ProductPageData;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
-import io.cvvexxx.frontend.service.ProductService;
+import io.cvvexxx.frontend.service.product.DefaultProductService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +31,7 @@ public class ProductController {
 
     private final ProductsPublicRestClient productsPublicRestClient;
     private final MessageSource messageSource;
-    private final ProductService productService;
+    private final DefaultProductService defaultProductService;
 
     @ModelAttribute("product")
     public Product product(@PathVariable("productId") UUID productId) {
@@ -46,7 +46,7 @@ public class ProductController {
             Model model,
             KeycloakJwtAuthenticationToken token
     ) {
-        ProductPageData productPageData = productService.getProductPage(
+        ProductPageData productPageData = defaultProductService.getProductPage(
                 product,
                 pageable,
                 token

@@ -1,7 +1,6 @@
-package io.cvvexxx.products.service;
+package io.cvvexxx.products.service.product;
 
 import io.cvvexxx.products.dto.ProductDto;
-import io.cvvexxx.products.entity.Product;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;

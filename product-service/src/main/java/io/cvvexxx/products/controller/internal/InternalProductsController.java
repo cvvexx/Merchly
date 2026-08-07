@@ -2,8 +2,7 @@ package io.cvvexxx.products.controller.internal;
 
 
 import io.cvvexxx.products.dto.ProductDto;
-import io.cvvexxx.products.entity.Product;
-import io.cvvexxx.products.service.ProductService;
+import io.cvvexxx.products.service.product.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

@@ -3,8 +3,7 @@ package io.cvvexxx.products.controller.publIc;
 
 import io.cvvexxx.products.controller.payload.NewProductPayload;
 import io.cvvexxx.products.dto.ProductDto;
-import io.cvvexxx.products.entity.Product;
-import io.cvvexxx.products.service.ProductService;
+import io.cvvexxx.products.service.product.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;

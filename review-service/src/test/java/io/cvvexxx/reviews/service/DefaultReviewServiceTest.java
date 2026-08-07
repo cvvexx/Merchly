@@ -28,13 +28,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class ReviewServiceTest {
+class DefaultReviewServiceTest {
 
     @Mock
     private ReviewRepository reviewRepository;
 
     @InjectMocks
-    private ReviewService reviewService;
+    private DefaultReviewService defaultReviewService;
 
     @Nested
     @DisplayName("Тесты метода createReview")
@@ -52,7 +52,7 @@ class ReviewServiceTest {
             when(reviewRepository.save(any(Review.class))).thenAnswer(i -> i.getArgument(0));
 
             //when
-            ReviewDto reviewDto = reviewService.createReview(new NewReviewDto(
+            ReviewDto reviewDto = defaultReviewService.createReview(new NewReviewDto(
                     productId,
                     rating,
                     comment
@@ -77,7 +77,7 @@ class ReviewServiceTest {
 
             //when
             IllegalStateException exception = assertThrows(
-                    IllegalStateException.class, () -> reviewService.createReview(new NewReviewDto(
+                    IllegalStateException.class, () -> defaultReviewService.createReview(new NewReviewDto(
                             productId,
                             rating,
                             comment
@@ -113,7 +113,7 @@ class ReviewServiceTest {
                     .thenReturn(reviewPage);
 
             //when
-            var reviewDtoPage = reviewService.getReviewsByProduct(productId, Pageable.unpaged());
+            var reviewDtoPage = defaultReviewService.getReviewsByProduct(productId, Pageable.unpaged());
 
             //then
             verify(reviewRepository, times(1)).findAllByProductId(productId, Pageable.unpaged());
@@ -129,7 +129,7 @@ class ReviewServiceTest {
                     .thenReturn(new PageImpl<>(List.of()));
 
             //when
-            var result = reviewService.getReviewsByProduct(productId, Pageable.unpaged());
+            var result = defaultReviewService.getReviewsByProduct(productId, Pageable.unpaged());
 
             //then
             verify(reviewRepository, times(1)).findAllByProductId(productId, Pageable.unpaged());
@@ -163,7 +163,7 @@ class ReviewServiceTest {
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
 
             // when
-            ReviewDto result = reviewService.updateReview(updateDto, userId, false);
+            ReviewDto result = defaultReviewService.updateReview(updateDto, userId, false);
 
             // then
             assertNotNull(result);
@@ -200,7 +200,7 @@ class ReviewServiceTest {
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
 
             // when
-            ReviewDto result = reviewService.updateReview(updateDto, adminUserId, true);
+            ReviewDto result = defaultReviewService.updateReview(updateDto, adminUserId, true);
 
             // then
             assertNotNull(result);
@@ -233,7 +233,7 @@ class ReviewServiceTest {
             // when & then
             AccessDeniedException exception = assertThrows(
                     AccessDeniedException.class,
-                    () -> reviewService.updateReview(updateDto, strangerUserId, false)
+                    () -> defaultReviewService.updateReview(updateDto, strangerUserId, false)
             );
 
             assertEquals("You are not allowed to update this review", exception.getMessage());
@@ -255,7 +255,7 @@ class ReviewServiceTest {
             // when & then
             NoSuchElementException exception = assertThrows(
                     NoSuchElementException.class,
-                    () -> reviewService.updateReview(updateDto, UUID.randomUUID(), false)
+                    () -> defaultReviewService.updateReview(updateDto, UUID.randomUUID(), false)
             );
 
             assertEquals("Review with id %s not found".formatted(reviewId), exception.getMessage());
@@ -283,7 +283,7 @@ class ReviewServiceTest {
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
 
             // when
-            UUID resultProductId = reviewService.deleteReview(reviewId, userId, false);
+            UUID resultProductId = defaultReviewService.deleteReview(reviewId, userId, false);
 
             // then
             assertEquals(productId, resultProductId);
@@ -309,7 +309,7 @@ class ReviewServiceTest {
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
 
             // when
-            UUID resultProductId = reviewService.deleteReview(reviewId, adminUserId, true);
+            UUID resultProductId = defaultReviewService.deleteReview(reviewId, adminUserId, true);
 
             // then
             assertEquals(productId, resultProductId);
@@ -336,7 +336,7 @@ class ReviewServiceTest {
             // when & then
             AccessDeniedException exception = assertThrows(
                     AccessDeniedException.class,
-                    () -> reviewService.deleteReview(reviewId, strangerUserId, false)
+                    () -> defaultReviewService.deleteReview(reviewId, strangerUserId, false)
             );
 
             assertEquals("You are not allowed to delete this review", exception.getMessage());
@@ -355,7 +355,7 @@ class ReviewServiceTest {
             // when & then
             NoSuchElementException exception = assertThrows(
                     NoSuchElementException.class,
-                    () -> reviewService.deleteReview(reviewId, UUID.randomUUID(), false)
+                    () -> defaultReviewService.deleteReview(reviewId, UUID.randomUUID(), false)
             );
 
             assertEquals("Review with id %s not found".formatted(reviewId), exception.getMessage());
@@ -377,7 +377,7 @@ class ReviewServiceTest {
             when(reviewRepository.getProductStats(productId)).thenReturn(Optional.of(expectedStats));
 
             // when
-            ReviewStatsDto actualStats = reviewService.getProductStats(productId);
+            ReviewStatsDto actualStats = defaultReviewService.getProductStats(productId);
 
             // then
             assertNotNull(actualStats);
@@ -397,7 +397,7 @@ class ReviewServiceTest {
             when(reviewRepository.getProductStats(productId)).thenReturn(Optional.empty());
 
             // when
-            ReviewStatsDto actualStats = reviewService.getProductStats(productId);
+            ReviewStatsDto actualStats = defaultReviewService.getProductStats(productId);
 
             // then
             assertNotNull(actualStats);
@@ -417,8 +417,8 @@ class ReviewServiceTest {
         @DisplayName("getProductsStats: возвращает пустой список, если передан null или пустой список")
         void getProductsStats_NullOrEmptyList_ShouldReturnEmptyListWithoutRepositoryCall() {
             // when
-            List<ReviewStatsDto> resultNull = reviewService.getProductsStats(null);
-            List<ReviewStatsDto> resultEmpty = reviewService.getProductsStats(List.of());
+            List<ReviewStatsDto> resultNull = defaultReviewService.getProductsStats(null);
+            List<ReviewStatsDto> resultEmpty = defaultReviewService.getProductsStats(List.of());
 
             // then
             assertTrue(resultNull.isEmpty());
@@ -442,7 +442,7 @@ class ReviewServiceTest {
             when(reviewRepository.getProductsStats(productIds)).thenReturn(List.of(stats1, stats3));
 
             // when
-            List<ReviewStatsDto> result = reviewService.getProductsStats(productIds);
+            List<ReviewStatsDto> result = defaultReviewService.getProductsStats(productIds);
 
             // then
             assertNotNull(result);

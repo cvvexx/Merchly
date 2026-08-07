@@ -1,7 +1,7 @@
 package io.cvvexxx.users.controller;
 
 import io.cvvexxx.users.dto.*;
-import io.cvvexxx.users.service.UserService;
+import io.cvvexxx.users.service.user.DefaultUserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ import java.util.UUID;
 @Slf4j
 public class UsersController {
 
-    private final UserService userService;
+    private final DefaultUserService userService;
 
     @PostMapping("/register")
     public ResponseEntity<UserCreatedDto> registerUser(

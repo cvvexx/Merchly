@@ -1,12 +1,11 @@
-package io.cvvexxx.users.service;
+package io.cvvexxx.users.service.user;
 
-import io.cvvexxx.users.domain.Gender;
 import io.cvvexxx.users.dto.*;
-import io.cvvexxx.users.dto.cart.AddToCartDto;
 import io.cvvexxx.users.entity.Role;
 import io.cvvexxx.users.entity.User;
 import io.cvvexxx.users.repository.RoleRepository;
 import io.cvvexxx.users.repository.UserRepository;
+import io.cvvexxx.users.service.minio.DefaultMinioService;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,16 +28,17 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class UserService {
+public class DefaultUserService implements  UserService {
 
     private final Keycloak keycloak;
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
-    private final MinioService minioService;
+    private final DefaultMinioService minioService;
 
     @Value("${keycloak.realm}")
     private String realm;
 
+    @Override
     @Transactional
     public UserCreatedDto registerUserInKeycloakAndLocalDb(NewUserDto newUserDto, MultipartFile userAvatar) {
         log.info("Received request to register user in keycloak and local db {}", newUserDto);
@@ -48,7 +48,6 @@ public class UserService {
 
         String keycloakUserId;
 
-        // 1. Создаем пользователя в Keycloak
         try (Response response = usersResource.create(user)) {
             log.info("Keycloak response status: {}", response.getStatus());
 
@@ -72,13 +71,11 @@ public class UserService {
             log.info("Keycloak User ID {}", keycloakUserId);
         }
 
-        // 2. Загружаем аватар только ПОСЛЕ успешного создания в Keycloak
         String userAvatarFileName = null;
         if (userAvatar != null && !userAvatar.isEmpty()) {
             userAvatarFileName = minioService.upload(userAvatar);
         }
 
-        // 3. Сохраняем в локальную БД с откатом Keycloak при ошибке
         try {
             Role defaultRole = roleRepository.findByRole("USER");
             if (defaultRole == null) {
@@ -103,14 +100,12 @@ public class UserService {
         } catch (Exception e) {
             log.error("Failed to save user in local DB. Rolling back Keycloak user {}", keycloakUserId, e);
 
-            // Компенсирующее действие: удаляем юзера из Keycloak, если локальная БД упала
             try {
                 usersResource.get(keycloakUserId).remove();
             } catch (Exception ex) {
                 log.error("Failed to rollback Keycloak user deletion for ID: {}", keycloakUserId, ex);
             }
 
-            // Если файл успел загрузиться в MinIO — чистим
             if (userAvatarFileName != null) {
                 try {
                     minioService.removeObject(userAvatarFileName);
@@ -139,6 +134,7 @@ public class UserService {
         return user;
     }
 
+    @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "private_user_info", key = "#userId")
     public UserInfoDto getUserInfo(UUID userId) {
@@ -163,6 +159,7 @@ public class UserService {
         );
     }
 
+    @Override
     @Transactional(readOnly = true)
     public List<UserProductOwnerDto> findUsersByIds(List<UUID> ids) {
 
@@ -183,6 +180,7 @@ public class UserService {
                 .toList();
     }
 
+    @Override
     @Transactional(readOnly = true)
     @Cacheable(value = "users_owner", key = "#userId")
     public UserProductOwnerDto findUserById(UUID userId) {
@@ -199,6 +197,7 @@ public class UserService {
         );
     }
 
+    @Override
     @Transactional
     @Caching(evict = {
             @CacheEvict(value = "private_user_info", key = "#userId"),
@@ -236,6 +235,7 @@ public class UserService {
         user.setBirthDate(updateUserDto.birthDate());
     }
 
+    @Override
     @Transactional
     @Cacheable(value = "public_user_info", key = "#username")
     public UserProfilePublicDto getPublicUserProfile(String username) {

@@ -1,7 +1,7 @@
 package io.cvvexxx.users.controller;
 
 import io.cvvexxx.users.dto.UserProductOwnerDto;
-import io.cvvexxx.users.service.UserService;
+import io.cvvexxx.users.service.user.DefaultUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -18,7 +18,7 @@ import java.util.UUID;
 @Slf4j
 public class InternalUsersController {
 
-    private final UserService userService;
+    private final DefaultUserService userService;
 
 
     @GetMapping
