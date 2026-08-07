@@ -202,11 +202,6 @@
                             <form th:action="@{/catalogue/reviews/{productId}/edit(productId=${data.product.id})}"
                                   th:method="patch">
                                 <div class="modal-body">
-                                    <div class="alert alert-danger" th:if="${errors}">
-                                        <ul class="mb-0">
-                                            <li th:each="error : ${errors}" th:text="${error}">Ошибка валидации</li>
-                                        </ul>
-                                    </div>
 
                                     <input name="reviewId" th:value="${review.reviewId}" type="hidden">
 

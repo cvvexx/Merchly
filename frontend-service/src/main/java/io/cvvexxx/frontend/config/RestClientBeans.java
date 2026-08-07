@@ -186,10 +186,10 @@ public class RestClientBeans {
 
     @Bean
     public KeycloakRestClient keycloakAuthClient(
-            @Value("${keycloak.client-id:merchly-frontend-client}")
+            @Value("${keycloak.client-id:merchly_frontend_client}")
             String clientId,
 
-            @Value("${keycloak.token-uri:http://localhost:8090/realms/merchly/protocol/openid-connect/token}")
+            @Value("${spring.security.oauth2.client.provider.keycloak.token-uri}")
             String tokenUri,
 
             @Value("${spring.security.oauth2.client.registration.keycloak.client-secret}")

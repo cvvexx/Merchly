@@ -35,8 +35,7 @@ public class RestClientReviewsRestClient implements ReviewsRestClient {
                     .retrieve()
                     .body(ReviewDto.class);
         } catch (HttpClientErrorException.BadRequest exception) {
-            ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
-            throw new BadRequestException((List<String>) problemDetail.getProperties().get("errors"));
+            throw new BadRequestException(extractErrors(exception));
         }
     }
 
@@ -76,8 +75,7 @@ public class RestClientReviewsRestClient implements ReviewsRestClient {
                     .retrieve()
                     .body(ReviewDto.class);
         } catch (HttpClientErrorException.BadRequest exception) {
-            ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
-            throw new BadRequestException((List<String>) problemDetail.getProperties().get("errors"));
+            throw new BadRequestException(extractErrors(exception));
         }
     }
 
@@ -109,6 +107,28 @@ public class RestClientReviewsRestClient implements ReviewsRestClient {
                 .retrieve()
                 .body(new ParameterizedTypeReference<List<ReviewStatsDto>>() {
                 });
+    }
+
+    private List<String> extractErrors(HttpClientErrorException.BadRequest exception) {
+        ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
+        if (problemDetail == null) {
+            return List.of("Неизвестная ошибка сервера");
+        }
+
+        if (problemDetail.getProperties() != null && problemDetail.getProperties().containsKey("errors")) {
+            Object errorsObj = problemDetail.getProperties().get("errors");
+            if (errorsObj instanceof List<?> list) {
+                return list.stream()
+                        .map(Object::toString)
+                        .toList();
+            }
+        }
+
+        if (problemDetail.getDetail() != null) {
+            return List.of(problemDetail.getDetail());
+        }
+
+        return List.of("Произошла ошибка при обработке запроса");
     }
 
 }
