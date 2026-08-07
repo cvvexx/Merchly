@@ -30,7 +30,6 @@ public class CartController {
         List<CartItemView> viewItems = cartPageData.viewItems();
         BigDecimal totalCartPrice = cartPageData.totalCartPrice();
 
-        log.info("Rendering cart page with {} items, total price: {}", viewItems.size(), totalCartPrice);
         model.addAttribute("items", viewItems);
         model.addAttribute("totalPrice", totalCartPrice);
         return "cart/cart";

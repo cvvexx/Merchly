@@ -28,7 +28,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class DefaultProductService implements ProductService {
 
@@ -118,7 +117,6 @@ public class DefaultProductService implements ProductService {
                 reviewDto.rating(),
                 reviewDto.comment()
         ));
-        log.info("reviewsPage {}", reviewsPage);
 
         ReviewStatsDto stats = reviewsRestClient.getProductReviewStats(product.id());
 

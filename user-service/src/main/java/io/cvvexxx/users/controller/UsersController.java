@@ -35,8 +35,6 @@ public class UsersController {
             }
             throw new BindException(bindingResult);
         } else {
-            log.info("Received request to register user {}", newUserDto);
-            log.info("userAvatar: {}", userAvatar);
             return ResponseEntity.ok(userService.registerUserInKeycloakAndLocalDb(newUserDto, userAvatar));
         }
     }
@@ -44,7 +42,6 @@ public class UsersController {
     @GetMapping("me")
     public ResponseEntity<UserInfoDto> getSecurityUserInfo(@AuthenticationPrincipal Jwt jwt) {
         UserInfoDto currentUserInfo = userService.getUserInfo(UUID.fromString(jwt.getClaimAsString("sub")));
-        log.info("currentUserInfo: {}", currentUserInfo);
         return ResponseEntity.ok(currentUserInfo);
     }
 
@@ -63,7 +60,6 @@ public class UsersController {
         } else {
             UUID currentUserId = UUID.fromString(jwt.getClaimAsString("sub"));
 
-            log.info("User with ID {} requested profile update to username: {}", currentUserId, updateUserDto.username());
             userService.updateUserInfo(currentUserId, updateUserDto, userAvatar);
             return ResponseEntity.noContent().build();
         }

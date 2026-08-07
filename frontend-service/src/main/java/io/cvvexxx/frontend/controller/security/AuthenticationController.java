@@ -86,7 +86,6 @@ public class AuthenticationController {
     ) {
         try {
             KeycloakTokenResponse tokenResponse = keycloakClient.login(loginUserDto.login(), loginUserDto.password());
-            log.info("access token {}", tokenResponse.accessToken());
             authenticateUserInSession(
                     loginUserDto.login(),
                     tokenResponse.accessToken(),
@@ -109,7 +108,6 @@ public class AuthenticationController {
     ) {
         log.info("Trying to authenticate user: {}", username);
         List<GrantedAuthority> authorities = extractAuthorities(accessToken);
-        log.info("Authorities: {}", authorities);
         UUID userId = extractUserId(accessToken);
         KeycloakJwtAuthenticationToken authToken = new KeycloakJwtAuthenticationToken(
                 username,
@@ -145,7 +143,6 @@ public class AuthenticationController {
             }
             return authorities;
         } catch (Exception e) {
-            log.error("Failed to parse roles from token", e);
             return Collections.emptyList();
         }
     }
@@ -157,7 +154,6 @@ public class AuthenticationController {
             JsonNode rootNode = objectMapper.readTree(payloadJson);
             return UUID.fromString(rootNode.path("sub").asText());
         } catch (Exception e) {
-            log.error("Failed to parse 'sub' from access token", e);
             return null;
         }
     }

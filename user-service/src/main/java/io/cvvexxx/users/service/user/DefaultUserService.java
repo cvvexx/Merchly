@@ -41,7 +41,6 @@ public class DefaultUserService implements UserService {
     @Override
     @Transactional
     public UserCreatedDto registerUserInKeycloakAndLocalDb(NewUserDto newUserDto, MultipartFile userAvatar) {
-        log.info("Received request to register user in keycloak and local db {}", newUserDto);
 
         UserRepresentation user = getUserRepresentation(newUserDto);
         UsersResource usersResource = keycloak.realm(realm).users();
@@ -49,7 +48,6 @@ public class DefaultUserService implements UserService {
         String keycloakUserId;
 
         try (Response response = usersResource.create(user)) {
-            log.info("Keycloak response status: {}", response.getStatus());
 
             if (response.getStatus() == 409) {
                 throw new IllegalArgumentException(
@@ -68,7 +66,6 @@ public class DefaultUserService implements UserService {
             }
 
             keycloakUserId = locationHeader.substring(locationHeader.lastIndexOf("/") + 1);
-            log.info("Keycloak User ID {}", keycloakUserId);
         }
 
         String userAvatarFileName = null;
@@ -93,13 +90,11 @@ public class DefaultUserService implements UserService {
             );
 
             User savedUser = userRepository.save(localUser);
-            log.info("Saved user {}", savedUser);
 
             return new UserCreatedDto(savedUser.getId(), savedUser.getUsername());
 
         } catch (Exception e) {
             log.error("Failed to save user in local DB. Rolling back Keycloak user {}", keycloakUserId, e);
-
             try {
                 usersResource.get(keycloakUserId).remove();
             } catch (Exception ex) {
