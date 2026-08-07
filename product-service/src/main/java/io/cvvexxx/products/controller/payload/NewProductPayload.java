@@ -21,7 +21,7 @@ public record NewProductPayload(
         @Positive(message = "{catalogue.products.create.errors.price_is_negative_or_zero}")
         BigDecimal price,
 
-        @NotNull
+        @NotNull(message = "catalogue.products.create.errors.createdBy_is_null")
         UUID createdBy
 ) {
 }

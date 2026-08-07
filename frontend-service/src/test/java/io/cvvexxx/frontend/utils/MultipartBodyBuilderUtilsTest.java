@@ -21,7 +21,8 @@ class MultipartBodyBuilderUtilsTest {
         builderUtils = new MultipartBodyBuilderUtils();
     }
 
-    private record SampleDto(String name, int price) {}
+    private record SampleDto(String name, int price) {
+    }
 
     @Nested
     @DisplayName("Тесты метода multipartBodyBuilder")

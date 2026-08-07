@@ -1,8 +1,8 @@
 package io.cvvexxx.products.controller.internal;
 
 
-import io.cvvexxx.products.entity.Product;
-import io.cvvexxx.products.service.ProductService;
+import io.cvvexxx.products.dto.ProductDto;
+import io.cvvexxx.products.service.product.ProductService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -25,9 +25,9 @@ public class InternalProductsController {
 
     @GetMapping
     @PreAuthorize("hasRole('INTERNAL_SERVICE')")
-    public ResponseEntity<List<Product>> findAllProducts(
+    public ResponseEntity<List<ProductDto>> findAllProducts(
             @RequestParam(required = false, name = "ids") List<UUID> ids
-    ) {//TODO(Сменить на DTO)
+    ) {
         if (ids.isEmpty() || ids == null) {
             return ResponseEntity.ok(List.of());
         }

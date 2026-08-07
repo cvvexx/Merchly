@@ -1,4 +1,4 @@
-package io.cvvexxx.users.service;
+package io.cvvexxx.users.service.cart;
 
 import io.cvvexxx.users.dto.cart.AddToCartDto;
 import io.cvvexxx.users.dto.cart.CartItemDto;
@@ -17,20 +17,19 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CartService {
+public class DefaultCartService implements CartService {
 
     private final CartItemRepository cartItemRepository;
 
+    @Override
     @Transactional
     public void addItemToCart(AddToCartDto addToCartDto, UUID currentUserId) {
 
         Optional<CartItem> byUserIdAndProductId =
                 cartItemRepository.findByUserIdAndProductId(currentUserId, addToCartDto.productId());
-        log.info("finding product by userId {} and productId {}", currentUserId,  addToCartDto.productId());
         byUserIdAndProductId
                 .ifPresentOrElse(
                         cartItem -> {
-                            log.info("Adding to cart item {}", cartItem);
                             cartItem.setQuantity(cartItem.getQuantity() + 1);
                         },
                         () -> {
@@ -41,11 +40,11 @@ public class CartService {
                                             .productId(addToCartDto.productId())
                                             .quantity(addToCartDto.quantity())
                                             .build());
-                            log.info("Saved cart item {}", saved);
                         }
-                        );
+                );
     }
 
+    @Override
     @Transactional
     public List<CartItemDto> getCartItems(UUID currentUserId) {
         return cartItemRepository.findAllByUserId(currentUserId)
@@ -57,11 +56,12 @@ public class CartService {
                 .toList();
     }
 
+    @Override
     @Transactional
     public void deleterItemFromCart(UUID productId, UUID currentUserId) {
         CartItem cartItem = cartItemRepository.findByUserIdAndProductId(currentUserId, productId)
                 .orElseThrow(() -> new NoSuchElementException("errors.404.header"));
 
-        cartItemRepository.delete(cartItem);//TODO(переделать)
+        cartItemRepository.delete(cartItem);
     }
 }

@@ -9,7 +9,7 @@
 
     <!-- Библиотека Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 </head>
 <body>
 
@@ -31,12 +31,12 @@
     <h2 class="mb-4">Ваша корзина</h2>
 
     <!-- Если корзина пуста -->
-    <div th:if="${items.isEmpty()}" class="alert alert-info">
+    <div class="alert alert-info" th:if="${items.isEmpty()}">
         Ваша корзина пока пуста. <a th:href="@{/catalogue/products/list}">Перейти к покупкам</a>.
     </div>
 
     <!-- Если в корзине есть товары -->
-    <div th:if="${!items.isEmpty()}" id="cart-content">
+    <div id="cart-content" th:if="${!items.isEmpty()}">
         <table class="table table-hover align-middle">
             <thead class="table-light">
             <tr>
@@ -51,15 +51,15 @@
             <!-- Добавлен id для строки (tr), чтобы JS мог ее удалить -->
             <tr th:each="item : ${items}" th:id="'cart-item-' + ${item.product.id}">
                 <td>
-                    <a th:href="@{/catalogue/products/{id}(id=${item.product.id})}"
-                       class="d-flex align-items-center text-decoration-none text-dark">
+                    <a class="d-flex align-items-center text-decoration-none text-dark"
+                       th:href="@{/catalogue/products/{id}(id=${item.product.id})}">
 
-                        <img th:src="@{${item.productImageUrl}}"
+                        <img alt="product"
                              class="img-thumbnail me-3"
                              style="width: 64px; height: 64px; object-fit: cover;"
-                             alt="product">
+                             th:src="@{${item.productImageUrl}}">
 
-                        <span th:text="${item.product.title}" class="fw-bold hover-link">Название товара</span>
+                        <span class="fw-bold hover-link" th:text="${item.product.title}">Название товара</span>
                     </a>
                 </td>
 
@@ -67,7 +67,7 @@
 
                 <td th:text="${item.quantity}">2</td>
 
-                <td th:text="${item.subtotal + ' ₽'}" class="fw-bold">2000 ₽</td>
+                <td class="fw-bold" th:text="${item.subtotal + ' ₽'}">2000 ₽</td>
 
                 <td>
                     <!--
@@ -87,16 +87,16 @@
 
         <!-- Общая сумма -->
         <div class="d-flex justify-content-between align-items-center mt-4">
-            <a href="/catalogue/products/list" class="btn btn-outline-secondary">Продолжить покупки</a>
+            <a class="btn btn-outline-secondary" href="/catalogue/products/list">Продолжить покупки</a>
             <div class="text-end">
                 <!--
                   Добавлен id и data-total для управления значением из JS
                 -->
                 <h4 class="mb-3">Итого:
-                    <span id="total-price-value"
+                    <span class="text-primary fw-bold"
+                          id="total-price-value"
                           th:data-total="${totalPrice}"
-                          th:text="${totalPrice + ' ₽'}"
-                          class="text-primary fw-bold"></span>
+                          th:text="${totalPrice + ' ₽'}"></span>
                 </h4>
                 <button class="btn btn-success btn-lg">Оформить заказ</button>
             </div>
@@ -107,19 +107,17 @@
 <!-- Скрипт для асинхронного удаления -->
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        // Получаем токены CSRF из meta-тегов (если Spring Security включен на фронтенде)
         const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
         const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
 
         const deleteButtons = document.querySelectorAll('.delete-btn');
 
         deleteButtons.forEach(button => {
-            button.addEventListener('click', function() {
+            button.addEventListener('click', function () {
                 const productId = this.getAttribute('data-product-id');
-                const subtotal = parseFloat(this.getAttribute('data-subtotal'));
+                const subtotal = parseFloat(this.getAttribute('data-subtotal')) || 0;
                 const buttonElement = this;
 
-                // Блокируем кнопку, чтобы избежать двойных кликов
                 buttonElement.disabled = true;
 
                 const headers = {};
@@ -127,45 +125,38 @@
                     headers[csrfHeader] = csrfToken;
                 }
 
-                // Отправляем DELETE запрос на ваш CartController (@DeleteMapping("{productId}"))
                 fetch(`/cart/${productId}`, {
                     method: 'DELETE',
                     headers: headers
                 })
                     .then(response => {
-                        // Сервер возвращает 204 No Content
                         if (response.ok) {
-                            // 1. Удаляем строку товара из таблицы
                             const itemRow = document.getElementById(`cart-item-${productId}`);
                             if (itemRow) {
                                 itemRow.remove();
                             }
 
-                            // 2. Обновляем общую стоимость
                             const totalEl = document.getElementById('total-price-value');
                             if (totalEl) {
-                                let currentTotal = parseFloat(totalEl.getAttribute('data-total'));
+                                let currentTotal = parseFloat(totalEl.getAttribute('data-total')) || 0;
                                 let newTotal = currentTotal - subtotal;
 
-                                // Защита от отрицательных значений
                                 if (newTotal < 0) newTotal = 0;
 
                                 totalEl.setAttribute('data-total', newTotal);
-                                totalEl.innerText = newTotal + ' ₽';
+                                totalEl.innerText = newTotal.toFixed(2) + ' ₽';
                             }
 
-                            // 3. Если удалили последний товар, перезагружаем страницу
-                            // чтобы отрендерился блок "Ваша корзина пока пуста"
                             if (document.querySelectorAll('.delete-btn').length === 0) {
                                 window.location.reload();
                             }
                         } else {
-                            throw new Error('Ошибка удаления');
+                            throw new Error('Ошибка сервера');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('Не удалось удалить товар из корзины. Попробуйте позже.');
+                        alert('Не удалось удалить товар из корзины. Попробуйте снова.');
                         buttonElement.disabled = false;
                     });
             });

@@ -9,7 +9,6 @@ import io.cvvexxx.frontend.exception.BadRequestException;
 import lombok.AllArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -22,8 +21,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class RestClientReviewsRestClient implements ReviewsRestClient {
 
-    private final RestClient restClient;
     private static final String DEFAULT_API_URI = "/api/reviews/products";
+    private final RestClient restClient;
 
     @Override
     public ReviewDto createReview(NewReviewDto newReviewDto) {
@@ -68,13 +67,18 @@ public class RestClientReviewsRestClient implements ReviewsRestClient {
 
     @Override
     public ReviewDto updateReview(UpdateReviewDto updateReviewDto) {
-        return restClient
-                .patch()
-                .uri(DEFAULT_API_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(updateReviewDto)
-                .retrieve()
-                .body(ReviewDto.class);
+        try {
+            return restClient
+                    .patch()
+                    .uri(DEFAULT_API_URI)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(updateReviewDto)
+                    .retrieve()
+                    .body(ReviewDto.class);
+        } catch (HttpClientErrorException.BadRequest exception) {
+            ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
+            throw new BadRequestException((List<String>) problemDetail.getProperties().get("errors"));
+        }
     }
 
     @Override

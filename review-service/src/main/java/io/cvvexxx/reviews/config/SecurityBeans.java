@@ -41,7 +41,7 @@ public class SecurityBeans {
                 )
                 .oauth2ResourceServer(oauth2 ->
                         oauth2.jwt(jwtConfigurer ->
-                                        jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                                jwtConfigurer.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .build();
     }
 

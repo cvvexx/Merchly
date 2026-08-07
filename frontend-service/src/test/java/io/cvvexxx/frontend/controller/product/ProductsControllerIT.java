@@ -48,49 +48,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(printOnlyOnFailure = false)
 class ProductsControllerIT {
 
+    private final UUID userId = UUID.randomUUID();
     @Autowired
     private MockMvc mockMvc;
-
     @Mock
     private ProductsPublicRestClient productsPublicRestClient;
-
     @Mock
     private UserInternalRestClient userInternalRestClient;
-
     @Mock
     private ReviewsRestClient reviewsRestClient;
-
     @Mock
     private ImageUrlFormatter imageUrlFormatter;
-
     private KeycloakJwtAuthenticationToken mockToken;
-    private final UUID userId = UUID.randomUUID();
-
-    // Конфигурация, учит Spring резолвить KeycloakJwtAuthenticationToken в аргументах контроллера
-    @TestConfiguration
-    static class TestConfig implements WebMvcConfigurer {
-        @Override
-        public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
-            resolvers.add(new HandlerMethodArgumentResolver() {
-                @Override
-                public boolean supportsParameter(MethodParameter parameter) {
-                    return KeycloakJwtAuthenticationToken.class.isAssignableFrom(parameter.getParameterType());
-                }
-
-                @Override
-                public Object resolveArgument(MethodParameter parameter,
-                                              ModelAndViewContainer mavContainer,
-                                              NativeWebRequest webRequest,
-                                              WebDataBinderFactory binderFactory) {
-                    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-                    if (authentication instanceof KeycloakJwtAuthenticationToken token) {
-                        return token;
-                    }
-                    return null;
-                }
-            });
-        }
-    }
 
     @BeforeEach
     void setUp() {
@@ -168,5 +137,31 @@ class ProductsControllerIT {
                 .andExpect(status().isOk())
                 .andExpect(view().name("catalogue/products/new_product"))
                 .andExpect(model().attributeExists("errors", "payload"));
+    }
+
+    // Конфигурация, учит Spring резолвить KeycloakJwtAuthenticationToken в аргументах контроллера
+    @TestConfiguration
+    static class TestConfig implements WebMvcConfigurer {
+        @Override
+        public void addArgumentResolvers(List<HandlerMethodArgumentResolver> resolvers) {
+            resolvers.add(new HandlerMethodArgumentResolver() {
+                @Override
+                public boolean supportsParameter(MethodParameter parameter) {
+                    return KeycloakJwtAuthenticationToken.class.isAssignableFrom(parameter.getParameterType());
+                }
+
+                @Override
+                public Object resolveArgument(MethodParameter parameter,
+                                              ModelAndViewContainer mavContainer,
+                                              NativeWebRequest webRequest,
+                                              WebDataBinderFactory binderFactory) {
+                    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+                    if (authentication instanceof KeycloakJwtAuthenticationToken token) {
+                        return token;
+                    }
+                    return null;
+                }
+            });
+        }
     }
 }

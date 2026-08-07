@@ -2,6 +2,8 @@ package io.cvvexxx.products.service;
 
 import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.repository.ProductRepository;
+import io.cvvexxx.products.service.minio.DefaultMinioService;
+import io.cvvexxx.products.service.product.DefaultProductService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,7 +33,7 @@ class DefaultProductServiceTest {
     private ProductRepository productRepository;
 
     @Mock
-    private MinioService minioService;
+    private DefaultMinioService defaultMinioService;
 
     @InjectMocks
     private DefaultProductService productService;
@@ -111,7 +113,7 @@ class DefaultProductServiceTest {
         );
         String uploadedFileName = "uuid-avatar.png";
 
-        when(minioService.upload(image)).thenReturn(uploadedFileName);
+        when(defaultMinioService.upload(image)).thenReturn(uploadedFileName);
         when(productRepository.save(any(Product.class))).thenAnswer(invocation ->
                 invocation.getArgument(0));
 
@@ -127,7 +129,7 @@ class DefaultProductServiceTest {
         assertEquals(createdBy, result.getCreatedBy());
         assertEquals(uploadedFileName, result.getImageFileName());
 
-        verify(minioService, times(1)).upload(image);
+        verify(defaultMinioService, times(1)).upload(image);
         verify(productRepository, times(1)).save(productCaptor.capture());
 
         Product savedProduct = productCaptor.getValue();
@@ -154,7 +156,7 @@ class DefaultProductServiceTest {
         assertNotNull(result);
         assertNull(result.getImageFileName());
 
-        verify(minioService, never()).upload(any());
+        verify(defaultMinioService, never()).upload(any());
         verify(productRepository, times(1)).save(any(Product.class));
     }
 
@@ -169,14 +171,14 @@ class DefaultProductServiceTest {
                 "bytes".getBytes()
         );
 
-        when(minioService.upload(image)).thenThrow(new RuntimeException("MinIO error"));
+        when(defaultMinioService.upload(image)).thenThrow(new RuntimeException("MinIO error"));
 
         // when & then
         assertThrows(RuntimeException.class, () ->
                 productService.createProduct("Title", "Desc", BigDecimal.TEN, UUID.randomUUID(), image)
         );
 
-        verify(minioService, times(1)).upload(image);
+        verify(defaultMinioService, times(1)).upload(image);
         verify(productRepository, never()).save(any());
     }
 
@@ -280,7 +282,7 @@ class DefaultProductServiceTest {
         );
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
-        when(minioService.upload(newImageFile)).thenReturn(newImageName);
+        when(defaultMinioService.upload(newImageFile)).thenReturn(newImageName);
 
         // when
         productService.updateProduct(
@@ -298,8 +300,8 @@ class DefaultProductServiceTest {
         assertEquals(newImageName, existingProduct.getImageFileName());
 
         verify(productRepository, times(1)).findById(productId);
-        verify(minioService, times(1)).upload(newImageFile);
-        verify(minioService, times(1)).removeObject(oldImage);
+        verify(defaultMinioService, times(1)).upload(newImageFile);
+        verify(defaultMinioService, times(1)).removeObject(oldImage);
     }
 
     @Test
@@ -332,8 +334,8 @@ class DefaultProductServiceTest {
         assertEquals("Обновленное", existingProduct.getTitle());
         assertEquals(oldImage, existingProduct.getImageFileName()); // Картинка осталась прежней
 
-        verify(minioService, never()).upload(any());
-        verify(minioService, never()).removeObject(anyString());
+        verify(defaultMinioService, never()).upload(any());
+        verify(defaultMinioService, never()).removeObject(anyString());
     }
 
     @Test
@@ -352,15 +354,15 @@ class DefaultProductServiceTest {
         String newImageName = "new-uuid.png";
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
-        when(minioService.upload(newImageFile)).thenReturn(newImageName);
+        when(defaultMinioService.upload(newImageFile)).thenReturn(newImageName);
 
         // when
         productService.updateProduct(productId, "Title", "Desc", BigDecimal.TEN, newImageFile);
 
         // then
         assertEquals(newImageName, existingProduct.getImageFileName());
-        verify(minioService, times(1)).upload(newImageFile);
-        verify(minioService, never()).removeObject(anyString());
+        verify(defaultMinioService, times(1)).upload(newImageFile);
+        verify(defaultMinioService, never()).removeObject(anyString());
     }
 
     @Test
@@ -377,7 +379,7 @@ class DefaultProductServiceTest {
         );
 
         assertEquals("catalogue.errors.product.not_found", exception.getMessage());
-        verify(minioService, never()).upload(any());
+        verify(defaultMinioService, never()).upload(any());
     }
 
     @Test
@@ -394,17 +396,17 @@ class DefaultProductServiceTest {
         MockMultipartFile newImageFile = new MockMultipartFile("image", "new.png", "image/png", "b".getBytes());
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
-        when(minioService.upload(newImageFile)).thenReturn("new-uuid.png");
+        when(defaultMinioService.upload(newImageFile)).thenReturn("new-uuid.png");
 
         // Имитируем падение MinIO при удалении
         doThrow(new RuntimeException("MinIO error"))
-                .when(minioService).removeObject(oldImage);
+                .when(defaultMinioService).removeObject(oldImage);
 
         // when & then — проверяем, что вызов метода не падает
         assertDoesNotThrow(() -> productService.updateProduct(
                 productId, "Title", "Desc", BigDecimal.TEN, newImageFile
         ));
 
-        verify(minioService, times(1)).removeObject(oldImage);
+        verify(defaultMinioService, times(1)).removeObject(oldImage);
     }
 }

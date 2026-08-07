@@ -43,7 +43,6 @@ public class KeycloakRestClient {
         formData.add("refresh_token", refreshToken);
         formData.add("client_secret", clientSecret);
 
-        log.debug("formData: {}", formData);
 
         return restClient
                 .post()

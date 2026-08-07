@@ -11,6 +11,4 @@ public record Product(
         String imageFileName,
         UUID createdBy
 ) {
-
-
 }

@@ -4,6 +4,7 @@ import io.cvvexxx.users.dto.cart.AddToCartDto;
 import io.cvvexxx.users.dto.cart.CartItemDto;
 import io.cvvexxx.users.entity.CartItem;
 import io.cvvexxx.users.repository.CartItemRepository;
+import io.cvvexxx.users.service.cart.DefaultCartService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,16 +24,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class CartServiceTest {
-
-    @Mock
-    private CartItemRepository cartItemRepository;
-
-    @InjectMocks
-    private CartService cartService;
+class DefaultCartServiceTest {
 
     private final UUID USER_ID = UUID.randomUUID();
     private final UUID PRODUCT_ID = UUID.randomUUID();
+    @Mock
+    private CartItemRepository cartItemRepository;
+    @InjectMocks
+    private DefaultCartService defaultCartService;
 
     @Nested
     @DisplayName("Тесты метода addItemToCart")
@@ -55,7 +54,7 @@ class CartServiceTest {
                     .thenReturn(Optional.of(existingCartItem));
 
             // when
-            cartService.addItemToCart(addToCartDto, USER_ID);
+            defaultCartService.addItemToCart(addToCartDto, USER_ID);
 
             // then
             assertEquals(3, existingCartItem.getQuantity());
@@ -83,7 +82,7 @@ class CartServiceTest {
             when(cartItemRepository.save(any(CartItem.class))).thenReturn(savedItem);
 
             // when
-            cartService.addItemToCart(addToCartDto, USER_ID);
+            defaultCartService.addItemToCart(addToCartDto, USER_ID);
 
             // then
             ArgumentCaptor<CartItem> captor = ArgumentCaptor.forClass(CartItem.class);
@@ -126,7 +125,7 @@ class CartServiceTest {
                     .thenReturn(List.of(item1, item2));
 
             // when
-            List<CartItemDto> result = cartService.getCartItems(USER_ID);
+            List<CartItemDto> result = defaultCartService.getCartItems(USER_ID);
 
             // then
             assertNotNull(result);
@@ -149,7 +148,7 @@ class CartServiceTest {
                     .thenReturn(List.of());
 
             // when
-            List<CartItemDto> result = cartService.getCartItems(USER_ID);
+            List<CartItemDto> result = defaultCartService.getCartItems(USER_ID);
 
             // then
             assertNotNull(result);
@@ -178,7 +177,7 @@ class CartServiceTest {
                     .thenReturn(Optional.of(existingItem));
 
             // when
-            cartService.deleterItemFromCart(PRODUCT_ID, USER_ID);
+            defaultCartService.deleterItemFromCart(PRODUCT_ID, USER_ID);
 
             // then
             verify(cartItemRepository, times(1)).findByUserIdAndProductId(USER_ID, PRODUCT_ID);
@@ -195,7 +194,7 @@ class CartServiceTest {
             // when & then
             NoSuchElementException exception = assertThrows(
                     NoSuchElementException.class,
-                    () -> cartService.deleterItemFromCart(PRODUCT_ID, USER_ID)
+                    () -> defaultCartService.deleterItemFromCart(PRODUCT_ID, USER_ID)
             );
 
             assertEquals("errors.404.header", exception.getMessage());

@@ -43,7 +43,6 @@ public class KeycloakTokenRefreshFilter extends OncePerRequestFilter {
         Authentication authentication = context.getAuthentication();
 
         if (authentication instanceof KeycloakJwtAuthenticationToken jwtAuth) {
-            // Проверяем истечение токена (с буфером в 10 секунд)
             if (jwtUtils.isTokenExpired(jwtAuth.getCredentials().toString(), 10)) {
                 log.info("Access token is expired. Refreshing session for user: {}", jwtAuth.getName());
                 try {

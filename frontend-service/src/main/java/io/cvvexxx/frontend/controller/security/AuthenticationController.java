@@ -4,8 +4,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cvvexxx.frontend.client.keycloak.KeycloakRestClient;
 import io.cvvexxx.frontend.client.user.publIc.RestClientUserPublicRestClient;
-import io.cvvexxx.frontend.dto.user.CreatedUserDto;
 import io.cvvexxx.frontend.dto.keycloak.KeycloakTokenResponse;
+import io.cvvexxx.frontend.dto.user.CreatedUserDto;
 import io.cvvexxx.frontend.dto.user.LoginUserDto;
 import io.cvvexxx.frontend.dto.user.NewUserDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
@@ -86,7 +86,6 @@ public class AuthenticationController {
     ) {
         try {
             KeycloakTokenResponse tokenResponse = keycloakClient.login(loginUserDto.login(), loginUserDto.password());
-            log.info("access token {}", tokenResponse.accessToken());
             authenticateUserInSession(
                     loginUserDto.login(),
                     tokenResponse.accessToken(),
@@ -109,7 +108,6 @@ public class AuthenticationController {
     ) {
         log.info("Trying to authenticate user: {}", username);
         List<GrantedAuthority> authorities = extractAuthorities(accessToken);
-        log.info("Authorities: {}", authorities);
         UUID userId = extractUserId(accessToken);
         KeycloakJwtAuthenticationToken authToken = new KeycloakJwtAuthenticationToken(
                 username,
@@ -118,12 +116,9 @@ public class AuthenticationController {
                 refreshToken,
                 authorities
         );
-        log.info("Authentication token: {}", authToken);
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authToken);
         SecurityContextHolder.setContext(context);
-        log.info("Authentication: {}", context.getAuthentication());
-        // Сохраняем SecurityContext в HTTP сессию
         HttpSession session = request.getSession(true);
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
     }
@@ -148,7 +143,6 @@ public class AuthenticationController {
             }
             return authorities;
         } catch (Exception e) {
-            log.error("Failed to parse roles from token", e);
             return Collections.emptyList();
         }
     }
@@ -160,7 +154,6 @@ public class AuthenticationController {
             JsonNode rootNode = objectMapper.readTree(payloadJson);
             return UUID.fromString(rootNode.path("sub").asText());
         } catch (Exception e) {
-            log.error("Failed to parse 'sub' from access token", e);
             return null;
         }
     }

@@ -4,7 +4,7 @@ import io.cvvexxx.reviews.dto.NewReviewDto;
 import io.cvvexxx.reviews.dto.ReviewDto;
 import io.cvvexxx.reviews.dto.ReviewStatsDto;
 import io.cvvexxx.reviews.dto.UpdateReviewDto;
-import io.cvvexxx.reviews.service.ReviewService;
+import io.cvvexxx.reviews.service.DefaultReviewService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +29,7 @@ import java.util.UUID;
 @Slf4j
 public class ProductsReviewController {
 
-    private final ReviewService reviewService;
+    private final DefaultReviewService defaultReviewService;
 
     @PostMapping
     public ResponseEntity<ReviewDto> createReview(
@@ -45,7 +45,7 @@ public class ProductsReviewController {
         } else {
             UUID userId = UUID.fromString(jwt.getClaimAsString("sub"));
 
-            return ResponseEntity.ok(reviewService.createReview(newReviewDto, userId));
+            return ResponseEntity.ok(defaultReviewService.createReview(newReviewDto, userId));
         }
     }
 
@@ -54,7 +54,7 @@ public class ProductsReviewController {
             @PathVariable UUID productId,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(reviewService.getReviewsByProduct(productId, pageable));
+        return ResponseEntity.ok(defaultReviewService.getReviewsByProduct(productId, pageable));
     }
 
     @PatchMapping
@@ -71,7 +71,7 @@ public class ProductsReviewController {
         } else {
             UUID userId = UUID.fromString(jwt.getClaimAsString("sub"));
 
-            return ResponseEntity.ok(reviewService.updateReview(updateReviewDto, userId, hasAdminRole(jwt)));
+            return ResponseEntity.ok(defaultReviewService.updateReview(updateReviewDto, userId, hasAdminRole(jwt)));
         }
     }
 
@@ -82,7 +82,7 @@ public class ProductsReviewController {
     ) {
         UUID userId = UUID.fromString(jwt.getClaimAsString("sub"));
 
-        reviewService.deleteReview(reviewId, userId, hasAdminRole(jwt));
+        defaultReviewService.deleteReview(reviewId, userId, hasAdminRole(jwt));
         return ResponseEntity.noContent().build();
     }
 
@@ -90,14 +90,14 @@ public class ProductsReviewController {
     public ResponseEntity<ReviewStatsDto> getProductStats(
             @PathVariable("productId") UUID productId
     ) {
-        return ResponseEntity.ok(reviewService.getProductStats(productId));
+        return ResponseEntity.ok(defaultReviewService.getProductStats(productId));
     }
 
     @PostMapping("/stats")
     public ResponseEntity<List<ReviewStatsDto>> getProductsStats(
             @RequestBody List<UUID> productIds
     ) {
-        return ResponseEntity.ok(reviewService.getProductsStats(productIds));
+        return ResponseEntity.ok(defaultReviewService.getProductsStats(productIds));
     }
 
 

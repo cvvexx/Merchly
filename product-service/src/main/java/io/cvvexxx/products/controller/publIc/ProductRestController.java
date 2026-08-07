@@ -1,8 +1,8 @@
 package io.cvvexxx.products.controller.publIc;
 
 import io.cvvexxx.products.controller.payload.UpdateProductPayload;
-import io.cvvexxx.products.entity.Product;
-import io.cvvexxx.products.service.ProductService;
+import io.cvvexxx.products.dto.ProductDto;
+import io.cvvexxx.products.service.product.ProductService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,10 +29,7 @@ public class ProductRestController {
     private final MessageSource messageSource;
 
     @GetMapping
-    public Product findProduct(@PathVariable("productId") UUID productId) {
-        // Запрос сразу идет в сервис.
-        // Если в кэше Redis есть данные — сервис отдает их.
-        // Если нет в БД — сервис бросает NoSuchElementException.
+    public ProductDto findProduct(@PathVariable("productId") UUID productId) {
         return productService.findProductById(productId);
     }
 
@@ -40,7 +37,7 @@ public class ProductRestController {
     public ResponseEntity<Void> updateProduct(
             @PathVariable("productId") UUID productId,
             @Valid @RequestPart("payload") UpdateProductPayload payload,
-            @RequestPart(value = "image", required = false ) MultipartFile image,
+            @RequestPart(value = "image", required = false) MultipartFile image,
             BindingResult bindingResult
     ) throws BindException {
         if (bindingResult.hasErrors()) {

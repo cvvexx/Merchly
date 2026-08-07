@@ -1,8 +1,6 @@
 package io.cvvexxx.users.config;
 
 
-//import io.cvvexxx.users.security.DefaultUserDetailsService;
-
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

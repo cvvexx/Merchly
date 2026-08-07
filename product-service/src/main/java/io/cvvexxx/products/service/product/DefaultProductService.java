@@ -1,14 +1,16 @@
-package io.cvvexxx.products.service;
+package io.cvvexxx.products.service.product;
 
+import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.repository.ProductRepository;
+import io.cvvexxx.products.service.minio.DefaultMinioService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -25,51 +27,57 @@ public class DefaultProductService implements ProductService {
     public static final String CACHE_PRODUCTS_LIST_NAME = "productList";
     public static final String CACHE_PRODUCT_NAME = "product";
     private final ProductRepository productRepository;
-    private final MinioService minioService;
+    private final DefaultMinioService defaultMinioService;
 
     @Override
     @Cacheable(value = CACHE_PRODUCTS_LIST_NAME, key = "#filter != null ? #filter : 'ALL'")
     @Transactional
-    public List<Product> findAllProducts(String filter) {
+    public List<ProductDto> findAllProducts(String filter) {
         log.info("findAllProducts filter: {}", filter);
         if (filter != null && !filter.isBlank()) {
             return productRepository.findAllByTitleContainingIgnoreCase(filter);
         } else {
-            return productRepository.findAll().stream().sorted(Comparator.comparing(Product::getCreatedAt)).toList();
+            return productRepository.findAll().stream()
+                    .sorted(Comparator.comparing(Product::getCreatedAt))
+                    .map(this::mapToDto)
+                    .toList();
         }
     }
 
     @Override
     @Cacheable(value = CACHE_PRODUCT_NAME, key = "#productId", unless = "#result == null")
-    public Product findProductById(UUID productId) {
+    public ProductDto findProductById(UUID productId) {
         log.info("Find product by id {}", productId);
-        return productRepository.findById(productId)
+        var product = productRepository.findById(productId)
                 .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
+        return mapToDto(product);
     }
 
     @Override
     @Transactional
     @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
-    public Product createProduct(
+    public ProductDto createProduct(
             String title, String description, BigDecimal price,
             UUID createdBy, MultipartFile image
     ) {
         String imageFileName = null;
         log.info("image {}", image);
         if (image != null && !image.isEmpty()) {
-            imageFileName = minioService.upload(image);
+            imageFileName = defaultMinioService.upload(image);
             log.info("imageFileName: {}", imageFileName);
         }
 
-        return productRepository.save(
-                Product.builder()
-                        .id(UUID.randomUUID())
-                        .title(title)
-                        .description(description)
-                        .price(price)
-                        .createdBy(createdBy)
-                        .imageFileName(imageFileName)
-                        .build()
+        return mapToDto(
+                productRepository.save(
+                        Product.builder()
+                                .id(UUID.randomUUID())
+                                .title(title)
+                                .description(description)
+                                .price(price)
+                                .createdBy(createdBy)
+                                .imageFileName(imageFileName)
+                                .build()
+                )
         );
     }
 
@@ -102,14 +110,14 @@ public class DefaultProductService implements ProductService {
         log.info("New image {}", image);
         log.info("oldImageFileName {}", oldImageFileName);
         if (image != null && !image.isEmpty()) {
-            String newImageFileName = minioService.upload(image);
+            String newImageFileName = defaultMinioService.upload(image);
             log.info("Uploaded new image: {}", newImageFileName);
 
             product.setImageFileName(newImageFileName);
 
             if (oldImageFileName != null && !oldImageFileName.isBlank()) {
                 try {
-                    minioService.removeObject(oldImageFileName);
+                    defaultMinioService.removeObject(oldImageFileName);
                 } catch (Exception e) {
                     log.error("Failed to delete old image {} from MinIO for product {}", oldImageFileName, productId, e);
                 }
@@ -123,7 +131,18 @@ public class DefaultProductService implements ProductService {
     @Override
     @Transactional(readOnly = true)
     @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true, key = "#ids")
-    public List<Product> findAllByIdIn(List<UUID> ids) {
-        return productRepository.findAllById(ids);
+    public List<ProductDto> findAllByIdIn(List<UUID> ids) {
+        return productRepository.findAllById(ids).stream().map(this::mapToDto)
+                .toList();
+    }
+
+    private ProductDto mapToDto(Product product) {
+        return new ProductDto(
+                product.getId(),
+                product.getTitle(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getImageFileName(),
+                product.getCreatedBy());
     }
 }

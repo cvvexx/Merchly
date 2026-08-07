@@ -8,6 +8,6 @@ public record UserProfilePublicDto(
         String username,
         String gender,
         LocalDate birthDate,
-        String userAvatarUrl 
+        String userAvatarUrl
 ) {
 }

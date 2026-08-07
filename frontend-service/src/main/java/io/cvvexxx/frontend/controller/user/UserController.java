@@ -56,7 +56,7 @@ public class UserController {
 
             return "redirect:/profile";
         } catch (BadRequestException exception) {
-            model.addAttribute("userAvatar",  imageUrlFormatter.getUserAvatarUrl(userInfo.userAvatarUrl()));
+            model.addAttribute("userAvatar", imageUrlFormatter.getUserAvatarUrl(userInfo.userAvatarUrl()));
             model.addAttribute("payload", updateUserDto);
             model.addAttribute("errors", exception.getErrors());
             return "user/edit";
