@@ -9,7 +9,6 @@ import io.cvvexxx.frontend.exception.BadRequestException;
 import lombok.AllArgsConstructor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -22,8 +21,8 @@ import java.util.UUID;
 @AllArgsConstructor
 public class RestClientReviewsRestClient implements ReviewsRestClient {
 
-    private final RestClient restClient;
     private static final String DEFAULT_API_URI = "/api/reviews/products";
+    private final RestClient restClient;
 
     @Override
     public ReviewDto createReview(NewReviewDto newReviewDto) {

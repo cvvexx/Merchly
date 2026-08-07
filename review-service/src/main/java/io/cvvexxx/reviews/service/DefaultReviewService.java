@@ -28,8 +28,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DefaultReviewService implements ReviewService {
 
-    private final ReviewRepository reviewRepository;
     private static final String CACHE_PRODUCT_STATS = "productStats";
+    private final ReviewRepository reviewRepository;
 
     @Override
     @Transactional
@@ -80,7 +80,7 @@ public class DefaultReviewService implements ReviewService {
         }
 
         reviewRepository.delete(review);
-        
+
         return review.getProductId();
     }
 

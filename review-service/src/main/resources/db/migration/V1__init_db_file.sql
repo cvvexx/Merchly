@@ -1,7 +1,7 @@
 CREATE TABLE product_reviews
 (
     id         UUID PRIMARY KEY,
-    product_id UUID  NOT NULL,
+    product_id UUID NOT NULL,
     user_id    UUID NOT NULL,
     rating     INT  NOT NULL CHECK (rating >= 1 AND rating <= 5),
     comment    VARCHAR(2000),

@@ -10,8 +10,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class ImageUrlFormatterTest {
 
-    private ImageUrlFormatter imageUrlFormatter;
     private final String MINIO_URL = "http://localhost:9000";
+    private ImageUrlFormatter imageUrlFormatter;
 
     @BeforeEach
     void setUp() {

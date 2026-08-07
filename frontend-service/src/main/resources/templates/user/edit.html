@@ -50,79 +50,79 @@
                 <div class="card-body p-4">
 
                     <!-- Блок отображения ошибок валидации -->
-                    <div th:if="${errors != null}" class="alert alert-danger mb-4">
+                    <div class="alert alert-danger mb-4" th:if="${errors != null}">
                         <ul class="mb-0 ps-3">
                             <li th:each="err : ${errors}" th:text="${err}">Ошибка валидации</li>
                         </ul>
                     </div>
 
-                    <form th:action="@{/profile/edit}" method="post" enctype="multipart/form-data" id="profileForm">
+                    <form enctype="multipart/form-data" id="profileForm" method="post" th:action="@{/profile/edit}">
 
                         <!-- Аватарка -->
                         <div class="text-center mb-4">
                             <div class="avatar-preview-wrapper shadow-sm">
-                                <img id="userAvatar"
-                                     th:src="@{${userAvatar}}"
-                                     alt="Аватар пользователя">
+                                <img alt="Аватар пользователя"
+                                     id="userAvatar"
+                                     th:src="@{${userAvatar}}">
                             </div>
 
-                            <label for="avatarInput" class="form-label text-muted small text-uppercase fw-bold">
+                            <label class="form-label text-muted small text-uppercase fw-bold" for="avatarInput">
                                 Изменить аватар (до 10 МБ)
                             </label>
-                            <input class="form-control"
-                                   type="file"
+                            <input accept="image/*"
+                                   class="form-control"
                                    id="avatarInput"
                                    name="userAvatar"
-                                   accept="image/*"
-                                   onchange="validateAndPreviewAvatar(this)">
+                                   onchange="validateAndPreviewAvatar(this)"
+                                   type="file">
 
-                            <div id="avatarError" class="invalid-feedback d-none">
+                            <div class="invalid-feedback d-none" id="avatarError">
                                 Размер файла не должен превышать 10 МБ!
                             </div>
                         </div>
 
                         <!-- Имя пользователя (Username) -->
                         <div class="mb-3">
-                            <label for="username" class="form-label text-muted small text-uppercase fw-bold">
+                            <label class="form-label text-muted small text-uppercase fw-bold" for="username">
                                 Имя пользователя (логин)
                             </label>
-                            <input type="text"
-                                   class="form-control"
+                            <input class="form-control"
                                    id="username"
                                    name="username"
+                                   required
                                    th:value="${payload != null ? payload.username : user.username}"
-                                   required>
+                                   type="text">
                         </div>
 
                         <!-- Email -->
                         <div class="mb-3">
-                            <label for="email" class="form-label text-muted small text-uppercase fw-bold">
+                            <label class="form-label text-muted small text-uppercase fw-bold" for="email">
                                 Email адрес
                             </label>
-                            <input type="email"
-                                   class="form-control"
+                            <input class="form-control"
                                    id="email"
                                    name="email"
+                                   required
                                    th:value="${payload != null ? payload.email : user.email}"
-                                   required>
+                                   type="email">
                         </div>
 
                         <!-- Пол -->
                         <div class="mb-3">
-                            <label for="gender" class="form-label text-muted small text-uppercase fw-bold">
+                            <label class="form-label text-muted small text-uppercase fw-bold" for="gender">
                                 Пол
                             </label>
                             <select class="form-select" id="gender" name="gender">
-                                <option value=""
-                                        th:selected="${payload != null ? payload.gender == null : user.gender == null}">
+                                <option th:selected="${payload != null ? payload.gender == null : user.gender == null}"
+                                        value="">
                                     Не указан
                                 </option>
-                                <option value="M"
-                                        th:selected="${payload != null ? payload.gender == 'M' : user.gender == 'M'}">
+                                <option th:selected="${payload != null ? payload.gender == 'M' : user.gender == 'M'}"
+                                        value="M">
                                     Мужчина
                                 </option>
-                                <option value="F"
-                                        th:selected="${payload != null ? payload.gender == 'F' : user.gender == 'F'}">
+                                <option th:selected="${payload != null ? payload.gender == 'F' : user.gender == 'F'}"
+                                        value="F">
                                     Женщина
                                 </option>
                             </select>
@@ -130,20 +130,20 @@
 
                         <!-- Дата рождения -->
                         <div class="mb-4">
-                            <label for="birthDate" class="form-label text-muted small text-uppercase fw-bold">
+                            <label class="form-label text-muted small text-uppercase fw-bold" for="birthDate">
                                 Дата рождения
                             </label>
-                            <input type="date"
-                                   class="form-control"
+                            <input class="form-control"
                                    id="birthDate"
                                    name="birthDate"
-                                   th:value="${payload != null ? payload.birthDate : user.birthDate}">
+                                   th:value="${payload != null ? payload.birthDate : user.birthDate}"
+                                   type="date">
                         </div>
 
                         <!-- Кнопки -->
                         <div class="d-flex justify-content-between align-items-center pt-3 border-top">
                             <a class="btn btn-outline-secondary" th:href="@{/profile}">Отмена</a>
-                            <button type="submit" class="btn btn-success px-4" id="submitBtn">
+                            <button class="btn btn-success px-4" id="submitBtn" type="submit">
                                 Сохранить изменения
                             </button>
                         </div>

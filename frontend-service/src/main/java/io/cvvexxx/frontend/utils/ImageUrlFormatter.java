@@ -6,11 +6,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class ImageUrlFormatter {
 
-    @Value("${minio.url}")
-    public String MINIO_URL;
-
     private final static String PRODUCT_DEFAULT_IMAGE = "/images/default-product-image.png";
     private final static String USER_DEFAULT_AVATAR = "/images/default-user-avatar.png";
+    @Value("${minio.url}")
+    public String MINIO_URL;
 
     public String getProductImageUrl(String imageFileName) {
         if (imageFileName == null || imageFileName.isBlank()) {

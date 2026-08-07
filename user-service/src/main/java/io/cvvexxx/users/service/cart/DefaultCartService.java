@@ -27,7 +27,7 @@ public class DefaultCartService implements CartService {
 
         Optional<CartItem> byUserIdAndProductId =
                 cartItemRepository.findByUserIdAndProductId(currentUserId, addToCartDto.productId());
-        log.info("finding product by userId {} and productId {}", currentUserId,  addToCartDto.productId());
+        log.info("finding product by userId {} and productId {}", currentUserId, addToCartDto.productId());
         byUserIdAndProductId
                 .ifPresentOrElse(
                         cartItem -> {
@@ -44,7 +44,7 @@ public class DefaultCartService implements CartService {
                                             .build());
                             log.info("Saved cart item {}", saved);
                         }
-                        );
+                );
     }
 
     @Override

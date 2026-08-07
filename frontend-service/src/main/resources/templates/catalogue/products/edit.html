@@ -40,7 +40,8 @@
                         </ul>
                     </div>
 
-                    <form method="post" th:action="@{/catalogue/products/{productId}/edit(productId=${product.id})}" enctype="multipart/form-data">
+                    <form enctype="multipart/form-data" method="post"
+                          th:action="@{/catalogue/products/{productId}/edit(productId=${product.id})}">
                         <div class="mb-3">
                             <label class="form-label fw-bold">Название товара</label>
                             <input class="form-control" name="title"
@@ -67,14 +68,14 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="image" class="form-label fw-bold">Новое изображение товара</label>
-                            <input class="form-control"
-                                   type="file"
+                            <label class="form-label fw-bold" for="image">Новое изображение товара</label>
+                            <input accept="image/png, image/jpeg, image/webp"
+                                   class="form-control"
                                    id="image"
                                    name="image"
-                                   accept="image/png, image/jpeg, image/webp"
-                                   onchange="validateFileSize(this)">
-                            <div id="fileSizeError" class="text-danger small mt-1 d-none">
+                                   onchange="validateFileSize(this)"
+                                   type="file">
+                            <div class="text-danger small mt-1 d-none" id="fileSizeError">
                                 Размер файла не должен превышать 10 МБ.
                             </div>
                         </div>

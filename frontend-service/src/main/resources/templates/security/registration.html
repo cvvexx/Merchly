@@ -19,77 +19,89 @@
                 <h3 class="card-title text-center mb-4 fw-bold">Регистрация</h3>
 
                 <!-- Блок отображения ошибок валидации -->
-                <div th:if="${errors != null}" class="alert alert-danger mb-4">
+                <div class="alert alert-danger mb-4" th:if="${errors != null}">
                     <ul class="mb-0 ps-3">
                         <li th:each="err : ${errors}" th:text="${err}">Ошибка валидации</li>
                     </ul>
                 </div>
 
-                <form id="registrationForm" method="post" enctype="multipart/form-data" th:action="@{/do-register}">
+                <form enctype="multipart/form-data" id="registrationForm" method="post" th:action="@{/do-register}">
                     <input th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden"/>
                     <input name="target" th:value="${target}" type="hidden"/>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Имя</label>
-                        <input class="form-control form-control-lg fs-6" name="firstName" placeholder="Иван" required type="text"
-                               th:value="${payload != null ? payload.firstName : ''}"/>
+                        <input class="form-control form-control-lg fs-6" name="firstName" placeholder="Иван" required
+                               th:value="${payload != null ? payload.firstName : ''}"
+                               type="text"/>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Фамилия</label>
-                        <input class="form-control form-control-lg fs-6" name="lastName" placeholder="Иванов" required type="text"
-                               th:value="${payload != null ? payload.lastName : ''}"/>
+                        <input class="form-control form-control-lg fs-6" name="lastName" placeholder="Иванов" required
+                               th:value="${payload != null ? payload.lastName : ''}"
+                               type="text"/>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Имя пользователя (логин)</label>
-                        <input class="form-control form-control-lg fs-6" name="username" placeholder="ivan_merch" required type="text"
-                               th:value="${payload != null ? payload.username : ''}"/>
+                        <label class="form-label small fw-bold text-muted text-uppercase">Имя пользователя
+                            (логин)</label>
+                        <input class="form-control form-control-lg fs-6" name="username" placeholder="ivan_merch"
+                               required th:value="${payload != null ? payload.username : ''}"
+                               type="text"/>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Email</label>
-                        <input class="form-control form-control-lg fs-6" name="email" placeholder="example@mail.com" required type="email"
-                               th:value="${payload != null ? payload.email : ''}"/>
+                        <input class="form-control form-control-lg fs-6" name="email" placeholder="example@mail.com"
+                               required th:value="${payload != null ? payload.email : ''}"
+                               type="email"/>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Загрузить аватар</label>
-                        <input class="form-control form-control-lg fs-6" name="userAvatar" type="file" accept="image/*"/>
+                        <input accept="image/*" class="form-control form-control-lg fs-6" name="userAvatar"
+                               type="file"/>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-muted text-uppercase">Пол</label>
                             <select class="form-select form-select-lg fs-6" name="gender" required>
-                                <option value="M" th:selected="${payload != null and payload.gender == 'M'}">Мужчина</option>
-                                <option value="F" th:selected="${payload != null and payload.gender == 'F'}">Женщина</option>
+                                <option th:selected="${payload != null and payload.gender == 'M'}" value="M">Мужчина
+                                </option>
+                                <option th:selected="${payload != null and payload.gender == 'F'}" value="F">Женщина
+                                </option>
                             </select>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-muted text-uppercase">Дата рождения</label>
-                            <input class="form-control form-control-lg fs-6" name="birthDate" required type="date"
-                                   th:value="${payload != null ? payload.birthDate : ''}"/>
+                            <input class="form-control form-control-lg fs-6" name="birthDate" required th:value="${payload != null ? payload.birthDate : ''}"
+                                   type="date"/>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Придумайте пароль</label>
-                        <input class="form-control form-control-lg fs-6" id="password" name="password" placeholder="Минимум 8 символов" required type="password"/>
+                        <input class="form-control form-control-lg fs-6" id="password" name="password"
+                               placeholder="Минимум 8 символов" required type="password"/>
                     </div>
 
                     <div class="mb-4">
                         <label class="form-label small fw-bold text-muted text-uppercase">Повторите пароль</label>
-                        <input class="form-control form-control-lg fs-6" id="confirmPassword" placeholder="Повторите придуманный пароль" required type="password"/>
+                        <input class="form-control form-control-lg fs-6" id="confirmPassword"
+                               placeholder="Повторите придуманный пароль" required type="password"/>
                         <div class="invalid-feedback" id="passwordMismatch">Пароли не совпадают!</div>
                     </div>
 
-                    <button class="btn btn-success btn-lg w-100 shadow-sm mb-3" type="submit">Зарегистрироваться</button>
+                    <button class="btn btn-success btn-lg w-100 shadow-sm mb-3" type="submit">Зарегистрироваться
+                    </button>
                 </form>
 
                 <div class="text-center mt-3">
                     <span class="text-muted small">Уже есть аккаунт?</span>
-                    <a class="text-decoration-none small fw-bold text-success" th:href="@{/login(target=${target})}">Войти в систему</a>
+                    <a class="text-decoration-none small fw-bold text-success" th:href="@{/login(target=${target})}">Войти
+                        в систему</a>
                 </div>
             </div>
         </div>

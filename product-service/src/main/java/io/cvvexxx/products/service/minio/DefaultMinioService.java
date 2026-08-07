@@ -13,7 +13,7 @@ import java.util.UUID;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class DefaultMinioService implements  MinioService {
+public class DefaultMinioService implements MinioService {
 
     private final MinioClient minioClient;
 

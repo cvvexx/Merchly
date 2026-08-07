@@ -34,7 +34,7 @@ public class ProductsRestController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createProduct(
             @Valid @RequestPart("payload") NewProductPayload payload,
-            @RequestPart(value = "image", required = false ) MultipartFile image,
+            @RequestPart(value = "image", required = false) MultipartFile image,
             UriComponentsBuilder uriComponentsBuilder,
             BindingResult bindingResult
     ) throws BindException {

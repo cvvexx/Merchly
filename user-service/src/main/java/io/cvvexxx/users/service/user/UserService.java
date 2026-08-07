@@ -21,5 +21,4 @@ public interface UserService {
     UserProfilePublicDto getPublicUserProfile(String username);
 
 
-
 }

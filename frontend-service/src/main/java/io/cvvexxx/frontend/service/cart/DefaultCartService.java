@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class DefaultCartService implements  CartService {
+public class DefaultCartService implements CartService {
 
     private final UserPublicRestClient userPublicRestClient;
     private final ProductsInternalRestClient productsInternalRestClient;

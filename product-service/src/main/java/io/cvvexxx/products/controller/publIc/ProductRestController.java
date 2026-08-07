@@ -37,7 +37,7 @@ public class ProductRestController {
     public ResponseEntity<Void> updateProduct(
             @PathVariable("productId") UUID productId,
             @Valid @RequestPart("payload") UpdateProductPayload payload,
-            @RequestPart(value = "image", required = false ) MultipartFile image,
+            @RequestPart(value = "image", required = false) MultipartFile image,
             BindingResult bindingResult
     ) throws BindException {
         if (bindingResult.hasErrors()) {

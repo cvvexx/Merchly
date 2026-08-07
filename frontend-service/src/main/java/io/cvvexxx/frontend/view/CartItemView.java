@@ -1,6 +1,7 @@
 package io.cvvexxx.frontend.view;
 
 import io.cvvexxx.frontend.dto.product.Product;
+
 import java.math.BigDecimal;
 
 public record CartItemView(

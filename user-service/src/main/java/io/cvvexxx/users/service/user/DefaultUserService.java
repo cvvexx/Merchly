@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class DefaultUserService implements  UserService {
+public class DefaultUserService implements UserService {
 
     private final Keycloak keycloak;
     private final UserRepository userRepository;

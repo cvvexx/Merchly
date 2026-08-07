@@ -37,6 +37,9 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class DefaultUserServiceTest {
 
+    private final String REALM = "test-realm";
+    private final UUID USER_ID = UUID.randomUUID();
+    private final String KEYCLOAK_ID = UUID.randomUUID().toString();
     @Mock
     private Keycloak keycloak;
     @Mock
@@ -45,7 +48,6 @@ class DefaultUserServiceTest {
     private RoleRepository roleRepository;
     @Mock
     private DefaultMinioService defaultMinioService;
-
     @Mock
     private RealmResource realmResource;
     @Mock
@@ -56,13 +58,8 @@ class DefaultUserServiceTest {
     private Response keycloakResponse;
     @Mock
     private MultipartFile avatarFile;
-
     @InjectMocks
     private DefaultUserService defaultUserService;
-
-    private final String REALM = "test-realm";
-    private final UUID USER_ID = UUID.randomUUID();
-    private final String KEYCLOAK_ID = UUID.randomUUID().toString();
 
     @BeforeEach
     void setUp() {

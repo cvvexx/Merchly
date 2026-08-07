@@ -29,7 +29,7 @@ public class CartController {
         log.info("Request received to render cart page");
         log.info("jwt {}", jwt);
         UUID currentUserId = UUID.fromString(jwt.getClaimAsString("sub"));
-        log.info("getting cart items from user {}",  currentUserId);
+        log.info("getting cart items from user {}", currentUserId);
         List<CartItemDto> items = cartService.getCartItems(currentUserId);
 
         return ResponseEntity.ok(items);

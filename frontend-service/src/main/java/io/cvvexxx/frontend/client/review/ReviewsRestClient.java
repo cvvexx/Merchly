@@ -18,7 +18,7 @@ public interface ReviewsRestClient {
 
     ReviewDto updateReview(UpdateReviewDto updateReviewDto);
 
-    void  deleteReview(UUID id);
+    void deleteReview(UUID id);
 
     ReviewStatsDto getProductReviewStats(UUID id);
 

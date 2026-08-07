@@ -26,14 +26,12 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class DefaultCartServiceTest {
 
-    @Mock
-    private CartItemRepository cartItemRepository;
-
-    @InjectMocks
-    private DefaultCartService defaultCartService;
-
     private final UUID USER_ID = UUID.randomUUID();
     private final UUID PRODUCT_ID = UUID.randomUUID();
+    @Mock
+    private CartItemRepository cartItemRepository;
+    @InjectMocks
+    private DefaultCartService defaultCartService;
 
     @Nested
     @DisplayName("Тесты метода addItemToCart")
