@@ -118,12 +118,9 @@ public class AuthenticationController {
                 refreshToken,
                 authorities
         );
-        log.info("Authentication token: {}", authToken);
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authToken);
         SecurityContextHolder.setContext(context);
-        log.info("Authentication: {}", context.getAuthentication());
-        // Сохраняем SecurityContext в HTTP сессию
         HttpSession session = request.getSession(true);
         session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
     }

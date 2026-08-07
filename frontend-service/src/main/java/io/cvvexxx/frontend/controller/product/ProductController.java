@@ -1,35 +1,27 @@
 package io.cvvexxx.frontend.controller.product;
 
 import io.cvvexxx.frontend.client.product.publIc.ProductsPublicRestClient;
-import io.cvvexxx.frontend.client.review.ReviewsRestClient;
-import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
-import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
 import io.cvvexxx.frontend.controller.product.payload.UpdateProductPayload;
 import io.cvvexxx.frontend.dto.product.Product;
-import io.cvvexxx.frontend.dto.product.ProductOwnerDto;
-import io.cvvexxx.frontend.dto.review.ReviewDto;
-import io.cvvexxx.frontend.dto.review.ReviewStatsDto;
-import io.cvvexxx.frontend.dto.review.UserReviewDto;
+import io.cvvexxx.frontend.dto.product.ProductPageData;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
-import io.cvvexxx.frontend.utils.ImageUrlFormatter;
-import io.cvvexxx.frontend.view.ProductDetailsViewModel;
+import io.cvvexxx.frontend.service.ProductService;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Locale;
+import java.util.NoSuchElementException;
+import java.util.UUID;
 
 @Controller
 @RequestMapping("catalogue/products/{productId}")
@@ -38,11 +30,8 @@ import java.util.stream.Collectors;
 public class ProductController {
 
     private final ProductsPublicRestClient productsPublicRestClient;
-    private final UserInternalRestClient userInternalRestClient;
-    private final UserPublicRestClient userPublicRestClient;
-    private final ReviewsRestClient reviewsRestClient;
     private final MessageSource messageSource;
-    private final ImageUrlFormatter imageUrlFormatter;
+    private final ProductService productService;
 
     @ModelAttribute("product")
     public Product product(@PathVariable("productId") UUID productId) {
@@ -57,60 +46,15 @@ public class ProductController {
             Model model,
             KeycloakJwtAuthenticationToken token
     ) {
-        ProductOwnerDto user = userInternalRestClient.findUserById(product.createdBy());
-
-        Page<ReviewDto> reviews = reviewsRestClient.getReviews(product.id(), pageable);
-
-        List<UUID> reviewerIds = reviews.getContent().stream()
-                .map(ReviewDto::userId)
-                .filter(Objects::nonNull)
-                .distinct()
-                .toList();
-
-        Map<UUID, String> usernamesMap;
-
-        if (!reviewerIds.isEmpty()) {
-            usernamesMap = userInternalRestClient.findAllUsersByIds(reviewerIds).stream()
-                    .collect(Collectors.toMap(
-                            ProductOwnerDto::id,
-                            ProductOwnerDto::username
-                    ));
-        } else {
-            usernamesMap = Map.of();
-        }
-
-        Page<UserReviewDto> reviewsPage = reviews.map(reviewDto -> new UserReviewDto(
-                reviewDto.reviewId(),
-                reviewDto.productId(),
-                reviewDto.userId(),
-                usernamesMap.get(reviewDto.userId()),
-                reviewDto.rating(),
-                reviewDto.comment()
-        ));
-        log.info("reviewsPage {}", reviewsPage);
-
-        ReviewStatsDto stats = reviewsRestClient.getProductReviewStats(product.id());
-
-        long totalReviews = (stats != null) ? stats.totalReviews() : 0L;
-        double avgRating = (stats != null) ? stats.averageRating() : 0.0;
-
-        ProductDetailsViewModel viewModel = new ProductDetailsViewModel(
+        ProductPageData productPageData = productService.getProductPage(
                 product,
-                user,
-                imageUrlFormatter.getProductImageUrl(product.imageFileName()),
-                imageUrlFormatter.getUserAvatarUrl(user.avatarFileName()),
-                reviewsPage,
-                totalReviews,
-                avgRating
+                pageable,
+                token
         );
 
-        boolean isAdmin = token.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        String authUsername = token.getName();
-
-        model.addAttribute("isAdmin", isAdmin);
-        model.addAttribute("authUsername", authUsername);
-        model.addAttribute("data", viewModel);
+        model.addAttribute("isAdmin", productPageData.isAdmin());
+        model.addAttribute("authUsername", productPageData.authUsername());
+        model.addAttribute("data", productPageData.viewModel());
 
         return "catalogue/products/product";
     }

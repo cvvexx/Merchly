@@ -6,6 +6,7 @@ import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
 import io.cvvexxx.frontend.dto.product.AddToCartDto;
 import io.cvvexxx.frontend.dto.product.CartItemDto;
 import io.cvvexxx.frontend.dto.product.Product;
+import io.cvvexxx.frontend.service.CartService;
 import io.cvvexxx.frontend.utils.ImageUrlFormatter;
 import io.cvvexxx.frontend.view.CartItemView;
 import lombok.RequiredArgsConstructor;
@@ -30,45 +31,13 @@ import java.util.stream.Collectors;
 public class CartController {
 
     private final UserPublicRestClient userPublicRestClient;
-    private final ProductsInternalRestClient productsInternalRestClient;
-    private final ImageUrlFormatter imageUrlFormatter;
+    private final CartService cartService;
 
     @GetMapping
     public String getCartPage(Model model) {
-
-        List<CartItemDto> cartItems = userPublicRestClient.getCartItems();
-
-        if (cartItems.isEmpty()) {
-            model.addAttribute("items", List.of());
-            model.addAttribute("totalPrice", BigDecimal.ZERO);
-            return "cart/cart";
-        }
-
-        List<UUID> productIds = cartItems.stream()
-                .map(CartItemDto::productId)
-                .toList();
-
-        List<Product> products = productsInternalRestClient.findAllProductsByIds(productIds);
-
-        Map<UUID, Product> productMap = products.stream()
-                .collect(Collectors.toMap(Product::id, Function.identity()));
-
-        List<CartItemView> viewItems = new ArrayList<>();
-        BigDecimal totalCartPrice = BigDecimal.ZERO;
-
-        for (CartItemDto cartItem : cartItems) {
-            Product product = productMap.get(cartItem.productId());
-
-            if (product != null) {
-                CartItemView view = new CartItemView(
-                        product, cartItem.quantity(), imageUrlFormatter.getProductImageUrl(product.imageFileName())
-                );
-                viewItems.add(view);
-                totalCartPrice = totalCartPrice.add(view.subtotal());
-            } else {
-                log.warn("Product with ID {} was found in user cart, but not returned by product service", cartItem.productId());
-            }
-        }
+        var cartPageData = cartService.getCartPage();
+        List<CartItemView> viewItems = cartPageData.viewItems();
+        BigDecimal totalCartPrice = cartPageData.totalCartPrice();
 
         log.info("Rendering cart page with {} items, total price: {}", viewItems.size(), totalCartPrice);
         model.addAttribute("items", viewItems);
