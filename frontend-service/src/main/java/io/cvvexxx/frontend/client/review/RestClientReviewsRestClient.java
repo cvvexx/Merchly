@@ -67,13 +67,18 @@ public class RestClientReviewsRestClient implements ReviewsRestClient {
 
     @Override
     public ReviewDto updateReview(UpdateReviewDto updateReviewDto) {
-        return restClient
-                .patch()
-                .uri(DEFAULT_API_URI)
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(updateReviewDto)
-                .retrieve()
-                .body(ReviewDto.class);
+        try {
+            return restClient
+                    .patch()
+                    .uri(DEFAULT_API_URI)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(updateReviewDto)
+                    .retrieve()
+                    .body(ReviewDto.class);
+        } catch (HttpClientErrorException.BadRequest exception) {
+            ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
+            throw new BadRequestException((List<String>) problemDetail.getProperties().get("errors"));
+        }
     }
 
     @Override

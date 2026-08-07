@@ -136,7 +136,8 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label" for="comment">Ваш комментарий</label>
-                            <textarea class="form-control" id="comment" name="comment" placeholder="Напишите, что вы думаете об этом товаре..." required
+                            <textarea class="form-control" id="comment" name="comment"
+                                      placeholder="Напишите, что вы думаете об этом товаре..." required
                                       rows="3"></textarea>
                         </div>
                         <button class="btn btn-primary" type="submit">Отправить отзыв</button>
@@ -174,7 +175,8 @@
                             </button>
 
                             <form class="m-0"
-                                  onsubmit="return confirm('Удалить отзыв?');" th:action="@{/catalogue/reviews/{productId}/{reviewId}(productId=${data.product.id}, reviewId=${review.reviewId})}"
+                                  onsubmit="return confirm('Удалить отзыв?');"
+                                  th:action="@{/catalogue/reviews/{productId}/{reviewId}(productId=${data.product.id}, reviewId=${review.reviewId})}"
                                   th:method="delete">
                                 <button class="btn btn-sm btn-outline-danger" type="submit">
                                     <i class="bi bi-trash"></i>
@@ -196,14 +198,17 @@
                                 <button aria-label="Закрыть" class="btn-close" data-bs-dismiss="modal"
                                         type="button"></button>
                             </div>
-                            <!-- Форма обновления отзыва (используем th:method="patch") -->
-                            <form th:action="@{/catalogue/reviews/edit}" th:method="patch">
-                                <div class="modal-body">
-                                    <input name="productId" th:value="${data.product.id}" type="hidden">
 
-                                    <!-- ВАЖНО: имя поля должно совпадать с названием поля ID отзыва в UpdateReviewDto (id или reviewId) -->
+                            <form th:action="@{/catalogue/reviews/{productId}/edit(productId=${data.product.id})}"
+                                  th:method="patch">
+                                <div class="modal-body">
+                                    <div class="alert alert-danger" th:if="${errors}">
+                                        <ul class="mb-0">
+                                            <li th:each="error : ${errors}" th:text="${error}">Ошибка валидации</li>
+                                        </ul>
+                                    </div>
+
                                     <input name="reviewId" th:value="${review.reviewId}" type="hidden">
-                                    <input name="id" th:value="${review.reviewId}" type="hidden">
 
                                     <div class="mb-3">
                                         <label class="form-label">Оценка</label>
@@ -230,9 +235,8 @@
                         </div>
                     </div>
                 </div>
-                <!-- Конец модального окна -->
-            </div>
 
+            </div>
         </div>
     </div>
 </div>
