@@ -13,7 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
@@ -21,6 +23,8 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.web.bind.support.WebDataBinderFactory;
 import org.springframework.web.context.request.NativeWebRequest;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
@@ -35,13 +39,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ProductsController.class)
+@SpringBootTest
+@AutoConfigureMockMvc(printOnlyOnFailure = false)
 class ProductsControllerIT {
 
     @Autowired
@@ -108,11 +112,16 @@ class ProductsControllerIT {
         when(reviewsRestClient.getProductsReviewStats(List.of(productId))).thenReturn(List.of(stats));
         when(imageUrlFormatter.getProductImageUrl(any())).thenReturn("/formatted-image.png");
 
-        mockMvc.perform(get("http://localhost:8080/catalogue/products/list")
-                        .with(authentication(mockToken)))
-                .andExpect(status().isOk())
-                .andExpect(view().name("catalogue/products/list"))
-                .andExpect(model().attributeExists("products"));
+        MockHttpServletRequestBuilder requestBuilder = MockMvcRequestBuilders.post("/catalogue/products/create")
+                .with(authentication(mockToken));
+
+        mockMvc.perform(requestBuilder)
+                //then
+                .andExpectAll(
+                        status().isOk(),
+                        view().name("/catalogue/products/list"),
+                        model().attributeExists("products")
+                );
     }
 
     @Test
