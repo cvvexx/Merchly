@@ -1,5 +1,6 @@
 package io.cvvexxx.products.service;
 
+import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -9,15 +10,15 @@ import java.util.UUID;
 
 public interface ProductService {
 
-    List<Product> findAllProducts(String filter);
+    List<ProductDto> findAllProducts(String filter);
 
-    Product findProductById(UUID productId);
+    ProductDto findProductById(UUID productId);
 
-    Product createProduct(String title, String description, BigDecimal price, UUID createdBy, MultipartFile imageFileName);
+    ProductDto createProduct(String title, String description, BigDecimal price, UUID createdBy, MultipartFile imageFileName);
 
     void deleteProduct(UUID productId);
 
     void updateProduct(UUID productId, String title, String description, BigDecimal price, MultipartFile imageFileName);
 
-    List<Product> findAllByIdIn(List<UUID> ids);
+    List<ProductDto> findAllByIdIn(List<UUID> ids);
 }

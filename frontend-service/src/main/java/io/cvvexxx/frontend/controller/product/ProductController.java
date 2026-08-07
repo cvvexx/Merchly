@@ -97,8 +97,8 @@ public class ProductController {
         ProductDetailsViewModel viewModel = new ProductDetailsViewModel(
                 product,
                 user,
-                getImageUrl(product),
-                getUserAvatarUrl(user),
+                imageUrlFormatter.getProductImageUrl(product.imageFileName()),
+                imageUrlFormatter.getUserAvatarUrl(user.avatarFileName()),
                 reviewsPage,
                 totalReviews,
                 avgRating
@@ -167,18 +167,5 @@ public class ProductController {
     @RequestMapping("error-403")
     public String accessDenied() {
         return "error/403";
-    }
-
-    private String getImageUrl(Product product) {
-        return (product != null && product.imageFileName() != null && !product.imageFileName().isBlank())
-                ? imageUrlFormatter.getProductImageUrl(product.imageFileName())
-                : "/images/default-product-image.png";
-    }
-
-    private String getUserAvatarUrl(ProductOwnerDto creator) {
-        if (creator == null || creator.avatarFileName() == null || creator.avatarFileName().isBlank()) {
-            return "/images/default-user-avatar.png";
-        }
-        return imageUrlFormatter.getUserAvatarUrl(creator.avatarFileName());
     }
 }

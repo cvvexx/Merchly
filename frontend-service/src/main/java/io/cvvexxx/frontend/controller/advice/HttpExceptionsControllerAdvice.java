@@ -25,6 +25,6 @@ public class HttpExceptionsControllerAdvice {
     @ExceptionHandler(HttpServerErrorException.InternalServerError.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public String handleInternalServerError() {
-        return "error/500.html";
+        return "error/500";
     }
 }

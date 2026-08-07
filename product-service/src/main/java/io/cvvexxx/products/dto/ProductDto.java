@@ -1,9 +1,9 @@
-package io.cvvexxx.frontend.dto.product;
+package io.cvvexxx.products.dto;
 
 import java.math.BigDecimal;
 import java.util.UUID;
 
-public record Product(
+public record ProductDto(
         UUID id,
         String title,
         String description,

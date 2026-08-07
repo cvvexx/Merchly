@@ -1,6 +1,7 @@
 package io.cvvexxx.products.controller.publIc;
 
 import io.cvvexxx.products.controller.payload.UpdateProductPayload;
+import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.service.ProductService;
 import jakarta.validation.Valid;
@@ -29,10 +30,7 @@ public class ProductRestController {
     private final MessageSource messageSource;
 
     @GetMapping
-    public Product findProduct(@PathVariable("productId") UUID productId) {
-        // Запрос сразу идет в сервис.
-        // Если в кэше Redis есть данные — сервис отдает их.
-        // Если нет в БД — сервис бросает NoSuchElementException.
+    public ProductDto findProduct(@PathVariable("productId") UUID productId) {
         return productService.findProductById(productId);
     }
 

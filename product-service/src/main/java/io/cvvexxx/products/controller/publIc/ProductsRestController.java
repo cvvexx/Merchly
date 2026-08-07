@@ -2,6 +2,7 @@ package io.cvvexxx.products.controller.publIc;
 
 
 import io.cvvexxx.products.controller.payload.NewProductPayload;
+import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.service.ProductService;
 import jakarta.validation.Valid;
@@ -25,7 +26,7 @@ public class ProductsRestController {
     private final ProductService productService;
 
     @GetMapping
-    public ResponseEntity<List<Product>> getAllProducts(
+    public ResponseEntity<List<ProductDto>> getAllProducts(
             @RequestParam(value = "filter", required = false) String filter
     ) {
         return ResponseEntity.ok(productService.findAllProducts(filter));
@@ -45,7 +46,7 @@ public class ProductsRestController {
             }
             throw new BindException(bindingResult);
         } else {
-            Product createdProduct = this.productService.createProduct(
+            ProductDto createdProduct = this.productService.createProduct(
                     payload.title(),
                     payload.description(),
                     payload.price(),
@@ -56,7 +57,7 @@ public class ProductsRestController {
             return ResponseEntity.created(
                             uriComponentsBuilder
                                     .replacePath("/api/products/{productId}")
-                                    .build(Map.of("productId", createdProduct.getId()))
+                                    .build(Map.of("productId", createdProduct.id()))
                     )
                     .body(createdProduct);
         }

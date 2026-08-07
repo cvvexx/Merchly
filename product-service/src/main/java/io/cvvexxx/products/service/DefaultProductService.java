@@ -1,14 +1,15 @@
 package io.cvvexxx.products.service;
 
+import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -30,27 +31,31 @@ public class DefaultProductService implements ProductService {
     @Override
     @Cacheable(value = CACHE_PRODUCTS_LIST_NAME, key = "#filter != null ? #filter : 'ALL'")
     @Transactional
-    public List<Product> findAllProducts(String filter) {
+    public List<ProductDto> findAllProducts(String filter) {
         log.info("findAllProducts filter: {}", filter);
         if (filter != null && !filter.isBlank()) {
             return productRepository.findAllByTitleContainingIgnoreCase(filter);
         } else {
-            return productRepository.findAll().stream().sorted(Comparator.comparing(Product::getCreatedAt)).toList();
+            return productRepository.findAll().stream()
+                    .sorted(Comparator.comparing(Product::getCreatedAt))
+                    .map(this::mapToDto)
+                    .toList();
         }
     }
 
     @Override
     @Cacheable(value = CACHE_PRODUCT_NAME, key = "#productId", unless = "#result == null")
-    public Product findProductById(UUID productId) {
+    public ProductDto findProductById(UUID productId) {
         log.info("Find product by id {}", productId);
-        return productRepository.findById(productId)
+        var product = productRepository.findById(productId)
                 .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
+        return mapToDto(product);
     }
 
     @Override
     @Transactional
     @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
-    public Product createProduct(
+    public ProductDto createProduct(
             String title, String description, BigDecimal price,
             UUID createdBy, MultipartFile image
     ) {
@@ -61,15 +66,17 @@ public class DefaultProductService implements ProductService {
             log.info("imageFileName: {}", imageFileName);
         }
 
-        return productRepository.save(
-                Product.builder()
-                        .id(UUID.randomUUID())
-                        .title(title)
-                        .description(description)
-                        .price(price)
-                        .createdBy(createdBy)
-                        .imageFileName(imageFileName)
-                        .build()
+        return mapToDto(
+                productRepository.save(
+                        Product.builder()
+                                .id(UUID.randomUUID())
+                                .title(title)
+                                .description(description)
+                                .price(price)
+                                .createdBy(createdBy)
+                                .imageFileName(imageFileName)
+                                .build()
+                )
         );
     }
 
@@ -123,7 +130,18 @@ public class DefaultProductService implements ProductService {
     @Override
     @Transactional(readOnly = true)
     @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true, key = "#ids")
-    public List<Product> findAllByIdIn(List<UUID> ids) {
-        return productRepository.findAllById(ids);
+    public List<ProductDto> findAllByIdIn(List<UUID> ids) {
+        return productRepository.findAllById(ids).stream().map(this::mapToDto)
+                .toList();
+    }
+
+    private ProductDto mapToDto(Product product) {
+        return new ProductDto(
+                product.getId(),
+                product.getTitle(),
+                product.getDescription(),
+                product.getPrice(),
+                product.getImageFileName(),
+                product.getCreatedBy());
     }
 }

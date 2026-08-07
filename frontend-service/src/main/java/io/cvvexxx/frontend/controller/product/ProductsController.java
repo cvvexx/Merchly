@@ -82,8 +82,8 @@ public class ProductsController {
                     return new ProductOwnerViewModel(
                             product,
                             creator,
-                            getImageUrl(product),
-                            getUserAvatarUrl(creator),
+                            imageUrlFormatter.getProductImageUrl(product.imageFileName()),
+                            imageUrlFormatter.getUserAvatarUrl(creator.avatarFileName()),
                             stats.totalReviews(),
                             stats.averageRating()
                     );
@@ -126,19 +126,6 @@ public class ProductsController {
             model.addAttribute("errors", exception.getErrors());
             return "catalogue/products/new_product";
         }
-    }
-
-    private String getImageUrl(Product product) {
-        return (product.imageFileName() != null && !product.imageFileName().isBlank())
-                ? imageUrlFormatter.getProductImageUrl(product.imageFileName())
-                : "/images/default-product-image.png";
-    }
-
-    private String getUserAvatarUrl(ProductOwnerDto creator) {
-        if (creator == null || creator.avatarFileName() == null || creator.avatarFileName().isBlank()) {
-            return "/images/default-user-avatar.png";
-        }
-        return imageUrlFormatter.getUserAvatarUrl(creator.avatarFileName());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
