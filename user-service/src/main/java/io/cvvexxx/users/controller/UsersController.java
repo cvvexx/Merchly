@@ -35,6 +35,7 @@ public class UsersController {
             }
             throw new BindException(bindingResult);
         } else {
+            log.info("New user registration request received username {}", newUserDto.username());
             return ResponseEntity.ok(userService.registerUserInKeycloakAndLocalDb(newUserDto, userAvatar));
         }
     }

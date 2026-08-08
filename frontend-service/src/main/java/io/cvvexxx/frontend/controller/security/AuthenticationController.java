@@ -26,6 +26,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Controller
@@ -95,8 +97,12 @@ public class AuthenticationController {
             return (target != null && !target.isBlank()) ? "redirect:" + target : "redirect:/catalogue/products/list";
 
         } catch (Exception e) {
-            log.error("Ошибка при логине: {}", e.getMessage());
-            return "redirect:/login?error=unauthorized";
+            log.error("Ошибка при входе: {}", e.getMessage());
+            String redirectUrl = "redirect:/login?error=true";
+            if (target != null && !target.isBlank()) {
+                redirectUrl += "&target=" + URLEncoder.encode(target, StandardCharsets.UTF_8);
+            }
+            return redirectUrl;
         }
     }
 

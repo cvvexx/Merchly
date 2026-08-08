@@ -18,18 +18,22 @@
             <div class="card-body p-4">
                 <h3 class="card-title text-center mb-4 fw-bold">Вход в систему</h3>
 
-                <!-- Сообщение от сервера -->
+                <!-- Сообщение: Пользователь не авторизован (попытка зайти на защищённую страницу) -->
+                <div class="alert alert-info py-2 small" th:if="${param.reason != null and param.reason[0] == 'unauthorized'}">
+                    Сначала необходимо войти в аккаунт.
+                </div>
+
+                <!-- Обычное информационное сообщение (если передаётся через RedirectAttributes/Model) -->
                 <div class="alert alert-info py-2 small" th:if="${message}">
                     <p class="m-0" th:text="${message}"></p>
                 </div>
 
-                <!-- Ошибка аутентификации -->
-                <div class="alert alert-danger py-2 small"
-                     th:if="${param.error != null}">
+                <!-- Ошибка: Неверный логин или пароль -->
+                <div class="alert alert-danger py-2 small" th:if="${param.error != null}">
                     Неверный логин или пароль!
                 </div>
 
-                <!-- Успешный выход -->
+                <!-- Сообщение об успешном выходе -->
                 <div class="alert alert-success py-2 small" th:if="${param.logout}">
                     Вы успешно вышли из системы.
                 </div>

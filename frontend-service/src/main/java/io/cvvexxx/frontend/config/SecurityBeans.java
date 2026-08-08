@@ -66,7 +66,7 @@ public class SecurityBeans {
                                 return;
                             }
 
-                            response.sendRedirect("/login?error=unauthorized&target="
+                            response.sendRedirect("/login?reason=unauthorized&target="
                                     + URLEncoder.encode(targetUri, StandardCharsets.UTF_8));
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {

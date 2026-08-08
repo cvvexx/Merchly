@@ -33,6 +33,7 @@ public class PublicProfileController {
 
         UserProfilePublicDto profile = userPublicRestClient.getUserProfile(username);
         model.addAttribute("profile", profile);
+        log.info("Public user Avatar {}", imageUrlFormatter.getUserAvatarUrl(profile.userAvatarUrl()));
         model.addAttribute("userAvatarUrl", imageUrlFormatter.getUserAvatarUrl(profile.userAvatarUrl()));
         return "user/public-profile";
     }
