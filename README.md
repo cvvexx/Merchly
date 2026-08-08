@@ -1,6 +1,6 @@
 # Merchly 🛒
 
-Multi-module merchandise marketplace built with Spring Boot 3 (Java 17, PostgreSQL, Spring Security, Apache Kafka, Flyway).
+Multi-module merchandise marketplace built with Spring Boot 3 (Java 17, PostgreSQL, Spring Security, Flyway).
 
 ## 📖 О проекте
 
@@ -13,7 +13,6 @@ Merchly — это современный маркетплейс мерча, п�
 | **Core**         | Java 17, Spring Boot 3.3.4                                                 |
 | **Архитектура**  | Microservices, BFF (Backend for Frontend), Event-Driven Architecture       |
 | **Базы данных**  | PostgreSQL (изолированные БД), Redis                                       |
-| **Брокер сообщений** | Apache Kafka                                                            |
 | **Безопасность** | Spring Security, Keycloak (OIDC), JWT                                      |
 | **Хранилище файлов** | MinIO (S3-совместимое хранилище)                                        |
 | **Инфраструктура** | Docker, Docker Compose, Flyway                                            |
@@ -29,9 +28,6 @@ Merchly — это современный маркетплейс мерча, п�
 
 - **Слабая связность (Loose Coupling):**  
   Микросервисы работают с изолированными базами данных (merchly_users, merchly_products). Связи между сущностями строятся исключительно по ID на уровне бизнес-логики без использования физических Foreign Key ограничений между сервисами.
-
-- **Событийно-ориентированная архитектура (Kafka):**  
-  Тяжёлые операции вынесены в асинхронный фон. Например, при добавлении отзыва review-service отправляет событие в топик Kafka, а product-service асинхронно пересчитывает средний рейтинг товара для мгновенной загрузки каталога.
 
 - **Чистая архитектура и стандарты:**  
   Код написан с соблюдением слоистой архитектуры (Controller → Service → Repository). Контроллеры не содержат бизнес-логики и остаются «тонкими». В разработке используются стандарты Conventional Commits для чистоты истории Git.
