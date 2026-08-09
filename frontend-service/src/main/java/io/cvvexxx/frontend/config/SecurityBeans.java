@@ -40,7 +40,9 @@ public class SecurityBeans {
                                 "/js/**",
                                 "/favicon.ico",  // Добавлено: чтобы исключить редиректы из-за иконки
                                 "/error",
-                                "/error-403"
+                                "/error-403",
+                                "/actuator/health/**",
+                                "/actuator/health"
                         ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/catalogue/products/create").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/catalogue/products/*/edit").hasRole("ADMIN")

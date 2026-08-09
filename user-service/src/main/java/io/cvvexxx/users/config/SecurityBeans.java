@@ -30,6 +30,7 @@ public class SecurityBeans {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/users/register").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers("/api/users/me").hasRole("USER")
                         .requestMatchers("/api/internal/users/**").hasRole("INTERNAL_SERVICE")
                         .anyRequest().authenticated()

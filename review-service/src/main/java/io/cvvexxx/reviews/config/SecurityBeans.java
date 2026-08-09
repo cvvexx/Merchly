@@ -36,6 +36,7 @@ public class SecurityBeans {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                         .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::none))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/reviews/**").permitAll()
                         .anyRequest().authenticated()
                 )
