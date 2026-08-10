@@ -709,7 +709,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "**********",
+      "secret": "2EcGmKzLBdngJ4xoObe8DysShjiorNVr",
       "redirectUris": [
         "http://localhost:8080/*"
       ],

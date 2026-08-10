@@ -137,7 +137,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ROOT_USER:-minioadmin} ${MINIO_ROOT_PASSWORD:-minioadmin};
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin};
       /usr/bin/mc mb myminio/merchly-products --ignore-existing;
       /usr/bin/mc mb myminio/merchly-users --ignore-existing;
       /usr/bin/mc anonymous set download myminio/merchly-products;
