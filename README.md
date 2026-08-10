@@ -58,7 +58,7 @@ Merchly — это современный маркетплейс мерча, п�
    ```bash
      cp .env.example .env
      ```
-  Для Windows(cmd)
+   Для Windows(cmd)
    ```bash
      copy .env.example .env
      ```
