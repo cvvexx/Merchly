@@ -11,7 +11,7 @@ Merchly — это современный маркетплейс мерча, п�
 | Категория        | Технологии                                                                 |
 |------------------|----------------------------------------------------------------------------|
 | **Core**         | Java 17, Spring Boot 3.4.1                                                 |
-| **Архитектура**  | Microservices, BFF (Backend for Frontend), Event-Driven Architecture       |
+| **Архитектура**  | Microservices, BFF (Backend for Frontend)       |
 | **Базы данных**  | PostgreSQL (изолированные БД), Redis                                       |
 | **Безопасность** | Spring Security, Keycloak (OIDC), JWT                                      |
 | **Хранилище файлов** | MinIO (S3-совместимое хранилище)                                        |
