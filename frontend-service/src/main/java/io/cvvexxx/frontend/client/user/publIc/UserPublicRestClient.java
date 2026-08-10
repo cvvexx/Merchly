@@ -23,4 +23,6 @@ public interface UserPublicRestClient {
     void deleteProductFromCart(UUID productId);
 
     UserProfilePublicDto getUserProfile(String username);
+
+    void getAdminRole();
 }

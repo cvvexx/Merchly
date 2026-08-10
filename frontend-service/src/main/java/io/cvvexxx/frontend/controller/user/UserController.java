@@ -5,9 +5,11 @@ import io.cvvexxx.frontend.client.user.publIc.RestClientUserPublicRestClient;
 import io.cvvexxx.frontend.dto.user.UpdateUserDto;
 import io.cvvexxx.frontend.dto.user.UserInfoDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.exception.FieldAlreadyExistsException;
 import io.cvvexxx.frontend.utils.ImageUrlFormatter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Controller
 @RequestMapping("/profile")
@@ -60,7 +64,18 @@ public class UserController {
             model.addAttribute("payload", updateUserDto);
             model.addAttribute("errors", exception.getErrors());
             return "user/edit";
+        } catch (FieldAlreadyExistsException exception) {
+            model.addAttribute("userAvatar", imageUrlFormatter.getUserAvatarUrl(userInfo.userAvatarUrl()));
+            model.addAttribute("payload", updateUserDto);
+            model.addAttribute("errors", List.of(exception.getMessage()));
+            return "security/registration";
         }
+    }
+
+    @PostMapping("/admin")
+    public ResponseEntity<Void> getAdminRole() {
+        restClient.getAdminRole();
+        return ResponseEntity.noContent().build();
     }
 }
 

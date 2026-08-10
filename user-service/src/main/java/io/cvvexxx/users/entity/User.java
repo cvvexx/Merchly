@@ -40,13 +40,14 @@ public class User implements Persistable<UUID> {
     @Column(name = "birth_date", nullable = false)
     private LocalDate birthDate;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.EAGER, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+
     @Transient
     private boolean isNew = true;
 
@@ -81,5 +82,18 @@ public class User implements Persistable<UUID> {
     @Override
     public int hashCode() {
         return getClass().hashCode();
+    }
+
+    public void addRole(Role role) {
+        if (this.roles == null) {
+            this.roles = new HashSet<>();
+        }
+        this.roles.add(role);
+    }
+
+    public void removeRole(Role role) {
+        if (this.roles != null) {
+            this.roles.remove(role);
+        }
     }
 }

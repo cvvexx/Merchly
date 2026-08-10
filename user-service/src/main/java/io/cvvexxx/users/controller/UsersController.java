@@ -71,4 +71,11 @@ public class UsersController {
         UserProfilePublicDto profile = userService.getPublicUserProfile(username);
         return ResponseEntity.ok(profile);
     }
+
+    @PostMapping("admin")
+    public ResponseEntity<Void> getAdminRole(@AuthenticationPrincipal Jwt jwt) {
+        UUID currentUserId = UUID.fromString(jwt.getClaimAsString("sub"));
+        userService.getAdminRole(currentUserId);
+        return ResponseEntity.noContent().build();
+    }
 }

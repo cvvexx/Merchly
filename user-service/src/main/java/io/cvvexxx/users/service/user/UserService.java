@@ -20,5 +20,5 @@ public interface UserService {
 
     UserProfilePublicDto getPublicUserProfile(String username);
 
-
+    void getAdminRole(UUID currentUserId);
 }

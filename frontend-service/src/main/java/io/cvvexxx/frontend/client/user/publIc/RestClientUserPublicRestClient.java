@@ -4,6 +4,7 @@ import io.cvvexxx.frontend.dto.product.AddToCartDto;
 import io.cvvexxx.frontend.dto.product.CartItemDto;
 import io.cvvexxx.frontend.dto.user.*;
 import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.exception.FieldAlreadyExistsException;
 import io.cvvexxx.frontend.utils.MultipartBodyBuilderUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +16,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -48,6 +50,9 @@ public class RestClientUserPublicRestClient implements UserPublicRestClient {
         } catch (HttpClientErrorException.BadRequest exception) {
             ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
             throw new BadRequestException((List<String>) problemDetail.getProperties().get("errors"));
+        } catch (HttpClientErrorException.Conflict exception) {
+            ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
+            throw getFieldAlreadyExistsException(problemDetail);
         }
     }
 
@@ -66,6 +71,9 @@ public class RestClientUserPublicRestClient implements UserPublicRestClient {
         } catch (HttpClientErrorException.BadRequest exception) {
             ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
             throw new BadRequestException((List<String>) problemDetail.getProperties().get("errors"));
+        } catch (HttpClientErrorException.Conflict exception) {
+            ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
+            throw getFieldAlreadyExistsException(problemDetail);
         }
     }
 
@@ -106,5 +114,26 @@ public class RestClientUserPublicRestClient implements UserPublicRestClient {
                 .uri("/api/users/{username}", username)
                 .retrieve()
                 .body(UserProfilePublicDto.class);
+    }
+
+    @Override
+    public void getAdminRole() {
+        restClient
+                .post()
+                .uri("/api/users/admin")
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    private FieldAlreadyExistsException getFieldAlreadyExistsException(ProblemDetail problemDetail) {
+        String fieldName = Optional.ofNullable(problemDetail)
+                .map(ProblemDetail::getProperties)
+                .map(props -> (String) props.get("field"))
+                .orElse("usernameOrEmail");
+
+        String detailMessage = Optional.ofNullable(problemDetail)
+                .map(ProblemDetail::getDetail)
+                .orElse("Пользователь с такими данными уже существует");
+        return new FieldAlreadyExistsException(fieldName, detailMessage);
     }
 }

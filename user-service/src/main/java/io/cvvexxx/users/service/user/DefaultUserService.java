@@ -3,15 +3,18 @@ package io.cvvexxx.users.service.user;
 import io.cvvexxx.users.dto.*;
 import io.cvvexxx.users.entity.Role;
 import io.cvvexxx.users.entity.User;
+import io.cvvexxx.users.exception.FieldAlreadyExistsException;
 import io.cvvexxx.users.repository.RoleRepository;
 import io.cvvexxx.users.repository.UserRepository;
 import io.cvvexxx.users.service.minio.DefaultMinioService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.ws.rs.core.Response;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -50,10 +53,21 @@ public class DefaultUserService implements UserService {
         try (Response response = usersResource.create(user)) {
 
             if (response.getStatus() == 409) {
-                throw new IllegalArgumentException(
-                        "User with username '%s' or email '%s' already exists"
-                                .formatted(newUserDto.username(), newUserDto.email())
-                );
+                boolean usernameExists = !usersResource.searchByUsername(newUserDto.username(), true).isEmpty();
+                boolean emailExists = !usersResource.searchByEmail(newUserDto.email(), true).isEmpty();
+
+                if (usernameExists) {
+                    throw new FieldAlreadyExistsException("username", newUserDto.username(),
+                            "Пользователь с именем '%s' уже существует".formatted(newUserDto.username()));
+                }
+
+                if (emailExists) {
+                    throw new FieldAlreadyExistsException("email", newUserDto.email(),
+                            "Пользователь с email '%s' уже существует".formatted(newUserDto.email()));
+                }
+
+                throw new FieldAlreadyExistsException("usernameOrEmail",
+                        "Пользователь с таким именем или email уже существует");
             }
 
             if (response.getStatus() != 201) {
@@ -74,10 +88,8 @@ public class DefaultUserService implements UserService {
         }
 
         try {
-            Role defaultRole = roleRepository.findByRole("USER");
-            if (defaultRole == null) {
-                throw new IllegalStateException("Default role 'USER' not found in database");
-            }
+            Role defaultRole = roleRepository.findByRole("USER")
+                    .orElseThrow(() -> new EntityNotFoundException("Role 'USER' not found"));
 
             User localUser = new User(
                     UUID.fromString(keycloakUserId),
@@ -89,7 +101,7 @@ public class DefaultUserService implements UserService {
                     userAvatarFileName
             );
 
-            User savedUser = userRepository.save(localUser);
+            User savedUser = userRepository.saveAndFlush(localUser);
 
             return new UserCreatedDto(savedUser.getId(), savedUser.getUsername());
 
@@ -242,6 +254,44 @@ public class DefaultUserService implements UserService {
                 user.getBirthDate(),
                 user.getAvatarFileName()
         );
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = "private_user_info", key = "#currentUserId")
+    public void getAdminRole(UUID currentUserId) {
+        User user = userRepository.findById(currentUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id %s".formatted(currentUserId)));
+
+        boolean hasAdminRole = user.getRoles().stream()
+                .anyMatch(r -> "ADMIN".equals(r.getRole()));
+
+        if (hasAdminRole) {
+            return;
+        }
+
+        Role role = roleRepository.findByRole("ADMIN")
+                .orElseThrow(() -> new EntityNotFoundException("Role 'ADMIN' not found"));
+
+        user.addRole(role);
+
+        try {
+            RoleRepresentation roleAdmin = keycloak.realm(realm)
+                    .roles()
+                    .get("ROLE_ADMIN")
+                    .toRepresentation();
+
+            keycloak.realm(realm)
+                    .users()
+                    .get(currentUserId.toString())
+                    .roles()
+                    .realmLevel()
+                    .add(List.of(roleAdmin));
+
+        } catch (Exception e) {
+            log.error("Failed to assign Keycloak role ADMIN for user {}", currentUserId, e);
+            throw new RuntimeException("Failed to assign ADMIN role in Keycloak", e);
+        }
     }
 
     private void updateKeycloakUser(String keycloakUserId, UpdateUserDto updateUserDto) {

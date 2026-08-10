@@ -12,6 +12,9 @@ RUN mvn clean package -pl user-service -am -Dmaven.test.skip=true
 # Этап 2: Запуск
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
+
+RUN apk add --no-cache curl
+
 # Забираем собранный jar-файл из папки модуля
 COPY --from=builder /app/user-service/target/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

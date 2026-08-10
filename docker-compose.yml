@@ -160,7 +160,6 @@ services:
       KEYCLOAK_SERVER_URL: http://keycloak:8090
       MINIO_URL: http://minio:9000
     healthcheck:
-      # Проверка через Spring Boot Actuator (порт 8082 из твоих переменных фронта)
       test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep UP || exit 1"]
       interval: 10s
       timeout: 5s
@@ -171,7 +170,7 @@ services:
       redis:
         condition: service_healthy
       keycloak:
-        condition: service_healthy # Ждем Keycloak, иначе Spring Security упадет
+        condition: service_healthy
 
   products-service:
     build:

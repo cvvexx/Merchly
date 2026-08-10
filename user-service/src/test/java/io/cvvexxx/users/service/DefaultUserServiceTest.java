@@ -92,7 +92,7 @@ class DefaultUserServiceTest {
 
             Role role = new Role();
             role.setRole("USER");
-            when(roleRepository.findByRole("USER")).thenReturn(role);
+            when(roleRepository.findByRole("USER")).thenReturn(Optional.of(role));
 
             User savedUser = new User(UUID.fromString(KEYCLOAK_ID), "testuser", "email@test.com", null, LocalDate.of(2000, 1, 1), Set.of(role), "avatar.png");
             when(userRepository.save(any(User.class))).thenReturn(savedUser);
