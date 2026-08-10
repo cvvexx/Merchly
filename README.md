@@ -55,9 +55,12 @@ Merchly — это современный маркетплейс мерча, п�
    ```bash
      git clone https://github.com/cvvexx/Merchly.git
      ```
-2. Скопируйте файл конфигурации окружения:  
+2. Перейдите в эту папку
+   ```bash
+     cd Merchly/
+     ```
+3. Скопируйте файл конфигурации окружения:  
    Скопируйте `.env.example` в `.env`.
-   
      Для Linux/MacOS
    ```bash
      cp .env.example .env
@@ -66,7 +69,7 @@ Merchly — это современный маркетплейс мерча, п�
    ```bash
      copy .env.example .env
      ```
-3. Запустите микросервисы:  
+5. Запустите микросервисы:  
    - Соберите и запустите проект:  
      ```bash
      docker compose up -d --build
