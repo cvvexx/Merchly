@@ -61,7 +61,7 @@ Merchly — это современный маркетплейс мерча, п�
      ```
 3. Скопируйте файл конфигурации окружения:  
    Скопируйте `.env.example` в `.env`.
-     Для Linux/MacOS
+       Для Linux/MacOS
    ```bash
      cp .env.example .env
      ```
