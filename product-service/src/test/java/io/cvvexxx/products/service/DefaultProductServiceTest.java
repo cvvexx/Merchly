@@ -1,5 +1,6 @@
 package io.cvvexxx.products.service;
 
+import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.repository.ProductRepository;
 import io.cvvexxx.products.service.minio.DefaultMinioService;
@@ -13,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -27,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 class DefaultProductServiceTest {
 
     @Mock
@@ -76,16 +79,8 @@ class DefaultProductServiceTest {
         var id1 = UUID.randomUUID();
         var id2 = UUID.randomUUID();
         when(productRepository.findAllByTitleContainingIgnoreCase(filter)).thenReturn(List.of(
-                Product.builder()
-                        .id(id1)
-                        .title("asdf")
-                        .createdAt(Instant.now())
-                        .build(),
-                Product.builder()
-                        .id(id2)
-                        .title("asdff")
-                        .createdAt(Instant.now().minusSeconds(1))
-                        .build()
+                new ProductDto(id1, "asdf", "1234", BigDecimal.ONE, "image.png", id1),
+                new ProductDto(id2, "asdf", "1234", BigDecimal.ONE, "image.png", id2)
         ));
 
         //when
@@ -118,16 +113,16 @@ class DefaultProductServiceTest {
                 invocation.getArgument(0));
 
         // when
-        Product result = productService.createProduct(title, description, price, createdBy, image);
+        ProductDto result = productService.createProduct(title, description, price, createdBy, image);
 
         // then
         assertNotNull(result);
-        assertNotNull(result.getId());
-        assertEquals(title, result.getTitle());
-        assertEquals(description, result.getDescription());
-        assertEquals(price, result.getPrice());
-        assertEquals(createdBy, result.getCreatedBy());
-        assertEquals(uploadedFileName, result.getImageFileName());
+        assertNotNull(result.id());
+        assertEquals(title, result.title());
+        assertEquals(description, result.description());
+        assertEquals(price, result.price());
+        assertEquals(createdBy, result.createdBy());
+        assertEquals(uploadedFileName, result.imageFileName());
 
         verify(defaultMinioService, times(1)).upload(image);
         verify(productRepository, times(1)).save(productCaptor.capture());
@@ -150,11 +145,11 @@ class DefaultProductServiceTest {
                 invocation.getArgument(0));
 
         // when
-        Product result = productService.createProduct(title, description, price, createdBy, image);
+        ProductDto result = productService.createProduct(title, description, price, createdBy, image);
 
         // then
         assertNotNull(result);
-        assertNull(result.getImageFileName());
+        assertNull(result.imageFileName());
 
         verify(defaultMinioService, never()).upload(any());
         verify(productRepository, times(1)).save(any(Product.class));
@@ -252,12 +247,12 @@ class DefaultProductServiceTest {
         );
 
         //when
-        Product result = productService.findProductById(productId);
+        ProductDto result = productService.findProductById(productId);
 
         //then
         assertNotNull(result);
-        assertEquals(productId, result.getId());
-        assertEquals("TestProduct", result.getTitle());
+        assertEquals(productId, result.id());
+        assertEquals("TestProduct", result.title());
     }
 
 

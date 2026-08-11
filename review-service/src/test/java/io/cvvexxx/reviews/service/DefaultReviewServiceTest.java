@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
 import java.util.List;
@@ -28,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 class DefaultReviewServiceTest {
 
     @Mock
@@ -86,7 +88,7 @@ class DefaultReviewServiceTest {
 
             //then
             assertNotNull(exception);
-            assertEquals("Вы уже оставляли отзыв на этот товар", exception.getMessage());
+            assertEquals("You already have an review on this product", exception.getMessage());
         }
     }
 

@@ -4,10 +4,12 @@ import io.cvvexxx.users.domain.Gender;
 import io.cvvexxx.users.dto.*;
 import io.cvvexxx.users.entity.Role;
 import io.cvvexxx.users.entity.User;
+import io.cvvexxx.users.exception.FieldAlreadyExistsException;
 import io.cvvexxx.users.repository.RoleRepository;
 import io.cvvexxx.users.repository.UserRepository;
 import io.cvvexxx.users.service.minio.DefaultMinioService;
 import io.cvvexxx.users.service.user.DefaultUserService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.ws.rs.core.Response;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +26,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -35,6 +38,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
+@ActiveProfiles("test")
 class DefaultUserServiceTest {
 
     private final String REALM = "test-realm";
@@ -80,22 +84,32 @@ class DefaultUserServiceTest {
         }
 
         @Test
-        @DisplayName("Успешная регистрация пользователя с аватаром")
+        @DisplayName("Успешная регистрация пользователя в системе")
         void registerUser_Success() {
             // given
+            Role role = new Role();
+            role.setRole("USER");
+
+            User savedUser = new User(
+                    UUID.fromString(KEYCLOAK_ID),
+                    "testuser",
+                    "email@test.com",
+                    Gender.M,
+                    LocalDate.of(2000, 1, 1),
+                    Set.of(role),
+                    "avatar.png"
+            );
+
+            when(roleRepository.findByRole("USER")).thenReturn(Optional.of(role));
+            when(userRepository.saveAndFlush(any(User.class))).thenReturn(savedUser); // Используем saveAndFlush
+
             when(usersResource.create(any(UserRepresentation.class))).thenReturn(keycloakResponse);
             when(keycloakResponse.getStatus()).thenReturn(201);
-            when(keycloakResponse.getHeaderString("Location")).thenReturn("http://localhost/auth/admin/realms/" + REALM + "/users/" + KEYCLOAK_ID);
+            when(keycloakResponse.getHeaderString("Location"))
+                    .thenReturn("http://localhost/auth/admin/realms/" + REALM + "/users/" + KEYCLOAK_ID);
 
             when(avatarFile.isEmpty()).thenReturn(false);
             when(defaultMinioService.upload(avatarFile)).thenReturn("avatar.png");
-
-            Role role = new Role();
-            role.setRole("USER");
-            when(roleRepository.findByRole("USER")).thenReturn(Optional.of(role));
-
-            User savedUser = new User(UUID.fromString(KEYCLOAK_ID), "testuser", "email@test.com", null, LocalDate.of(2000, 1, 1), Set.of(role), "avatar.png");
-            when(userRepository.save(any(User.class))).thenReturn(savedUser);
 
             // when
             UserCreatedDto result = defaultUserService.registerUserInKeycloakAndLocalDb(newUserDto, avatarFile);
@@ -106,7 +120,7 @@ class DefaultUserServiceTest {
             assertEquals("testuser", result.username());
 
             verify(defaultMinioService, times(1)).upload(avatarFile);
-            verify(userRepository, times(1)).save(any(User.class));
+            verify(userRepository, times(1)).saveAndFlush(any(User.class)); // Заменили save на saveAndFlush
         }
 
         @Test
@@ -117,12 +131,12 @@ class DefaultUserServiceTest {
             when(keycloakResponse.getStatus()).thenReturn(409);
 
             // when & then
-            IllegalArgumentException ex = assertThrows(
-                    IllegalArgumentException.class,
+            FieldAlreadyExistsException ex = assertThrows(
+                    FieldAlreadyExistsException.class,
                     () -> defaultUserService.registerUserInKeycloakAndLocalDb(newUserDto, null)
             );
 
-            assertTrue(ex.getMessage().contains("already exists"));
+            assertTrue(ex.getMessage().contains("существует"));
             verifyNoInteractions(userRepository, defaultMinioService);
         }
 
@@ -137,13 +151,13 @@ class DefaultUserServiceTest {
             when(avatarFile.isEmpty()).thenReturn(false);
             when(defaultMinioService.upload(avatarFile)).thenReturn("avatar.png");
 
-            when(roleRepository.findByRole("USER")).thenReturn(null);
+            when(roleRepository.findByRole("USER")).thenReturn(Optional.empty());
 
             when(usersResource.get(KEYCLOAK_ID)).thenReturn(userResource);
 
             // when & then
-            IllegalStateException ex = assertThrows(
-                    IllegalStateException.class,
+            EntityNotFoundException ex = assertThrows(
+                    EntityNotFoundException.class,
                     () -> defaultUserService.registerUserInKeycloakAndLocalDb(newUserDto, avatarFile)
             );
 
