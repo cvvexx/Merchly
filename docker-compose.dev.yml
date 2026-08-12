@@ -5,6 +5,8 @@ services:
     image: postgres:16
     container_name: merchly_users_db
     restart: always
+    env_file:
+      - .env.dev
     environment:
       POSTGRES_USER: ${USERS_DB_USER}
       POSTGRES_PASSWORD: ${USERS_DB_PASSWORD}
@@ -18,6 +20,8 @@ services:
     image: postgres:16
     container_name: merchly_products_db
     restart: always
+    env_file:
+      - .env.dev
     environment:
       POSTGRES_USER: ${PRODUCTS_DB_USER}
       POSTGRES_PASSWORD: ${PRODUCTS_DB_PASSWORD}
@@ -31,6 +35,8 @@ services:
     image: postgres:16
     container_name: merchly_reviews_db
     restart: always
+    env_file:
+      - .env.dev
     environment:
       POSTGRES_USER: ${REVIEWS_DB_USER}
       POSTGRES_PASSWORD: ${REVIEWS_DB_PASSWORD}
@@ -54,6 +60,8 @@ services:
     image: postgres:16
     container_name: merchly_keycloak_db
     restart: always
+    env_file:
+      - .env.dev
     environment:
       POSTGRES_USER: ${KEYCLOAK_DB_USER:-keycloak}
       POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak_pass}
@@ -63,11 +71,30 @@ services:
     volumes:
       - pgdata_keycloak:/var/lib/postgresql/data
 
+  orders_db:
+    image: postgres:16
+    container_name: merchly_orders_db
+    restart: always
+    env_file:
+      - .env.dev
+    environment:
+      POSTGRES_USER: ${ORDERS_DB_USER:-orders_admin}
+      POSTGRES_PASSWORD: ${ORDERS_DB_PASSWORD:-12341234}
+      POSTGRES_DB: ${ORDERS_DB_NAME:-merchly_orders}
+    ports:
+      - "5436:5432"
+    volumes:
+      - pgdata_orders:/var/lib/postgresql/data
+
+
+
   keycloak:
     image: quay.io/keycloak/keycloak:24.0
     container_name: merchly_keycloak
     restart: always
     command: start-dev
+    env_file:
+      - .env.dev
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
@@ -85,6 +112,8 @@ services:
     image: minio/minio:latest
     container_name: merchly_minio
     restart: always
+    env_file:
+      - .env.dev
     ports:
       - "9000:9000"
       - "9001:9001"
@@ -95,11 +124,35 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
 
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: merchly_kafka
+    env_file:
+      - .env.dev
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
 
 volumes:
   pgdata_users:
   pgdata_products:
   pgdata_reviews:
+  pgdata_orders:
   redisdata:
   pgdata_keycloak:
   minio_data:
+  kafka:
