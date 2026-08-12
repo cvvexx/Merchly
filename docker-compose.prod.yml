@@ -152,7 +152,7 @@ services:
       dockerfile: user-service/Dockerfile
     container_name: merchly_users_service
     env_file:
-      - .env
+      - .env.prod
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://users_db:5432/${USERS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
@@ -178,7 +178,7 @@ services:
       dockerfile: product-service/Dockerfile
     container_name: merchly_products_service
     env_file:
-      - .env
+      - .env.prod
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://products_db:5432/${PRODUCTS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
@@ -207,7 +207,7 @@ services:
       dockerfile: review-service/Dockerfile
     container_name: merchly_reviews_service
     env_file:
-      - .env
+      - .env.prod
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://reviews_db:5432/${REVIEWS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
@@ -233,7 +233,7 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - .env
+      - .env.prod
     environment:
       SPRING_RESTCLIENT_URI_USER_SERVICE: http://users-service:8082
       SPRING_RESTCLIENT_URI_PRODUCT_SERVICE: http://products-service:8081

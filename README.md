@@ -66,11 +66,11 @@ Merchly — это современный маркетплейс мерча, п�
    Скопируйте `.env.example` в `.env`.  
    Для Linux/MacOS:
    ```bash
-   cp .env.example .env
+   cp .env.prod.example .env.prod
    ```
    Для Windows (cmd):
    ```bash
-   copy .env.example .env
+   copy .env.prod.example .env.prod
    ```
 4. Запустите микросервисы:  
    - Соберите и запустите проект:  
