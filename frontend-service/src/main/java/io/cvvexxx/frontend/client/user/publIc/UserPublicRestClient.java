@@ -24,5 +24,4 @@ public interface UserPublicRestClient {
 
     UserProfilePublicDto getUserProfile(String username);
 
-    void getAdminRole();
 }

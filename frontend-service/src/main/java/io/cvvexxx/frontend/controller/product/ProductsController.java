@@ -36,7 +36,6 @@ public class ProductsController {
         List<ProductOwnerViewModel> viewModels =
                 defaultProductService.getProductsList(filter).viewModels();
 
-        log.info("viewModels: {}", viewModels);
         model.addAttribute("products", viewModels);
         model.addAttribute("filter", filter);
 

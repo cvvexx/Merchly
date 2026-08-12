@@ -9,6 +9,12 @@ public record NewUserDto(
         String password,
         String email,
         String gender,
-        LocalDate birthDate
+        LocalDate birthDate,
+        Boolean isAdmin
 ) {
+    public NewUserDto {
+        if (isAdmin == null) {
+            isAdmin = false;
+        }
+    }
 }

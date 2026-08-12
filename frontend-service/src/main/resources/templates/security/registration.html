@@ -81,6 +81,19 @@
                         </div>
                     </div>
 
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input"
+                               type="checkbox"
+                               role="switch"
+                               id="adminSwitch"
+                               name="isAdmin"
+                               value="true"
+                               th:checked="${payload != null and payload.isAdmin}">
+                        <label class="form-check-label" for="adminSwitch">
+                            Права администратора
+                        </label>
+                    </div>
+
                     <div class="mb-3">
                         <label class="form-label small fw-bold text-muted text-uppercase">Придумайте пароль</label>
                         <input class="form-control form-control-lg fs-6" id="password" name="password"

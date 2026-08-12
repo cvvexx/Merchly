@@ -116,14 +116,6 @@ public class RestClientUserPublicRestClient implements UserPublicRestClient {
                 .body(UserProfilePublicDto.class);
     }
 
-    @Override
-    public void getAdminRole() {
-        restClient
-                .post()
-                .uri("/api/users/admin")
-                .retrieve()
-                .toBodilessEntity();
-    }
 
     private FieldAlreadyExistsException getFieldAlreadyExistsException(ProblemDetail problemDetail) {
         String fieldName = Optional.ofNullable(problemDetail)

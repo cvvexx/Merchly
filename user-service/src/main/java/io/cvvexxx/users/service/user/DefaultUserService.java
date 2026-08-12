@@ -32,6 +32,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class DefaultUserService implements UserService {
+    private static final String KEYCLOAK_ADMIN_ROLE = "ROLE_ADMIN";
+    private static final String LOCAL_ADMIN_ROLE = "ADMIN";
+    private static final String LOCAL_USER_ROLE = "USER";
 
     private final Keycloak keycloak;
     private final UserRepository userRepository;
@@ -58,7 +61,7 @@ public class DefaultUserService implements UserService {
 
                 if (usernameExists) {
                     throw new FieldAlreadyExistsException("username", newUserDto.username(),
-                            "Пользователь с именем '%s' уже существует".formatted(newUserDto.username()));
+                            "Пользователь с логином '%s' уже существует".formatted(newUserDto.username()));
                 }
 
                 if (emailExists) {
@@ -67,7 +70,7 @@ public class DefaultUserService implements UserService {
                 }
 
                 throw new FieldAlreadyExistsException("usernameOrEmail",
-                        "Пользователь с таким именем или email уже существует");
+                        "Пользователь с таким логином или email уже существует");
             }
 
             if (response.getStatus() != 201) {
@@ -88,8 +91,7 @@ public class DefaultUserService implements UserService {
         }
 
         try {
-            Role defaultRole = roleRepository.findByRole("USER")
-                    .orElseThrow(() -> new EntityNotFoundException("Role 'USER' not found"));
+            Set<Role> userRoles = setUserRoles(usersResource, newUserDto.isAdmin(), keycloakUserId);
 
             User localUser = new User(
                     UUID.fromString(keycloakUserId),
@@ -97,7 +99,7 @@ public class DefaultUserService implements UserService {
                     newUserDto.email(),
                     newUserDto.gender(),
                     newUserDto.birthDate(),
-                    Set.of(defaultRole),
+                    userRoles,
                     userAvatarFileName
             );
 
@@ -106,7 +108,7 @@ public class DefaultUserService implements UserService {
             return new UserCreatedDto(savedUser.getId(), savedUser.getUsername());
 
         } catch (Exception e) {
-            log.error("Failed to save user in local DB. Rolling back Keycloak user {}", keycloakUserId, e);
+            log.error("Failed to save user or assign roles. Rolling back Keycloak user {}", keycloakUserId, e);
             try {
                 usersResource.get(keycloakUserId).remove();
             } catch (Exception ex) {
@@ -123,22 +125,6 @@ public class DefaultUserService implements UserService {
 
             throw e;
         }
-    }
-
-    private UserRepresentation getUserRepresentation(NewUserDto newUserDto) {
-        CredentialRepresentation credential = new CredentialRepresentation();
-        credential.setType(CredentialRepresentation.PASSWORD);
-        credential.setValue(newUserDto.password());
-        credential.setTemporary(false);
-
-        UserRepresentation user = new UserRepresentation();
-        user.setFirstName(newUserDto.firstName());
-        user.setLastName(newUserDto.lastName());
-        user.setUsername(newUserDto.username());
-        user.setEmail(newUserDto.email());
-        user.setEnabled(true);
-        user.setCredentials(Collections.singletonList(credential));
-        return user;
     }
 
     @Override
@@ -256,42 +242,48 @@ public class DefaultUserService implements UserService {
         );
     }
 
-    @Override
-    @Transactional
-    @CacheEvict(value = "private_user_info", key = "#currentUserId")
-    public void getAdminRole(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id %s".formatted(currentUserId)));
 
-        boolean hasAdminRole = user.getRoles().stream()
-                .anyMatch(r -> "ADMIN".equals(r.getRole()));
+    private Set<Role> setUserRoles(UsersResource usersResource, boolean isAdmin, String keycloakUserId) {
+        Set<Role> roles = new HashSet<>();
 
-        if (hasAdminRole) {
-            return;
-        }
+        Role defaultRole = roleRepository.findByRole(LOCAL_USER_ROLE)
+                .orElseThrow(() -> new EntityNotFoundException("Role 'USER' not found"));
 
-        Role role = roleRepository.findByRole("ADMIN")
+        roles.add(defaultRole);
+        if (isAdmin) {
+        RoleRepresentation roleAdmin = keycloak.realm(realm)
+                .roles()
+                .get(KEYCLOAK_ADMIN_ROLE)
+                .toRepresentation();
+
+        usersResource.get(keycloakUserId)
+                .roles()
+                .realmLevel()
+                .add(List.of(roleAdmin));
+
+
+        Role adminRole = roleRepository.findByRole(LOCAL_ADMIN_ROLE)
                 .orElseThrow(() -> new EntityNotFoundException("Role 'ADMIN' not found"));
 
-        user.addRole(role);
-
-        try {
-            RoleRepresentation roleAdmin = keycloak.realm(realm)
-                    .roles()
-                    .get("ROLE_ADMIN")
-                    .toRepresentation();
-
-            keycloak.realm(realm)
-                    .users()
-                    .get(currentUserId.toString())
-                    .roles()
-                    .realmLevel()
-                    .add(List.of(roleAdmin));
-
-        } catch (Exception e) {
-            log.error("Failed to assign Keycloak role ADMIN for user {}", currentUserId, e);
-            throw new RuntimeException("Failed to assign ADMIN role in Keycloak", e);
+        roles.add(adminRole);
         }
+        return roles;
+    }
+
+    private UserRepresentation getUserRepresentation(NewUserDto newUserDto) {
+        CredentialRepresentation credential = new CredentialRepresentation();
+        credential.setType(CredentialRepresentation.PASSWORD);
+        credential.setValue(newUserDto.password());
+        credential.setTemporary(false);
+
+        UserRepresentation user = new UserRepresentation();
+        user.setFirstName(newUserDto.firstName());
+        user.setLastName(newUserDto.lastName());
+        user.setUsername(newUserDto.username());
+        user.setEmail(newUserDto.email());
+        user.setEnabled(true);
+        user.setCredentials(Collections.singletonList(credential));
+        return user;
     }
 
     private void updateKeycloakUser(String keycloakUserId, UpdateUserDto updateUserDto) {
