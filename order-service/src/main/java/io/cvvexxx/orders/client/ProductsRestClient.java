@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface ProductsRestClient {
+    List<ProductDto> findAllProductsByIds(List<UUID> ids);
 
-    List<ProductDto> getProductsByIds(List<UUID> ids);
-
+    ProductDto findById(UUID productId);
 }

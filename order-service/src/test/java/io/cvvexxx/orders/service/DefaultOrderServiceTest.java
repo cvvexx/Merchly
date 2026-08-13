@@ -1,6 +1,6 @@
 package io.cvvexxx.orders.service;
 
-import io.cvvexxx.orders.client.ProductClient;
+import io.cvvexxx.orders.client.ProductsRestClient;
 import io.cvvexxx.orders.domain.OrderStatus;
 import io.cvvexxx.orders.dto.NewOrderDto;
 import io.cvvexxx.orders.dto.NewOrderItemDto;
@@ -19,6 +19,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
@@ -31,10 +32,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DefaultOrderServiceTest {
@@ -45,13 +43,13 @@ class DefaultOrderServiceTest {
     private final UUID ORDER_ID = UUID.randomUUID();
 
     @Mock
+    private ApplicationEventPublisher applicationEventPublisher;
+
+    @Mock
     private OrderRepository orderRepository;
 
     @Mock
-    private ProductClient productClient;
-
-    @Mock
-    private OrderEventPublisher orderEventPublisher;
+    private ProductsRestClient productClient;
 
     @InjectMocks
     private DefaultOrderService orderService;
@@ -67,8 +65,10 @@ class DefaultOrderServiceTest {
             NewOrderDto request = new NewOrderDto(List.of(
                     new NewOrderItemDto(PRODUCT_ID, 2),
                     new NewOrderItemDto(secondProductId, 1),
-                    new NewOrderItemDto(PRODUCT_ID, 1)
-            ));
+                    new NewOrderItemDto(PRODUCT_ID, 1)),
+                    "address",
+                    "comment"
+            );
 
             when(productClient.findById(PRODUCT_ID)).thenReturn(product(PRODUCT_ID, new BigDecimal("100.00")));
             when(productClient.findById(secondProductId)).thenReturn(product(secondProductId, new BigDecimal("50.00")));
@@ -97,7 +97,8 @@ class DefaultOrderServiceTest {
                     .getQuantity());
 
             ArgumentCaptor<OrderCreatedEvent> eventCaptor = ArgumentCaptor.forClass(OrderCreatedEvent.class);
-            verify(orderEventPublisher).publishOrderCreated(eventCaptor.capture());
+            verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+            assertEquals(ORDER_ID, eventCaptor.getValue().orderId());
             assertEquals(ORDER_ID, eventCaptor.getValue().orderId());
             assertEquals(new BigDecimal("350.00"), eventCaptor.getValue().totalAmount());
         }
@@ -110,14 +111,18 @@ class DefaultOrderServiceTest {
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
                     () -> orderService.createOrder(
-                            new NewOrderDto(List.of(new NewOrderItemDto(PRODUCT_ID, 1))),
+                            new NewOrderDto(
+                                    List.of(new NewOrderItemDto(PRODUCT_ID, 1)),
+                                    "address",
+                                    "comment"
+                            ),
                             USER_ID
                     )
             );
 
             assertEquals("order.errors.product.price_missing", exception.getMessage());
             verify(orderRepository, never()).save(any());
-            verify(orderEventPublisher, never()).publishOrderCreated(any());
+            verify(applicationEventPublisher, never()).publishEvent(any());
         }
     }
 
@@ -129,10 +134,16 @@ class DefaultOrderServiceTest {
         @DisplayName("переводит CREATED заказ в PAID")
         void confirmOrder_WhenCreated_ShouldMarkPaid() {
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CREATED, USER_ID)));
+            when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+                Order order = invocation.getArgument(0);
+                order.setId(ORDER_ID);
+                order.setCreatedAt(Instant.parse("2026-08-12T10:00:00Z"));
+                return order;
+            });
 
             OrderDto result = orderService.confirmOrder(ORDER_ID, USER_ID, false);
 
-            assertEquals(OrderStatus.PAID, result.status());
+            assertEquals(OrderStatus.CONFIRMED, result.status());
         }
 
         @Test
@@ -152,16 +163,22 @@ class DefaultOrderServiceTest {
         @DisplayName("админ может подтвердить чужой заказ")
         void confirmOrder_WhenAdmin_ShouldConfirmForeignOrder() {
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CREATED, OTHER_USER_ID)));
+            when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+                Order order = invocation.getArgument(0);
+                order.setId(ORDER_ID);
+                order.setCreatedAt(Instant.parse("2026-08-12T10:00:00Z"));
+                return order;
+            });
 
             OrderDto result = orderService.confirmOrder(ORDER_ID, USER_ID, true);
 
-            assertEquals(OrderStatus.PAID, result.status());
+            assertEquals(OrderStatus.CONFIRMED, result.status());
         }
 
         @Test
         @DisplayName("не подтверждает уже оплаченный или отменённый заказ")
         void confirmOrder_WhenNotCreated_ShouldThrowIllegalState() {
-            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PAID, USER_ID)));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CONFIRMED, USER_ID)));
 
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
@@ -180,6 +197,12 @@ class DefaultOrderServiceTest {
         @DisplayName("переводит CREATED заказ в CANCELLED")
         void cancelOrder_WhenCreated_ShouldMarkCancelled() {
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CREATED, USER_ID)));
+            when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
+                Order order = invocation.getArgument(0);
+                order.setId(ORDER_ID);
+                order.setCreatedAt(Instant.parse("2026-08-12T10:00:00Z"));
+                return order;
+            });
 
             OrderDto result = orderService.cancelOrder(ORDER_ID, USER_ID, false);
 
@@ -189,7 +212,7 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("не отменяет оплаченный заказ")
         void cancelOrder_WhenPaid_ShouldThrowIllegalState() {
-            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PAID, USER_ID)));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CONFIRMED, USER_ID)));
 
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
@@ -242,7 +265,7 @@ class DefaultOrderServiceTest {
     }
 
     private ProductDto product(UUID productId, BigDecimal price) {
-        return new ProductDto(productId, "Title", "Desc", price, "image.png", UUID.randomUUID());
+        return new ProductDto(productId, 1, price);
     }
 
     private Order order(OrderStatus status, UUID userId) {

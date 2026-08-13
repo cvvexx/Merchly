@@ -27,7 +27,7 @@ public class OrderController {
     private final OrderService orderService;
 
     @PostMapping("/create")
-    public ResponseEntity<NewOrderDto> createOrder(
+    public ResponseEntity<OrderDto> createOrder(
             @Valid @RequestBody NewOrderDto newOrderDto,
             BindingResult bindingResult,
             @AuthenticationPrincipal Jwt jwt,
@@ -42,7 +42,7 @@ public class OrderController {
 
         UUID currentUserId = currentUserId(jwt);
         log.info("Request received to create order for user {}", currentUserId);
-        NewOrderDto createdOrder = orderService.createOrder(newOrderDto, currentUserId);
+        OrderDto createdOrder = orderService.createOrder(newOrderDto, currentUserId);
 
         return ResponseEntity.created(
                         uriComponentsBuilder
@@ -53,7 +53,7 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/confirm")
-    public ResponseEntity<NewOrderDto> confirmOrder(
+    public ResponseEntity<OrderDto> confirmOrder(
             @PathVariable UUID orderId,
             @AuthenticationPrincipal Jwt jwt
     ) {
@@ -63,7 +63,7 @@ public class OrderController {
     }
 
     @PostMapping("/{orderId}/cancel")
-    public ResponseEntity<NewOrderDto> cancelOrder(
+    public ResponseEntity<OrderDto> cancelOrder(
             @PathVariable UUID orderId,
             @AuthenticationPrincipal Jwt jwt
     ) {
@@ -73,7 +73,7 @@ public class OrderController {
     }
 
     @GetMapping("/{orderId}")
-    public ResponseEntity<NewOrderDto> getOrder(
+    public ResponseEntity<OrderDto> getOrder(
             @PathVariable UUID orderId,
             @AuthenticationPrincipal Jwt jwt
     ) {

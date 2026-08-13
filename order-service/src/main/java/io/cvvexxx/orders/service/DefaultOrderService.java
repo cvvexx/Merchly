@@ -1,23 +1,22 @@
 package io.cvvexxx.orders.service;
 
-import io.cvvexxx.orders.client.RestClientProductsRestClient;
+import io.cvvexxx.orders.client.ProductsRestClient;
 import io.cvvexxx.orders.domain.OrderStatus;
 import io.cvvexxx.orders.dto.*;
 import io.cvvexxx.orders.entity.Order;
 import io.cvvexxx.orders.entity.OrderItem;
+import io.cvvexxx.orders.event.OrderCreatedEvent;
+import io.cvvexxx.orders.exception.OrderNotFoundException;
 import io.cvvexxx.orders.repository.OrderRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,18 +25,22 @@ import java.util.stream.Collectors;
 public class DefaultOrderService implements OrderService {
 
     private final OrderRepository orderRepository;
-    private final RestClientProductsRestClient restClient;
+    private final ProductsRestClient productClient;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
     public OrderDto createOrder(NewOrderDto newOrderDto, UUID currentUserId) {
         List<NewOrderItemDto> items = newOrderDto.items();
+        log.info("Creating order for user {}", currentUserId);
 
-        List<ProductDto> products = restClient.findAllProductsByIds(
-                items.stream().map(NewOrderItemDto::productId).toList());
-
-        Map<UUID, ProductDto> productById = products.stream()
-                .collect(Collectors.toMap(ProductDto::id, Function.identity()));
+            Map<UUID, Integer> quantityByProduct = items.stream()
+                .collect(Collectors.toMap(
+                        NewOrderItemDto::productId,
+                        NewOrderItemDto::quantity,
+                        Integer::sum,
+                        LinkedHashMap::new
+                ));
 
         Order order = Order.builder()
                 .userId(currentUserId)
@@ -47,27 +50,34 @@ public class DefaultOrderService implements OrderService {
                 .build();
 
         BigDecimal totalPrice = BigDecimal.ZERO;
-        for (NewOrderItemDto item : items) {
-            ProductDto product = productById.get(item.productId());
-            if (product == null) {
-                throw new EntityNotFoundException("Product %s not found".formatted(item.productId()));
+        for (Map.Entry<UUID, Integer> entry : quantityByProduct.entrySet()) {
+            UUID productId = entry.getKey();
+            int quantity = entry.getValue();
+
+            ProductDto product = productClient.findById(productId);
+            BigDecimal price = product.price();
+            if (price == null) {
+                throw new IllegalStateException("order.errors.product.price_missing");
             }
-            BigDecimal itemTotal = product.price().multiply(BigDecimal.valueOf(item.quantity()));
+
+            BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(quantity));
             totalPrice = totalPrice.add(itemTotal);
 
             order.addItem(new OrderItem(
                     UUID.randomUUID(),
                     order,
-                    product.id(),
-                    product.price(),
-                    item.quantity()
+                    productId,
+                    price,
+                    quantity
             ));
         }
         order.setTotalAmount(totalPrice);
 
         Order savedOrder = orderRepository.save(order);
 
-        //TODO(KAFKA)
+        applicationEventPublisher.publishEvent(
+                new OrderCreatedEvent(savedOrder.getId(), savedOrder.getTotalAmount())
+        );
 
         return mapToDto(savedOrder);
     }
@@ -78,18 +88,16 @@ public class DefaultOrderService implements OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new EntityNotFoundException("Order with id %s not found".formatted(orderId)));
 
-        if (!isAdmin || !order.getUserId().equals(currentUserId)) {
-            throw new AccessDeniedException("Вам нельзя изменять этот товар");
+        if (!isAdmin && !order.getUserId().equals(currentUserId)) {
+            throw new AccessDeniedException("order.errors.access_denied");
         }
 
-        if (order.getStatus() == OrderStatus.CANCELLED) {
-            throw new IllegalArgumentException("Заказ уже отменен, его нельзя подтвердить");
+        if (order.getStatus() != OrderStatus.CREATED) {
+            throw new IllegalStateException("order.errors.cannot_confirm");
         }
 
         order.setStatus(OrderStatus.CONFIRMED);
         Order savedOrder = orderRepository.save(order);
-
-        //TODO(KAFKA)
 
         return mapToDto(savedOrder);
     }
@@ -98,24 +106,18 @@ public class DefaultOrderService implements OrderService {
     @Transactional
     public OrderDto cancelOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("Order with id %s not found".formatted(orderId)));
+                .orElseThrow(() -> new NoSuchElementException("order.errors.not_found"));
 
         if (!isAdmin && !order.getUserId().equals(currentUserId)) {
-            throw new AccessDeniedException("Вам нельзя изменять этот товар");
-        }
-
-        if (order.getStatus() == OrderStatus.CANCELLED) {
-            throw new IllegalArgumentException("Заказ уже успешно отменен");
+            throw new AccessDeniedException("order.errors.access_denied");
         }
 
         if (order.getStatus() == OrderStatus.CONFIRMED) {
-            throw new IllegalArgumentException("Заказ уже успешно подтвержден, его нельзя отменить");
+            throw new IllegalStateException("order.errors.cannot_cancel");
         }
 
         order.setStatus(OrderStatus.CANCELLED);
         Order savedOrder = orderRepository.save(order);
-
-        //TODO(KAFKA)
 
         return mapToDto(savedOrder);
     }
@@ -124,10 +126,10 @@ public class DefaultOrderService implements OrderService {
     @Transactional(readOnly = true)
     public OrderDto getOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("Order with id %s not found".formatted(orderId)));
+                .orElseThrow(() -> new NoSuchElementException("order.errors.not_found"));
 
-        if (!order.getUserId().equals(currentUserId) || !isAdmin) {
-            throw new AccessDeniedException("Вам нельзя изменять этот товар");
+        if (!isAdmin && !order.getUserId().equals(currentUserId)) {
+            throw new AccessDeniedException("order.errors.access_denied");
         }
 
         return mapToDto(order);
