@@ -6,6 +6,8 @@ import io.cvvexxx.orders.dto.*;
 import io.cvvexxx.orders.entity.Order;
 import io.cvvexxx.orders.entity.OrderItem;
 import io.cvvexxx.orders.event.OrderCreatedEvent;
+import io.cvvexxx.orders.exception.OrderAccessDeniedException;
+import io.cvvexxx.orders.exception.OrderCannotConfirmException;
 import io.cvvexxx.orders.exception.OrderNotFoundException;
 import io.cvvexxx.orders.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -86,14 +88,14 @@ public class DefaultOrderService implements OrderService {
     @Transactional
     public OrderDto confirmOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new EntityNotFoundException("Order with id %s not found".formatted(orderId)));
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
 
         if (!isAdmin && !order.getUserId().equals(currentUserId)) {
-            throw new AccessDeniedException("order.errors.access_denied");
+            throw new OrderAccessDeniedException("order.errors.access_denied");
         }
 
         if (order.getStatus() != OrderStatus.CREATED) {
-            throw new IllegalStateException("order.errors.cannot_confirm");
+            throw new OrderCannotConfirmException("order.errors.cannot_confirm");
         }
 
         order.setStatus(OrderStatus.CONFIRMED);

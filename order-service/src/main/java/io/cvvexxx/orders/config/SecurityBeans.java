@@ -33,7 +33,13 @@ public class SecurityBeans {
                         .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::none)
                 )
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/actuator/health/**",
+                                "/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
                         .requestMatchers("/api/orders/**").authenticated()
                         .anyRequest().authenticated()
                 )
