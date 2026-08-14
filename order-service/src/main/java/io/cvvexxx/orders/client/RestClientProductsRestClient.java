@@ -36,7 +36,7 @@ public class RestClientProductsRestClient implements ProductsRestClient {
                     .uri("/api/products/{productId}", productId)
                     .retrieve()
                     .body(ProductDto.class);
-
+            log.info("product found: {}", product);
             if (product == null) {
                 throw new NoSuchElementException("order.errors.product.not_found");
             }

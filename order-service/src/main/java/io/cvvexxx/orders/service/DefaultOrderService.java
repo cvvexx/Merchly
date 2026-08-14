@@ -5,20 +5,22 @@ import io.cvvexxx.orders.domain.OrderStatus;
 import io.cvvexxx.orders.dto.*;
 import io.cvvexxx.orders.entity.Order;
 import io.cvvexxx.orders.entity.OrderItem;
-import io.cvvexxx.orders.event.OrderCreatedEvent;
 import io.cvvexxx.orders.exception.OrderAccessDeniedException;
+import io.cvvexxx.orders.exception.OrderCannotCancelException;
 import io.cvvexxx.orders.exception.OrderCannotConfirmException;
 import io.cvvexxx.orders.exception.OrderNotFoundException;
 import io.cvvexxx.orders.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,51 +38,51 @@ public class DefaultOrderService implements OrderService {
         List<NewOrderItemDto> items = newOrderDto.items();
         log.info("Creating order for user {}", currentUserId);
 
-            Map<UUID, Integer> quantityByProduct = items.stream()
+        Map<UUID, Integer> quantityByProduct = items.stream()
                 .collect(Collectors.toMap(
                         NewOrderItemDto::productId,
                         NewOrderItemDto::quantity,
                         Integer::sum,
                         LinkedHashMap::new
                 ));
-
+        log.info("quantityByProduct: {}", quantityByProduct);
         Order order = Order.builder()
                 .userId(currentUserId)
                 .status(OrderStatus.CREATED)
                 .deliveryAddress(newOrderDto.deliveryAddress())
                 .comment(newOrderDto.comment())
                 .build();
-
+        log.info("Order: {}", order);
         BigDecimal totalPrice = BigDecimal.ZERO;
         for (Map.Entry<UUID, Integer> entry : quantityByProduct.entrySet()) {
             UUID productId = entry.getKey();
             int quantity = entry.getValue();
-
+            log.info("productId: {}, quantity: {}", productId, quantity);
             ProductDto product = productClient.findById(productId);
+            log.info("product {}", product);
             BigDecimal price = product.price();
             if (price == null) {
                 throw new IllegalStateException("order.errors.product.price_missing");
             }
-
             BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(quantity));
             totalPrice = totalPrice.add(itemTotal);
-
+            log.info("totalPrice: {}", totalPrice);
             order.addItem(new OrderItem(
-                    UUID.randomUUID(),
+                    null,
                     order,
                     productId,
                     price,
                     quantity
             ));
+            log.info("order items {}", order.getItems());
         }
         order.setTotalAmount(totalPrice);
-
+        log.info("Order: {}", order);
         Order savedOrder = orderRepository.save(order);
-
-        applicationEventPublisher.publishEvent(
-                new OrderCreatedEvent(savedOrder.getId(), savedOrder.getTotalAmount())
-        );
-
+        log.info("SavedOrder: {}", savedOrder);
+//        applicationEventPublisher.publishEvent(
+//                new OrderCreatedEvent(savedOrder.getId(), savedOrder.getTotalAmount())
+//        );
         return mapToDto(savedOrder);
     }
 
@@ -89,13 +91,16 @@ public class DefaultOrderService implements OrderService {
     public OrderDto confirmOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
-
+        log.info("isAdmin: {}", isAdmin);
+        log.info("currentUser: {}", currentUserId);
+        log.info("orderCreatorId: {}", order.getUserId());
+        log.info("Yslovie {}", !isAdmin && !order.getUserId().equals(currentUserId));
         if (!isAdmin && !order.getUserId().equals(currentUserId)) {
-            throw new OrderAccessDeniedException("order.errors.access_denied");
+            throw new OrderAccessDeniedException();
         }
 
         if (order.getStatus() != OrderStatus.CREATED) {
-            throw new OrderCannotConfirmException("order.errors.cannot_confirm");
+            throw new OrderCannotConfirmException(orderId);
         }
 
         order.setStatus(OrderStatus.CONFIRMED);
@@ -108,14 +113,14 @@ public class DefaultOrderService implements OrderService {
     @Transactional
     public OrderDto cancelOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NoSuchElementException("order.errors.not_found"));
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
 
         if (!isAdmin && !order.getUserId().equals(currentUserId)) {
-            throw new AccessDeniedException("order.errors.access_denied");
+            throw new OrderAccessDeniedException();
         }
 
         if (order.getStatus() == OrderStatus.CONFIRMED) {
-            throw new IllegalStateException("order.errors.cannot_cancel");
+            throw new OrderCannotCancelException(orderId);
         }
 
         order.setStatus(OrderStatus.CANCELLED);
@@ -128,10 +133,10 @@ public class DefaultOrderService implements OrderService {
     @Transactional(readOnly = true)
     public OrderDto getOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NoSuchElementException("order.errors.not_found"));
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
 
         if (!isAdmin && !order.getUserId().equals(currentUserId)) {
-            throw new AccessDeniedException("order.errors.access_denied");
+            throw new OrderAccessDeniedException();
         }
 
         return mapToDto(order);

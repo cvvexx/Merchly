@@ -39,7 +39,7 @@ public class OrderController {
             }
             throw new BindException(bindingResult);
         }
-
+        log.info("Received request to create order, dto: {}", newOrderDto);
         UUID currentUserId = currentUserId(jwt);
         log.info("Request received to create order for user {}", currentUserId);
         OrderDto createdOrder = orderService.createOrder(newOrderDto, currentUserId);

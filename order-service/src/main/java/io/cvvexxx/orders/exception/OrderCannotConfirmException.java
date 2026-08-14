@@ -5,7 +5,7 @@ public class OrderCannotConfirmException extends IllegalStateException implement
     private final Object[] args;
 
     public OrderCannotConfirmException(Object... args) {
-        super("order.errors.access_denied");
+        super(DEFAULT_CODE);
         this.args = args != null ? args : new Object[0];
     }
 
