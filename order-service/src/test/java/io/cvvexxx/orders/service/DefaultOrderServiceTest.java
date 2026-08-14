@@ -9,6 +9,7 @@ import io.cvvexxx.orders.dto.ProductDto;
 import io.cvvexxx.orders.entity.Order;
 import io.cvvexxx.orders.entity.OrderItem;
 import io.cvvexxx.orders.event.OrderCreatedEvent;
+import io.cvvexxx.orders.exception.OrderNotFoundException;
 import io.cvvexxx.orders.kafka.OrderEventPublisher;
 import io.cvvexxx.orders.repository.OrderRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -227,12 +228,12 @@ class DefaultOrderServiceTest {
         void cancelOrder_WhenMissing_ShouldThrowNotFound() {
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.empty());
 
-            NoSuchElementException exception = assertThrows(
-                    NoSuchElementException.class,
+            OrderNotFoundException exception = assertThrows(
+                    OrderNotFoundException.class,
                     () -> orderService.cancelOrder(ORDER_ID, USER_ID, false)
             );
 
-            assertEquals("order.errors.not_found", exception.getMessage());
+            assertEquals("order.errors.order_not_found", exception.getMessage());
         }
     }
 

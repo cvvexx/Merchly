@@ -5,6 +5,7 @@ import io.cvvexxx.orders.domain.OrderStatus;
 import io.cvvexxx.orders.dto.*;
 import io.cvvexxx.orders.entity.Order;
 import io.cvvexxx.orders.entity.OrderItem;
+import io.cvvexxx.orders.event.OrderCreatedEvent;
 import io.cvvexxx.orders.exception.OrderAccessDeniedException;
 import io.cvvexxx.orders.exception.OrderCannotCancelException;
 import io.cvvexxx.orders.exception.OrderCannotConfirmException;
@@ -36,7 +37,6 @@ public class DefaultOrderService implements OrderService {
     @Transactional
     public OrderDto createOrder(NewOrderDto newOrderDto, UUID currentUserId) {
         List<NewOrderItemDto> items = newOrderDto.items();
-        log.info("Creating order for user {}", currentUserId);
 
         Map<UUID, Integer> quantityByProduct = items.stream()
                 .collect(Collectors.toMap(
@@ -45,28 +45,23 @@ public class DefaultOrderService implements OrderService {
                         Integer::sum,
                         LinkedHashMap::new
                 ));
-        log.info("quantityByProduct: {}", quantityByProduct);
         Order order = Order.builder()
                 .userId(currentUserId)
                 .status(OrderStatus.CREATED)
                 .deliveryAddress(newOrderDto.deliveryAddress())
                 .comment(newOrderDto.comment())
                 .build();
-        log.info("Order: {}", order);
         BigDecimal totalPrice = BigDecimal.ZERO;
         for (Map.Entry<UUID, Integer> entry : quantityByProduct.entrySet()) {
             UUID productId = entry.getKey();
             int quantity = entry.getValue();
-            log.info("productId: {}, quantity: {}", productId, quantity);
             ProductDto product = productClient.findById(productId);
-            log.info("product {}", product);
             BigDecimal price = product.price();
             if (price == null) {
                 throw new IllegalStateException("order.errors.product.price_missing");
             }
             BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(quantity));
             totalPrice = totalPrice.add(itemTotal);
-            log.info("totalPrice: {}", totalPrice);
             order.addItem(new OrderItem(
                     null,
                     order,
@@ -74,15 +69,12 @@ public class DefaultOrderService implements OrderService {
                     price,
                     quantity
             ));
-            log.info("order items {}", order.getItems());
         }
         order.setTotalAmount(totalPrice);
-        log.info("Order: {}", order);
         Order savedOrder = orderRepository.save(order);
-        log.info("SavedOrder: {}", savedOrder);
-//        applicationEventPublisher.publishEvent(
-//                new OrderCreatedEvent(savedOrder.getId(), savedOrder.getTotalAmount())
-//        );
+        applicationEventPublisher.publishEvent(
+                new OrderCreatedEvent(savedOrder.getId(), savedOrder.getTotalAmount())
+        );
         return mapToDto(savedOrder);
     }
 

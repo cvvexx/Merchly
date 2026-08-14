@@ -78,7 +78,7 @@ class DefaultUserServiceTest {
 
         @BeforeEach
         void setUp() {
-            newUserDto = new NewUserDto("testuser", "password", "email@test.com", "John", "Doe", null, LocalDate.of(2000, 1, 1));
+            newUserDto = new NewUserDto("testuser", "password", "email@test.com", "John", "Doe", null, LocalDate.of(2000, 1, 1), false);
             lenient().when(keycloak.realm(REALM)).thenReturn(realmResource);
             lenient().when(realmResource.users()).thenReturn(usersResource);
         }
