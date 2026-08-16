@@ -91,7 +91,9 @@ public class DefaultUserService implements UserService {
         }
 
         try {
-            Set<Role> userRoles = setUserRoles(usersResource, newUserDto.isAdmin(), keycloakUserId);
+            Role defaultRole = roleRepository.findByRole(LOCAL_USER_ROLE)
+                    .orElseThrow(() -> new EntityNotFoundException("Role 'USER' not found"));
+            Set<Role> userRoles = Set.of(defaultRole);
 
             User localUser = new User(
                     UUID.fromString(keycloakUserId),
@@ -243,32 +245,6 @@ public class DefaultUserService implements UserService {
     }
 
 
-    private Set<Role> setUserRoles(UsersResource usersResource, boolean isAdmin, String keycloakUserId) {
-        Set<Role> roles = new HashSet<>();
-
-        Role defaultRole = roleRepository.findByRole(LOCAL_USER_ROLE)
-                .orElseThrow(() -> new EntityNotFoundException("Role 'USER' not found"));
-
-        roles.add(defaultRole);
-        if (isAdmin) {
-        RoleRepresentation roleAdmin = keycloak.realm(realm)
-                .roles()
-                .get(KEYCLOAK_ADMIN_ROLE)
-                .toRepresentation();
-
-        usersResource.get(keycloakUserId)
-                .roles()
-                .realmLevel()
-                .add(List.of(roleAdmin));
-
-
-        Role adminRole = roleRepository.findByRole(LOCAL_ADMIN_ROLE)
-                .orElseThrow(() -> new EntityNotFoundException("Role 'ADMIN' not found"));
-
-        roles.add(adminRole);
-        }
-        return roles;
-    }
 
     private UserRepresentation getUserRepresentation(NewUserDto newUserDto) {
         CredentialRepresentation credential = new CredentialRepresentation();

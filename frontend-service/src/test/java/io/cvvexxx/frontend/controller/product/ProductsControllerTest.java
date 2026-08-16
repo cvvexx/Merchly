@@ -53,6 +53,7 @@ class ProductsControllerTest {
         var payload = new NewProductPayload(
                 "new product title",
                 "new product description",
+                1,
                 BigDecimal.TEN,
                 creatorId
         );
@@ -80,6 +81,7 @@ class ProductsControllerTest {
                 productId,
                 "new product title",
                 "new product description",
+                1,
                 BigDecimal.TEN,
                 image.getOriginalFilename(),
                 creatorId
@@ -87,14 +89,14 @@ class ProductsControllerTest {
 
         doReturn(createdProduct)
                 .when(productsPublicRestClient)
-                .createProduct("new product title", "new product description", BigDecimal.TEN, image, creatorId);
+                .createProduct("new product title", "new product description", 1, BigDecimal.TEN, image, creatorId);
 
         // when
         var result = productsController.createProduct(payload, image, model, token);
 
         // then
         assertEquals("redirect:/catalogue/products/" + productId, result);
-        verify(productsPublicRestClient).createProduct("new product title", "new product description",
+        verify(productsPublicRestClient).createProduct("new product title", "new product description", 1,
                 BigDecimal.TEN, image, creatorId);
         verifyNoMoreInteractions(productsPublicRestClient);
     }
@@ -112,7 +114,7 @@ class ProductsControllerTest {
                 "image/png",
                 "123".getBytes()
         );
-        var payload = new NewProductPayload("    ", null, BigDecimal.ZERO, creatorId);
+        var payload = new NewProductPayload("    ", null, 1, BigDecimal.ZERO, creatorId);
         var token = new KeycloakJwtAuthenticationToken(
                 creatorId.toString(),
                 creatorId,
@@ -126,7 +128,7 @@ class ProductsControllerTest {
 
         doThrow(new BadRequestException(List.of("error1", "error2")))
                 .when(productsPublicRestClient)
-                .createProduct("    ", null, BigDecimal.ZERO, image, creatorId);
+                .createProduct("    ", null, 1, BigDecimal.ZERO, image, creatorId);
         //when
         var result = productsController.createProduct(
                 payload,
@@ -139,7 +141,7 @@ class ProductsControllerTest {
         assertEquals(payload, model.getAttribute("payload"));
         assertEquals(List.of("error1", "error2"), model.getAttribute("errors"));
 
-        verify(productsPublicRestClient).createProduct("    ", null, BigDecimal.ZERO, image, creatorId);
+        verify(productsPublicRestClient).createProduct("    ", null, 1, BigDecimal.ZERO, image, creatorId);
         verifyNoMoreInteractions(productsPublicRestClient);
     }
 

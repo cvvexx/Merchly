@@ -68,6 +68,13 @@
                         </div>
 
                         <div class="mb-3">
+                            <label class="form-label fw-bold">Количество</label>
+                            <textarea class="form-control"
+                                      name="quantity" rows="4"
+                                      th:text="${payload != null ? payload.quantity : product.quantity}"></textarea>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label fw-bold" for="image">Новое изображение товара</label>
                             <input accept="image/png, image/jpeg, image/webp"
                                    class="form-control"

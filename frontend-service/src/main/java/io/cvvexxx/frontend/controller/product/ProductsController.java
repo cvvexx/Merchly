@@ -61,6 +61,7 @@ public class ProductsController {
             Product createdProduct = productsPublicRestClient.createProduct(
                     payload.title(),
                     payload.description(),
+                    payload.quantity(),
                     payload.price(),
                     image,
                     userId
