@@ -48,6 +48,7 @@ public class ProductsRestController {
             ProductDto createdProduct = this.productService.createProduct(
                     payload.title(),
                     payload.description(),
+                    payload.quantity(),
                     payload.price(),
                     payload.createdBy(),
                     image

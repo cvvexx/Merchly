@@ -13,11 +13,13 @@ public interface ProductService {
 
     ProductDto findProductById(UUID productId);
 
-    ProductDto createProduct(String title, String description, BigDecimal price, UUID createdBy, MultipartFile imageFileName);
+    ProductDto createProduct(String title, String description, Integer quantity,
+                             BigDecimal price, UUID createdBy, MultipartFile imageFileName);
 
     void deleteProduct(UUID productId);
 
-    void updateProduct(UUID productId, String title, String description, BigDecimal price, MultipartFile imageFileName);
+    void updateProduct(UUID productId, String title, String description, Integer quantity,
+                       BigDecimal price, MultipartFile imageFileName);
 
     List<ProductDto> findAllByIdIn(List<UUID> ids);
 }

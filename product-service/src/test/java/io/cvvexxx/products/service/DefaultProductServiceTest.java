@@ -79,8 +79,8 @@ class DefaultProductServiceTest {
         var id1 = UUID.randomUUID();
         var id2 = UUID.randomUUID();
         when(productRepository.findAllByTitleContainingIgnoreCase(filter)).thenReturn(List.of(
-                new ProductDto(id1, "asdf", "1234", BigDecimal.ONE, "image.png", id1),
-                new ProductDto(id2, "asdf", "1234", BigDecimal.ONE, "image.png", id2)
+                new ProductDto(id1, "asdf", "1234", 1, BigDecimal.ONE, "image.png", id1),
+                new ProductDto(id2, "asdf", "1234", 1, BigDecimal.ONE, "image.png", id2)
         ));
 
         //when
@@ -98,6 +98,7 @@ class DefaultProductServiceTest {
         // given
         String title = "Футболка Merchly";
         String description = "Классный мерч";
+        Integer quantity = 1;
         BigDecimal price = new BigDecimal("1500.00");
         UUID createdBy = UUID.randomUUID();
         MockMultipartFile image = new MockMultipartFile(
@@ -113,7 +114,7 @@ class DefaultProductServiceTest {
                 invocation.getArgument(0));
 
         // when
-        ProductDto result = productService.createProduct(title, description, price, createdBy, image);
+        ProductDto result = productService.createProduct(title, description, quantity, price, createdBy, image);
 
         // then
         assertNotNull(result);
@@ -137,6 +138,7 @@ class DefaultProductServiceTest {
         // given
         String title = "Кружка";
         String description = "Керамическая";
+        Integer quantity = 1;
         BigDecimal price = new BigDecimal("500.00");
         UUID createdBy = UUID.randomUUID();
         MultipartFile image = null;
@@ -145,7 +147,7 @@ class DefaultProductServiceTest {
                 invocation.getArgument(0));
 
         // when
-        ProductDto result = productService.createProduct(title, description, price, createdBy, image);
+        ProductDto result = productService.createProduct(title, description, quantity, price, createdBy, image);
 
         // then
         assertNotNull(result);
@@ -170,7 +172,7 @@ class DefaultProductServiceTest {
 
         // when & then
         assertThrows(RuntimeException.class, () ->
-                productService.createProduct("Title", "Desc", BigDecimal.TEN, UUID.randomUUID(), image)
+                productService.createProduct("Title", "Desc", 1, BigDecimal.TEN, UUID.randomUUID(), image)
         );
 
         verify(defaultMinioService, times(1)).upload(image);
@@ -284,6 +286,7 @@ class DefaultProductServiceTest {
                 productId,
                 "Новое название",
                 "Новое описание",
+                1,
                 new BigDecimal("200.00"),
                 newImageFile
         );
@@ -321,6 +324,7 @@ class DefaultProductServiceTest {
                 productId,
                 "Обновленное",
                 "Обновленное",
+                1,
                 BigDecimal.ONE,
                 null // Картинка не передана
         );
@@ -352,7 +356,7 @@ class DefaultProductServiceTest {
         when(defaultMinioService.upload(newImageFile)).thenReturn(newImageName);
 
         // when
-        productService.updateProduct(productId, "Title", "Desc", BigDecimal.TEN, newImageFile);
+        productService.updateProduct(productId, "Title", "Desc", 1, BigDecimal.TEN, newImageFile);
 
         // then
         assertEquals(newImageName, existingProduct.getImageFileName());
@@ -370,7 +374,7 @@ class DefaultProductServiceTest {
         // when & then
         NoSuchElementException exception = assertThrows(
                 NoSuchElementException.class,
-                () -> productService.updateProduct(productId, "T", "D", BigDecimal.ONE, null)
+                () -> productService.updateProduct(productId, "T", "D", 1, BigDecimal.ONE, null)
         );
 
         assertEquals("catalogue.errors.product.not_found", exception.getMessage());
@@ -399,7 +403,7 @@ class DefaultProductServiceTest {
 
         // when & then — проверяем, что вызов метода не падает
         assertDoesNotThrow(() -> productService.updateProduct(
-                productId, "Title", "Desc", BigDecimal.TEN, newImageFile
+                productId, "Title", "Desc", 1, BigDecimal.TEN, newImageFile
         ));
 
         verify(defaultMinioService, times(1)).removeObject(oldImage);

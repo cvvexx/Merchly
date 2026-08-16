@@ -57,8 +57,8 @@ public class DefaultProductService implements ProductService {
     @Transactional
     @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
     public ProductDto createProduct(
-            String title, String description, BigDecimal price,
-            UUID createdBy, MultipartFile image
+            String title, String description, Integer quantity,
+            BigDecimal price, UUID createdBy, MultipartFile image
     ) {
         String imageFileName = null;
         log.info("image {}", image);
@@ -73,6 +73,7 @@ public class DefaultProductService implements ProductService {
                                 .id(UUID.randomUUID())
                                 .title(title)
                                 .description(description)
+                                .quantity(quantity)
                                 .price(price)
                                 .createdBy(createdBy)
                                 .imageFileName(imageFileName)
@@ -100,9 +101,9 @@ public class DefaultProductService implements ProductService {
             @CacheEvict(value = CACHE_PRODUCT_NAME, key = "#productId"),
             @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
     })
-    public void updateProduct(UUID productId, String title, String description, BigDecimal price, MultipartFile image) {
+    public void updateProduct(UUID productId, String title, String description, Integer quantity, BigDecimal price, MultipartFile image) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
+                .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));//TODO(СДЕЛАТЬ КАСТОМНЫЕ EXC)
 
         log.info("update product {}", product);
 
@@ -125,6 +126,7 @@ public class DefaultProductService implements ProductService {
         }
         product.setTitle(title);
         product.setDescription(description);
+        product.setQuantity(quantity);
         product.setPrice(price);
     }
 
@@ -141,6 +143,7 @@ public class DefaultProductService implements ProductService {
                 product.getId(),
                 product.getTitle(),
                 product.getDescription(),
+                product.getQuantity(),
                 product.getPrice(),
                 product.getImageFileName(),
                 product.getCreatedBy());

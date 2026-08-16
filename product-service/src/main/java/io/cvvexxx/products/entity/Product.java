@@ -31,12 +31,14 @@ public class Product {
     @Id
     private UUID id;
 
-    @NotNull
-    @Size(min = 3, max = 50)
+    @Column(name = "title",  nullable = false)
     private String title;
 
-    @Size(max = 1000)
+    @Column(name = "description")
     private String description;
+
+    @Column(name = "quantity",  nullable = false)
+    private Integer quantity;
 
     @Column(name = "price", nullable = false)
     private BigDecimal price;
