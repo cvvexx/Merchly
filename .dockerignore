@@ -1,6 +1,7 @@
 # VCS
 .git
 .gitignore
+.http
 
 # IDE / Editors
 .idea
