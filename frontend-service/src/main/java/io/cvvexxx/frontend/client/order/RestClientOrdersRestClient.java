@@ -2,10 +2,16 @@ package io.cvvexxx.frontend.client.order;
 
 import io.cvvexxx.frontend.dto.order.NewOrderDto;
 import io.cvvexxx.frontend.dto.order.OrderDto;
+import io.cvvexxx.frontend.exception.BadRequestException;
+import io.cvvexxx.frontend.exception.OrderAccessDeniedException;
+import io.cvvexxx.frontend.exception.OrderCannotChangeStatusException;
+import io.cvvexxx.frontend.exception.OrderNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import java.util.List;
@@ -17,44 +23,68 @@ public class RestClientOrdersRestClient implements OrdersRestClient {
 
     private final RestClient restClient;
 
-    //TODO(сделать обработку ошибок везде)
     @Override
     public OrderDto createOrder(NewOrderDto newOrderDto) {
-        return restClient
-                .post()
-                .uri("/api/orders/create")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(newOrderDto)
-                .retrieve()
-                .body(OrderDto.class);
-
+        try {
+            return restClient
+                    .post()
+                    .uri("/api/orders/create")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(newOrderDto)
+                    .retrieve()
+                    .body(OrderDto.class);
+        } catch (HttpClientErrorException.BadRequest exception) {
+            throw new BadRequestException(extractBadRequestErrors(exception));
+        }
     }
 
     @Override
     public OrderDto confirmOrder(UUID orderId) {
-        return restClient
-                .post()
-                .uri("/api/orders/{orderId}/confirm", orderId)
-                .retrieve()
-                .body(OrderDto.class);
+        try {
+            return restClient
+                    .post()
+                    .uri("/api/orders/{orderId}/confirm", orderId)
+                    .retrieve()
+                    .body(OrderDto.class);
+        } catch (HttpClientErrorException.NotFound exception) {
+            throw new OrderNotFoundException(getErrorsFromException(exception));
+        } catch (HttpClientErrorException.Forbidden exception) {
+            throw new OrderAccessDeniedException(getErrorsFromException(exception));
+        } catch (HttpClientErrorException.Conflict exception) {
+            throw new OrderCannotChangeStatusException(getErrorsFromException(exception));
+        }
     }
 
     @Override
     public OrderDto cancelOrder(UUID orderId) {
-        return restClient
-                .post()
-                .uri("/api/orders/{orderId}/cancel", orderId)
-                .retrieve()
-                .body(OrderDto.class);
+        try {
+            return restClient
+                    .post()
+                    .uri("/api/orders/{orderId}/cancel", orderId)
+                    .retrieve()
+                    .body(OrderDto.class);
+        } catch (HttpClientErrorException.NotFound exception) {
+            throw new OrderNotFoundException(getErrorsFromException(exception));
+        } catch (HttpClientErrorException.Forbidden exception) {
+            throw new OrderAccessDeniedException(getErrorsFromException(exception));
+        } catch (HttpClientErrorException.Conflict exception) {
+            throw new OrderCannotChangeStatusException(getErrorsFromException(exception));
+        }
     }
 
     @Override
     public OrderDto getOrder(UUID orderId) {
-        return restClient
-                .get()
-                .uri("/api/orders/{orderId}", orderId)
-                .retrieve()
-                .body(OrderDto.class);
+        try {
+            return restClient
+                    .get()
+                    .uri("/api/orders/{orderId}", orderId)
+                    .retrieve()
+                    .body(OrderDto.class);
+        } catch (HttpClientErrorException.NotFound exception) {
+            throw new OrderNotFoundException(getErrorsFromException(exception));
+        } catch (HttpClientErrorException.Forbidden exception) {
+            throw new OrderAccessDeniedException(getErrorsFromException(exception));
+        }
     }
 
     @Override
@@ -65,5 +95,32 @@ public class RestClientOrdersRestClient implements OrdersRestClient {
                 .retrieve()
                 .body(new ParameterizedTypeReference<List<OrderDto>>() {
                 });
+    }
+
+    private List<String> extractBadRequestErrors(HttpClientErrorException.BadRequest exception) {
+        ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
+        if (problemDetail == null) {
+            return List.of("Неизвестная ошибка сервера");
+        }
+
+        if (problemDetail.getProperties() != null && problemDetail.getProperties().containsKey("errors")) {
+            Object errorsObj = problemDetail.getProperties().get("errors");
+            if (errorsObj instanceof List<?> list) {
+                return list.stream()
+                        .map(Object::toString)
+                        .toList();
+            }
+        }
+
+        if (problemDetail.getDetail() != null) {
+            return List.of(problemDetail.getDetail());
+        }
+
+        return List.of("Произошла ошибка при обработке запроса");
+    }
+
+    private List<String> getErrorsFromException(HttpClientErrorException exception) {
+        ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
+        return (List<String>) problemDetail.getProperties().get("errors");
     }
 }

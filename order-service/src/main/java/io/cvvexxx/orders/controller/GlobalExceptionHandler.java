@@ -39,13 +39,6 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ProblemDetail> handleIllegalStateException(IllegalStateException ex, Locale locale) {
-        log.warn("Illegal state exception: {}", ex.getMessage());
-        return buildProblemResponse(HttpStatus.CONFLICT, ex, locale);
-    }
-
-
     @ExceptionHandler(OrderNotFoundException.class)
     public ResponseEntity<ProblemDetail> handleOrderNotFoundException(OrderNotFoundException ex, Locale locale) {
         log.warn("Resource not found: {}", ex.getMessage());
