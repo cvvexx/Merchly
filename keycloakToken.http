@@ -1,5 +1,11 @@
-### Получить токен по client_credentials (для internal-service-client)
+### Получить токен для root
 POST http://localhost:8090/realms/merchly/protocol/openid-connect/token
 Content-Type: application/x-www-form-urlencoded
 
 grant_type=password&client_id=merchly_frontend_client&username=root&password=12341234&client_secret=2EcGmKzLBdngJ4xoObe8DysShjiorNVr
+
+### Получить токен для обычного пользователя
+POST http://localhost:8090/realms/merchly/protocol/openid-connect/token
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&client_id=merchly_frontend_client&username=sss&password=12341234&client_secret=2EcGmKzLBdngJ4xoObe8DysShjiorNVr

@@ -1,6 +1,6 @@
 package io.cvvexxx.orders.controller;
 
-import io.cvvexxx.orders.exception.LocalizedException;
+import io.cvvexxx.orders.exception.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -46,16 +46,28 @@ public class GlobalExceptionHandler {
     }
 
 
-    @ExceptionHandler(NoSuchElementException.class)
-    public ResponseEntity<ProblemDetail> handleNoSuchElementException(NoSuchElementException ex, Locale locale) {
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleOrderNotFoundException(OrderNotFoundException ex, Locale locale) {
         log.warn("Resource not found: {}", ex.getMessage());
         return buildProblemResponse(HttpStatus.NOT_FOUND, ex, locale);
     }
 
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ProblemDetail> handleAccessDeniedException(AccessDeniedException ex, Locale locale) {
+    @ExceptionHandler(OrderAccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleOrderAccessDeniedException(OrderAccessDeniedException ex, Locale locale) {
         log.warn("Access denied: {}", ex.getMessage());
         return buildProblemResponse(HttpStatus.FORBIDDEN, ex, locale);
+    }
+
+    @ExceptionHandler(OrderCannotCancelException.class)
+    public ResponseEntity<ProblemDetail> handleOrderCannotCancelException(OrderCannotCancelException ex, Locale locale) {
+        log.warn("Conflict: {}", ex.getMessage());
+        return buildProblemResponse(HttpStatus.CONFLICT, ex, locale);
+    }
+
+    @ExceptionHandler(OrderCannotConfirmException.class)
+    public ResponseEntity<ProblemDetail> handleOrderCannotConfirmException(OrderCannotConfirmException ex, Locale locale) {
+        log.warn("Conflict: {}", ex.getMessage());
+        return buildProblemResponse(HttpStatus.CONFLICT, ex, locale);
     }
 
 

@@ -83,10 +83,7 @@ public class DefaultOrderService implements OrderService {
     public OrderDto confirmOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
-        log.info("isAdmin: {}", isAdmin);
-        log.info("currentUser: {}", currentUserId);
-        log.info("orderCreatorId: {}", order.getUserId());
-        log.info("Yslovie {}", !isAdmin && !order.getUserId().equals(currentUserId));
+
         if (!isAdmin && !order.getUserId().equals(currentUserId)) {
             throw new OrderAccessDeniedException();
         }
