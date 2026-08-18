@@ -35,6 +35,7 @@ public class GlobalExceptionHandler {
                 .toList();
 
         problemDetail.setProperty("errors", errors);
+        log.error(problemDetail.toString());
         return ResponseEntity.badRequest().body(problemDetail);
     }
 
@@ -67,6 +68,8 @@ public class GlobalExceptionHandler {
     private ResponseEntity<ProblemDetail> buildProblemResponse(HttpStatus status, Throwable ex, Locale locale) {
         String detail = resolveMessage(ex, locale);
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(status, detail);
+        problemDetail.setProperty("errors", List.of(detail));
+        log.error(problemDetail.toString());
         return ResponseEntity.status(status).body(problemDetail);
     }
 

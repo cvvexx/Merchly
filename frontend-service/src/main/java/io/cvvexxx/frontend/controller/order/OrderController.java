@@ -1,9 +1,10 @@
 package io.cvvexxx.frontend.controller.order;
 
 import io.cvvexxx.frontend.client.order.OrdersRestClient;
-import io.cvvexxx.frontend.client.order.RestClientOrdersRestClient;
 import io.cvvexxx.frontend.dto.order.NewOrderDto;
 import io.cvvexxx.frontend.dto.order.OrderDto;
+import io.cvvexxx.frontend.service.order.DefaultOrderService;
+import io.cvvexxx.frontend.view.OrderDetailsView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
@@ -22,40 +23,41 @@ import java.util.UUID;
 @RequestMapping("/orders")
 public class OrderController {
 
-    private final OrdersRestClient restClient;
+    private final OrdersRestClient ordersRestClient;
+    private final DefaultOrderService orderDetailsService;
 
     @GetMapping
     public String getUserOrders(Model model) {
-        List<OrderDto> orders = restClient.getUserOrders();
-        model.addAttribute("orders", orders);
+        List<OrderDto> orders = ordersRestClient.getUserOrders();
+        List<OrderDetailsView> enrichedOrders = orderDetailsService.enrichOrders(orders);
+        model.addAttribute("orders", enrichedOrders);
         return "order/user-orders";
     }
 
     @GetMapping("/{orderId}")
     public String getOrderPage(Model model, @PathVariable UUID orderId) {
-        OrderDto order = restClient.getOrder(orderId);
-        model.addAttribute("order", order);
+        OrderDto order = ordersRestClient.getOrder(orderId);
+        OrderDetailsView enrichedOrder = orderDetailsService.enrichOrder(order);
+        model.addAttribute("order", enrichedOrder);
         return "order/order";
     }
 
     @PostMapping("/create")
     public String createOrder(NewOrderDto newOrderDto) {
-        OrderDto order = restClient.createOrder(newOrderDto);
+        OrderDto order = ordersRestClient.createOrder(newOrderDto);
+        log.info("Order created: {}", order);
         return "redirect:/orders/" + order.id();
     }
 
     @PostMapping("/{orderId}/confirm")
-    public String confirmOrder(Model model, @PathVariable UUID orderId) {
-        OrderDto order = restClient.confirmOrder(orderId);
-        model.addAttribute("order", order);
-        return "order/order";
+    public String confirmOrder(@PathVariable UUID orderId) {
+        ordersRestClient.confirmOrder(orderId);
+        return "redirect:/orders/" + orderId;
     }
 
     @PostMapping("/{orderId}/cancel")
-    public String cancelOrder(Model model, @PathVariable UUID orderId) {
-        OrderDto order = restClient.cancelOrder(orderId);
-        model.addAttribute("order", order);
-        return "order/order";
+    public String cancelOrder(@PathVariable UUID orderId) {
+        ordersRestClient.cancelOrder(orderId);
+        return "redirect:/orders/" + orderId;
     }
-
 }
