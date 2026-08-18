@@ -85,20 +85,51 @@
             </tbody>
         </table>
 
-        <!-- Общая сумма -->
-        <div class="d-flex justify-content-between align-items-center mt-4">
-            <a class="btn btn-outline-secondary" href="/catalogue/products/list">Продолжить покупки</a>
-            <div class="text-end">
-                <!--
-                  Добавлен id и data-total для управления значением из JS
-                -->
-                <h4 class="mb-3">Итого:
-                    <span class="text-primary fw-bold"
-                          id="total-price-value"
-                          th:data-total="${totalPrice}"
-                          th:text="${totalPrice + ' ₽'}"></span>
-                </h4>
-                <button class="btn btn-success btn-lg">Оформить заказ</button>
+        <!-- Блок оформления заказа -->
+        <div class="row mt-5">
+            <!-- Кнопка возврата в каталог (слева) -->
+            <div class="col-md-5 mb-4">
+                <a class="btn btn-outline-secondary" th:href="@{/catalogue/products/list}">
+                    <i class="bi bi-arrow-left"></i> Вернуться в каталог
+                </a>
+            </div>
+
+            <!-- Форма оформления заказа (справа) -->
+            <div class="col-md-7">
+                <div class="card shadow-sm border-0 p-4">
+
+                    <!-- Форма POST-запроса -->
+                    <form method="post" th:action="@{/orders/create}">
+
+                        <!-- Адрес доставки -->
+                        <div class="mb-3 text-start">
+                            <label for="address" class="form-label fw-bold">Адрес доставки <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="address" name="deliveryAddress" required
+                                   placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5">
+                        </div>
+
+                        <!-- Комментарий -->
+                        <div class="mb-4 text-start">
+                            <label for="comment" class="form-label fw-bold">Комментарий к заказу</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="2"
+                                      placeholder="Например: Позвонить за час до доставки"></textarea>
+                        </div>
+
+                        <!-- Итого и кнопка -->
+                        <div class="d-flex justify-content-between align-items-center border-top pt-4 mt-2">
+                            <h4 class="mb-0">Итого:
+                                <span class="text-primary fw-bold"
+                                      id="total-price-value"
+                                      th:data-total="${totalPrice}"
+                                      th:text="${totalPrice + ' ₽'}"></span>
+                            </h4>
+                            <button type="submit" class="btn btn-success btn-lg">
+                                Оформить заказ
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
             </div>
         </div>
     </div>

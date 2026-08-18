@@ -2,10 +2,7 @@ package io.cvvexxx.frontend.client.order;
 
 import io.cvvexxx.frontend.dto.order.NewOrderDto;
 import io.cvvexxx.frontend.dto.order.OrderDto;
-import io.cvvexxx.frontend.exception.BadRequestException;
-import io.cvvexxx.frontend.exception.OrderAccessDeniedException;
-import io.cvvexxx.frontend.exception.OrderCannotChangeStatusException;
-import io.cvvexxx.frontend.exception.OrderNotFoundException;
+import io.cvvexxx.frontend.exception.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
@@ -33,8 +30,8 @@ public class RestClientOrdersRestClient implements OrdersRestClient {
                     .body(newOrderDto)
                     .retrieve()
                     .body(OrderDto.class);
-        } catch (HttpClientErrorException.BadRequest exception) {
-            throw new BadRequestException(extractBadRequestErrors(exception));
+        } catch (HttpClientErrorException exception) {
+            throw mapToCustomException(exception);
         }
     }
 
@@ -46,12 +43,8 @@ public class RestClientOrdersRestClient implements OrdersRestClient {
                     .uri("/api/orders/{orderId}/confirm", orderId)
                     .retrieve()
                     .body(OrderDto.class);
-        } catch (HttpClientErrorException.NotFound exception) {
-            throw new OrderNotFoundException(getErrorsFromException(exception));
-        } catch (HttpClientErrorException.Forbidden exception) {
-            throw new OrderAccessDeniedException(getErrorsFromException(exception));
-        } catch (HttpClientErrorException.Conflict exception) {
-            throw new OrderCannotChangeStatusException(getErrorsFromException(exception));
+        } catch (HttpClientErrorException exception) {
+            throw mapToCustomException(exception);
         }
     }
 
@@ -63,12 +56,8 @@ public class RestClientOrdersRestClient implements OrdersRestClient {
                     .uri("/api/orders/{orderId}/cancel", orderId)
                     .retrieve()
                     .body(OrderDto.class);
-        } catch (HttpClientErrorException.NotFound exception) {
-            throw new OrderNotFoundException(getErrorsFromException(exception));
-        } catch (HttpClientErrorException.Forbidden exception) {
-            throw new OrderAccessDeniedException(getErrorsFromException(exception));
-        } catch (HttpClientErrorException.Conflict exception) {
-            throw new OrderCannotChangeStatusException(getErrorsFromException(exception));
+        } catch (HttpClientErrorException exception) {
+            throw mapToCustomException(exception);
         }
     }
 
@@ -80,10 +69,8 @@ public class RestClientOrdersRestClient implements OrdersRestClient {
                     .uri("/api/orders/{orderId}", orderId)
                     .retrieve()
                     .body(OrderDto.class);
-        } catch (HttpClientErrorException.NotFound exception) {
-            throw new OrderNotFoundException(getErrorsFromException(exception));
-        } catch (HttpClientErrorException.Forbidden exception) {
-            throw new OrderAccessDeniedException(getErrorsFromException(exception));
+        } catch (HttpClientErrorException exception) {
+            throw mapToCustomException(exception);
         }
     }
 
@@ -122,5 +109,18 @@ public class RestClientOrdersRestClient implements OrdersRestClient {
     private List<String> getErrorsFromException(HttpClientErrorException exception) {
         ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
         return (List<String>) problemDetail.getProperties().get("errors");
+    }
+
+    private BaseClientException mapToCustomException(HttpClientErrorException ex) {
+        List<String> errors = getErrorsFromException(ex);
+
+        return switch (ex.getStatusCode().value()) {
+            case 400 -> new BadRequestException(extractBadRequestErrors((HttpClientErrorException.BadRequest) ex));
+            case 403 -> new OrderAccessDeniedException(errors);
+            case 404 -> new OrderNotFoundException(errors);
+            case 409 -> new OrderCannotChangeStatusException(errors);
+            default -> new BaseClientException(errors) {
+            };
+        };
     }
 }

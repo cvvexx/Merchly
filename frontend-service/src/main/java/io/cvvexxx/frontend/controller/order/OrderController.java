@@ -1,5 +1,6 @@
 package io.cvvexxx.frontend.controller.order;
 
+import io.cvvexxx.frontend.client.order.OrdersRestClient;
 import io.cvvexxx.frontend.client.order.RestClientOrdersRestClient;
 import io.cvvexxx.frontend.dto.order.NewOrderDto;
 import io.cvvexxx.frontend.dto.order.OrderDto;
@@ -21,41 +22,40 @@ import java.util.UUID;
 @RequestMapping("/orders")
 public class OrderController {
 
-    private final RestClientOrdersRestClient restClient;
+    private final OrdersRestClient restClient;
 
     @GetMapping
     public String getUserOrders(Model model) {
         List<OrderDto> orders = restClient.getUserOrders();
         model.addAttribute("orders", orders);
-        return "orders/userOrders";//TODO(ДОБАВИТЬ html страницы)
+        return "order/user-orders";
     }
 
     @GetMapping("/{orderId}")
     public String getOrderPage(Model model, @PathVariable UUID orderId) {
         OrderDto order = restClient.getOrder(orderId);
         model.addAttribute("order", order);
-        return "orders/order";
+        return "order/order";
     }
 
     @PostMapping("/create")
-    public String createOrder(Model model, NewOrderDto newOrderDto) {
+    public String createOrder(NewOrderDto newOrderDto) {
         OrderDto order = restClient.createOrder(newOrderDto);
-        model.addAttribute("order", order);
-        return "orders/order";
+        return "redirect:/orders/" + order.id();
     }
 
     @PostMapping("/{orderId}/confirm")
     public String confirmOrder(Model model, @PathVariable UUID orderId) {
         OrderDto order = restClient.confirmOrder(orderId);
         model.addAttribute("order", order);
-        return "orders/order";
+        return "order/order";
     }
 
     @PostMapping("/{orderId}/cancel")
     public String cancelOrder(Model model, @PathVariable UUID orderId) {
         OrderDto order = restClient.cancelOrder(orderId);
         model.addAttribute("order", order);
-        return "orders/order";
+        return "order/order";
     }
 
 }

@@ -80,7 +80,7 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getOrder(orderId, currentUserId(jwt), hasAdminRole(jwt)));
     }
 
-    @GetMapping
+    @GetMapping("/")
     public ResponseEntity<List<OrderDto>> getCurrentUserOrders(@AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(orderService.getCurrentUserOrders(currentUserId(jwt)));
     }

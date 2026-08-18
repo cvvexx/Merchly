@@ -131,7 +131,7 @@ public class DefaultOrderService implements OrderService {
     @Override
     @Transactional(readOnly = true)
     public List<OrderDto> getCurrentUserOrders(UUID currentUserId) {
-        return orderRepository.findAllByUserIdOrderByCreatedAtDesc(currentUserId).stream()
+        return orderRepository.findAllByUserIdOrderByCreatedAtDesc(currentUserId).stream()//TODO(ПЕРЕДЕЛАТЬ В OPTIONAL)
                 .map(this::mapToDto)
                 .toList();
     }
