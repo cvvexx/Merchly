@@ -14,6 +14,7 @@ public record OrderDetailsView(
         BigDecimal totalAmount,
         String deliveryAddress,
         String comment,
+        String cancellationReason,
         List<OrderItemDetailsView> items,
         Instant createdAt,
         Instant updatedAt

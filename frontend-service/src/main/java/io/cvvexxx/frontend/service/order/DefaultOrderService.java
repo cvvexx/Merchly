@@ -74,6 +74,7 @@ public class DefaultOrderService implements  OrderService {
                 order.totalAmount(),
                 order.deliveryAddress(),
                 order.comment(),
+                order.cancellationReason(),
                 items,
                 order.createdAt(),
                 order.updatedAt()

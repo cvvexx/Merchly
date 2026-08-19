@@ -2,6 +2,7 @@ package io.cvvexxx.frontend.client.order;
 
 import io.cvvexxx.frontend.dto.order.NewOrderDto;
 import io.cvvexxx.frontend.dto.order.OrderDto;
+import io.cvvexxx.frontend.dto.order.OrderStatusDto;
 import io.cvvexxx.frontend.exception.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -82,6 +83,15 @@ public class RestClientOrdersRestClient implements OrdersRestClient {
                 .retrieve()
                 .body(new ParameterizedTypeReference<List<OrderDto>>() {
                 });
+    }
+
+    @Override
+    public OrderStatusDto getOrderStatus(UUID orderId) {
+        return restClient
+                .get()
+                .uri("/api/orders/{orderId}/status", orderId)
+                .retrieve()
+                .body(OrderStatusDto.class);
     }
 
     private List<String> extractBadRequestErrors(HttpClientErrorException.BadRequest exception) {

@@ -42,6 +42,9 @@ public class Order {
     @Column(name = "comment")
     private String comment;
 
+    @Column(name = "cancellation_reason")
+    private String cancellationReason;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
     private Instant createdAt;

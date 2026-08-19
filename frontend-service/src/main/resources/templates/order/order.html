@@ -23,14 +23,14 @@
 </nav>
 
 <div class="container">
-    <!-- Кнопка назад -->
+    <!-- Кнопка Назад -->
     <div class="mb-3">
         <a th:href="@{/orders}" class="text-decoration-none text-secondary">
             <i class="bi bi-arrow-left"></i> К списку заказов
         </a>
     </div>
 
-    <!-- Блок ошибок -->
+    <!-- Ошибки валидации -->
     <div th:if="${errors}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
         <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Ошибка обработки заказа</h5>
         <ul class="mb-0">
@@ -39,22 +39,38 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
     </div>
 
+    <div th:if="${#strings.toString(order.status) == 'CANCELLED' && order.cancellationReason != null}"
+         class="alert alert-warning alert-dismissible fade show shadow-sm mb-4" role="alert">
+        <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Причина отмены</h5>
+
+        <p class="mb-0"
+           th:with="matchedItem=${order.items.?[#root.order.cancellationReason != null && #root.order.cancellationReason.contains(productId.toString())]}"
+           th:text="${!matchedItem.isEmpty() ? #strings.replace(order.cancellationReason, 'ID: ' + matchedItem[0].productId, '«' + matchedItem[0].title + '»') : order.cancellationReason}">
+            Причина отмены
+        </p>
+
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+    </div>
+
     <!-- Карточка заказа -->
     <div class="card shadow border-0">
         <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
             <h4 class="mb-0 fw-bold">Заказ #<span th:text="${order.id}">12345</span></h4>
+
             <!-- Статус заказа -->
             <span class="badge fs-6 py-2 px-3"
                   th:classappend="${#strings.toString(order.status) == 'CREATED' ? 'bg-primary' :
-                                   (#strings.toString(order.status) == 'CONFIRMED' ? 'bg-success' : 'bg-secondary')}"
+                                   (#strings.toString(order.status) == 'CONFIRMED' ? 'bg-success' : 'bg-danger')}"
                   th:text="${order.status}">CREATED</span>
         </div>
+
 
         <div class="card-body p-4">
             <!-- Дата оформления -->
             <p class="text-muted mb-4" th:if="${order.createdAt != null}">
                 Дата оформления: <strong class="text-dark"
-                                         th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2026 15:00</strong>
+                                         th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2026
+                15:00</strong>
             </p>
 
             <h5 class="mb-3">Состав заказа</h5>
@@ -78,7 +94,10 @@
                         </td>
                         <td th:text="${#numbers.formatDecimal(item.price, 1, 'COMMA', 2, 'POINT') + ' ₽'}">1000 ₽</td>
                         <td th:text="${item.quantity}">2</td>
-                        <td class="fw-bold" th:text="${#numbers.formatDecimal(item.price * item.quantity, 1, 'COMMA', 2, 'POINT') + ' ₽'}">2000 ₽</td>
+                        <td class="fw-bold"
+                            th:text="${#numbers.formatDecimal(item.price * item.quantity, 1, 'COMMA', 2, 'POINT') + ' ₽'}">
+                            2000 ₽
+                        </td>
                     </tr>
                     </tbody>
                 </table>
@@ -87,29 +106,57 @@
             <!-- Итоговая сумма -->
             <div class="d-flex justify-content-end mb-2">
                 <h4 class="mb-0">Итого к оплате:
-                    <span class="text-primary fw-bold" th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'COMMA', 2, 'POINT') + ' ₽'}">0 ₽</span>
+                    <span class="text-primary fw-bold"
+                          th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'COMMA', 2, 'POINT') + ' ₽'}">0 ₽</span>
                 </h4>
             </div>
         </div>
 
-        <!-- Кнопки управления (отображаются ТОЛЬКО если статус CREATED) -->
+        <!-- 2. КНОПКИ ДЕЙСТВИЙ (показываются только для незавершенных заказов) -->
         <div class="card-footer bg-light p-3 d-flex justify-content-end gap-2"
              th:if="${#strings.toString(order.status) == 'CREATED'}">
 
-            <!-- Кнопка отмены -->
             <form method="post" th:action="@{/orders/{id}/cancel(id=${order.id})}" class="m-0">
                 <button type="submit" class="btn btn-outline-danger">Отменить заказ</button>
             </form>
 
-            <!-- Кнопка подтверждения -->
             <form method="post" th:action="@{/orders/{id}/confirm(id=${order.id})}" class="m-0">
                 <button type="submit" class="btn btn-success">Подтвердить заказ</button>
             </form>
-
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Скрипт для поллинга статуса -->
+<script th:inline="javascript">
+    // Получаем текущий статус и ID заказа из Thymeleaf
+    const currentStatus = /*[[${order.status}]]*/ 'CREATED';
+    const orderId = /*[[${order.id}]]*/ '123';
+
+    // Запускаем опрос только если заказ находится в статусе CREATED (или PENDING)
+    if (currentStatus === 'CREATED') {
+        const pollInterval = setInterval(async () => {
+            try {
+                const response = await fetch(`/orders/${orderId}/status`);
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Если статус на сервере отличается от того, что сейчас на странице
+                    if (data.status !== currentStatus) {
+                        clearInterval(pollInterval); // Останавливаем таймер
+                        console.log('Статус изменился на:', data.status, 'Перезагружаем страницу...');
+
+                        // Перезагружаем страницу. Thymeleaf отрендерит всё в новом виде
+                        window.location.reload();
+                    }
+                }
+            } catch (error) {
+                console.error("Ошибка при проверке статуса заказа:", error);
+            }
+        }, 3000); // Опрашиваем каждые 3 секунды (3000 мс)
+    }
+</script>
 </body>
 </html>

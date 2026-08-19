@@ -155,6 +155,7 @@ public class DefaultOrderService implements OrderService {
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
 
         order.setStatus(OrderStatus.CANCELLED);
+        order.setCancellationReason(reason);
 
         return mapToDto(order);
     }
@@ -167,6 +168,7 @@ public class DefaultOrderService implements OrderService {
                 order.getTotalAmount(),
                 order.getDeliveryAddress(),
                 order.getComment(),
+                order.getCancellationReason(),
                 order.getItems().stream()
                         .map(orderItem -> new OrderItemDto(
                                 orderItem.getId(),

@@ -12,6 +12,7 @@ public record OrderDto(
         BigDecimal totalAmount,
         String deliveryAddress,
         String comment,
+        String cancellationReason,
         List<OrderItemDto> items,
         Instant createdAt,
         Instant updatedAt

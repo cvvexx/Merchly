@@ -2,6 +2,7 @@ package io.cvvexxx.frontend.client.order;
 
 import io.cvvexxx.frontend.dto.order.NewOrderDto;
 import io.cvvexxx.frontend.dto.order.OrderDto;
+import io.cvvexxx.frontend.dto.order.OrderStatusDto;
 
 import java.util.List;
 import java.util.UUID;
@@ -17,4 +18,6 @@ public interface OrdersRestClient {
     OrderDto getOrder(UUID orderId);
 
     List<OrderDto> getUserOrders();
+
+    OrderStatusDto getOrderStatus(UUID orderId);
 }

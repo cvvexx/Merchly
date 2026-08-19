@@ -1,5 +1,6 @@
 package io.cvvexxx.orders.service;
 
+import io.cvvexxx.orders.domain.OrderStatus;
 import io.cvvexxx.orders.dto.NewOrderDto;
 import io.cvvexxx.orders.dto.OrderDto;
 
