@@ -17,10 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
-import java.util.Comparator;
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -148,15 +145,31 @@ public class DefaultProductService implements ProductService {
             @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
     })
     public void deductStock(List<OrderItemPayload> items) {
-        log.info("checking if order is correct. Items {}", items);
+        log.info("Checking stock for items: {}", items);
+
+        List<UUID> invalidProductIds = new ArrayList<>();
+
         for (OrderItemPayload item : items) {
             Product product = productRepository.findById(item.productId())
                     .orElseThrow(() -> new EntityNotFoundException("Товар не найден: " + item.productId()));
-            log.info("product quantity: {}. Order quantity {}", product.getQuantity(), item.quantity());
+
+            log.info("Product stock: {}. Requested: {}", product.getQuantity(), item.quantity());
+
             if (product.getQuantity() < item.quantity()) {
-                throw new InsufficientStockException(product.getId(),
-                        "Недостаточно товара на складе ID: " + product.getId());
+                invalidProductIds.add(item.productId());
             }
+        }
+        log.info("Product stock for items: {}", Arrays.toString(invalidProductIds.toArray()));
+        if (!invalidProductIds.isEmpty()) {
+            throw new InsufficientStockException(
+                    invalidProductIds,
+                    "Недостаточно товара на складе ID: " + invalidProductIds
+            );
+        }
+
+        for (OrderItemPayload item : items) {
+            Product product = productRepository.findById(item.productId())
+                    .orElseThrow(() -> new EntityNotFoundException("Товар не найден: " + item.productId()));
 
             product.setQuantity(product.getQuantity() - item.quantity());
         }

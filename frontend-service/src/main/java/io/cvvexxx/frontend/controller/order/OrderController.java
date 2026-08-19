@@ -69,7 +69,8 @@ public class OrderController {
         OrderDto order = ordersRestClient.getOrder(orderId);
 
         String comment = order.cancellationReason() != null ? order.cancellationReason() : "";
-
+        log.info("Order status: {}", order.status());
+        log.info("Order comment: {}", comment);
         return ResponseEntity.ok(Map.of(
                 "status", order.status().toString(),
                 "comment", comment

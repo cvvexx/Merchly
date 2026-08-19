@@ -27,10 +27,10 @@ public class OrderKafkaListener {
             productService.deductStock(event.items());
             log.info("Успешно списаны товары для заказа: {}", event.orderId());
         } catch (InsufficientStockException e) {
-            log.error("Нехватка товара {} для заказа {}", e.getProductId(), event.orderId());
+            log.error("Нехватка товара(ов) {} для заказа {}", e.getProductIds(), event.orderId());
             OrderFailedEvent failedEvent = new OrderFailedEvent(
                     event.orderId(),
-                    e.getProductId(),
+                    e.getProductIds(),
                     e.getMessage()
             );
             orderEventPublisher.publishOrderFailed(failedEvent);

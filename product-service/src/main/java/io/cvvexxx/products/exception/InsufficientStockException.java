@@ -1,14 +1,16 @@
 package io.cvvexxx.products.exception;
 
 import lombok.Getter;
+
+import java.util.List;
 import java.util.UUID;
 
 @Getter
 public class InsufficientStockException extends RuntimeException {
-    private final UUID productId;
+    private final List<UUID> productIds;
 
-    public InsufficientStockException(UUID productId, String message) {
+    public InsufficientStockException(List<UUID> productIds, String message) {
         super(message);
-        this.productId = productId;
+        this.productIds = productIds;
     }
 }
