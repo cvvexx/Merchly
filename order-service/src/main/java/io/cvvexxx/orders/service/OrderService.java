@@ -12,7 +12,9 @@ public interface OrderService {
 
     OrderDto confirmOrder(UUID orderId, UUID currentUserId, boolean isAdmin);
 
-    OrderDto cancelOrder(UUID orderId, UUID currentUserId, boolean isAdmin);
+    OrderDto cancelOrderByUser(UUID orderId, UUID currentUserId, boolean isAdmin);
+
+    OrderDto cancelOrderBySystem(UUID orderId, String reason);
 
     OrderDto getOrder(UUID orderId, UUID currentUserId, boolean isAdmin);
 

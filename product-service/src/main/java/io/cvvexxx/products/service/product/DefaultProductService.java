@@ -154,7 +154,8 @@ public class DefaultProductService implements ProductService {
                     .orElseThrow(() -> new EntityNotFoundException("Товар не найден: " + item.productId()));
             log.info("product quantity: {}. Order quantity {}", product.getQuantity(), item.quantity());
             if (product.getQuantity() < item.quantity()) {
-                throw new InsufficientStockException("Недостаточно товара на складе ID: " + product.getId());
+                throw new InsufficientStockException(product.getId(),
+                        "Недостаточно товара на складе ID: " + product.getId());
             }
 
             product.setQuantity(product.getQuantity() - item.quantity());

@@ -69,7 +69,7 @@ public class OrderController {
     ) {
         UUID currentUserId = currentUserId(jwt);
         log.info("Request received to cancel order {} by user {}", orderId, currentUserId);
-        return ResponseEntity.ok(orderService.cancelOrder(orderId, currentUserId, hasAdminRole(jwt)));
+        return ResponseEntity.ok(orderService.cancelOrderByUser(orderId, currentUserId, hasAdminRole(jwt)));
     }
 
     @GetMapping("/{orderId}")

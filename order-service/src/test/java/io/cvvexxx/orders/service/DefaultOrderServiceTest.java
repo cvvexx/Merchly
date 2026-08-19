@@ -10,7 +10,6 @@ import io.cvvexxx.orders.entity.Order;
 import io.cvvexxx.orders.entity.OrderItem;
 import io.cvvexxx.orders.event.OrderCreatedEvent;
 import io.cvvexxx.orders.exception.OrderNotFoundException;
-import io.cvvexxx.orders.kafka.OrderEventPublisher;
 import io.cvvexxx.orders.repository.OrderRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,7 +25,6 @@ import org.springframework.security.access.AccessDeniedException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -191,7 +189,7 @@ class DefaultOrderServiceTest {
     }
 
     @Nested
-    @DisplayName("cancelOrder")
+    @DisplayName("cancelOrderByUser")
     class CancelOrderTests {
 
         @Test
@@ -205,7 +203,7 @@ class DefaultOrderServiceTest {
                 return order;
             });
 
-            OrderDto result = orderService.cancelOrder(ORDER_ID, USER_ID, false);
+            OrderDto result = orderService.cancelOrderByUser(ORDER_ID, USER_ID, false);
 
             assertEquals(OrderStatus.CANCELLED, result.status());
         }
@@ -217,7 +215,7 @@ class DefaultOrderServiceTest {
 
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
-                    () -> orderService.cancelOrder(ORDER_ID, USER_ID, false)
+                    () -> orderService.cancelOrderByUser(ORDER_ID, USER_ID, false)
             );
 
             assertEquals("order.errors.cannot_cancel", exception.getMessage());
@@ -230,7 +228,7 @@ class DefaultOrderServiceTest {
 
             OrderNotFoundException exception = assertThrows(
                     OrderNotFoundException.class,
-                    () -> orderService.cancelOrder(ORDER_ID, USER_ID, false)
+                    () -> orderService.cancelOrderByUser(ORDER_ID, USER_ID, false)
             );
 
             assertEquals("order.errors.order_not_found", exception.getMessage());

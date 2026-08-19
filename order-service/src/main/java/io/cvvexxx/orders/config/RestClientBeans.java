@@ -2,7 +2,6 @@ package io.cvvexxx.orders.config;
 
 import io.cvvexxx.orders.client.RestClientProductsRestClient;
 import io.cvvexxx.orders.client.RestClientUsersRestClient;
-import io.cvvexxx.orders.security.KeycloakJwtAuthenticationToken;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

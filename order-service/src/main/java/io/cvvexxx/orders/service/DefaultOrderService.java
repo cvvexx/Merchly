@@ -109,7 +109,7 @@ public class DefaultOrderService implements OrderService {
 
     @Override
     @Transactional
-    public OrderDto cancelOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
+    public OrderDto cancelOrderByUser(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
 
@@ -127,7 +127,7 @@ public class DefaultOrderService implements OrderService {
         return mapToDto(savedOrder);
     }
 
-    @Override
+    @Override//TODO(ADD CACHING)
     @Transactional(readOnly = true)
     public OrderDto getOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
@@ -140,12 +140,23 @@ public class DefaultOrderService implements OrderService {
         return mapToDto(order);
     }
 
-    @Override
+    @Override//TODO(ADD CACHING)
     @Transactional(readOnly = true)
     public List<OrderDto> getCurrentUserOrders(UUID currentUserId) {
         return orderRepository.findAllByUserIdOrderByCreatedAtDesc(currentUserId).stream()//TODO(ПЕРЕДЕЛАТЬ В OPTIONAL)
                 .map(this::mapToDto)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public OrderDto cancelOrderBySystem(UUID orderId, String reason) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        order.setStatus(OrderStatus.CANCELLED);
+
+        return mapToDto(order);
     }
 
     private OrderDto mapToDto(Order order) {
