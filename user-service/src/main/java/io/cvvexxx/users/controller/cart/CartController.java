@@ -58,4 +58,15 @@ public class CartController {
         return ResponseEntity.noContent().build();
     }
 
+    @DeleteMapping
+    public ResponseEntity<Void> clearCart(
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        UUID currentUserId = UUID.fromString(jwt.getClaimAsString("sub"));
+
+        cartService.clearCart(currentUserId);
+
+        return ResponseEntity.noContent().build();
+    }
+
 }

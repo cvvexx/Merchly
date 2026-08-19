@@ -127,6 +127,7 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: merchly_kafka
+    restart: always
     env_file:
       - .env.dev
     ports:

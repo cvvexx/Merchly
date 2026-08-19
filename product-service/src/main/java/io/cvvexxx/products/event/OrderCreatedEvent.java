@@ -1,4 +1,4 @@
-package io.cvvexxx.orders.event;
+package io.cvvexxx.products.event;
 
 import java.math.BigDecimal;
 import java.util.List;

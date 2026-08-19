@@ -1,6 +1,7 @@
 package io.cvvexxx.products.service.product;
 
 import io.cvvexxx.products.dto.ProductDto;
+import io.cvvexxx.products.event.OrderItemPayload;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
@@ -22,4 +23,6 @@ public interface ProductService {
                        BigDecimal price, MultipartFile imageFileName);
 
     List<ProductDto> findAllByIdIn(List<UUID> ids);
+
+    void deductStock(List<OrderItemPayload> items);
 }

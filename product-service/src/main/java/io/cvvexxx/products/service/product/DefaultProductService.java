@@ -2,8 +2,11 @@ package io.cvvexxx.products.service.product;
 
 import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
+import io.cvvexxx.products.event.OrderItemPayload;
+import io.cvvexxx.products.exception.InsufficientStockException;
 import io.cvvexxx.products.repository.ProductRepository;
 import io.cvvexxx.products.service.minio.DefaultMinioService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -136,6 +139,26 @@ public class DefaultProductService implements ProductService {
     public List<ProductDto> findAllByIdIn(List<UUID> ids) {
         return productRepository.findAllById(ids).stream().map(this::mapToDto)
                 .toList();
+    }
+
+    @Transactional
+    @Override
+    @Caching(evict = {
+            @CacheEvict(value = CACHE_PRODUCT_NAME, allEntries = true),
+            @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
+    })
+    public void deductStock(List<OrderItemPayload> items) {
+        log.info("checking if order is correct. Items {}", items);
+        for (OrderItemPayload item : items) {
+            Product product = productRepository.findById(item.productId())
+                    .orElseThrow(() -> new EntityNotFoundException("Товар не найден: " + item.productId()));
+            log.info("product quantity: {}. Order quantity {}", product.getQuantity(), item.quantity());
+            if (product.getQuantity() < item.quantity()) {
+                throw new InsufficientStockException("Недостаточно товара на складе ID: " + product.getId());
+            }
+
+            product.setQuantity(product.getQuantity() - item.quantity());
+        }
     }
 
     private ProductDto mapToDto(Product product) {

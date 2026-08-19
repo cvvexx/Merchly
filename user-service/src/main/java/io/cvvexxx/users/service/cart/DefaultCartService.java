@@ -18,6 +18,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class DefaultCartService implements CartService {
+    //TODO(добавить кэш)
 
     private final CartItemRepository cartItemRepository;
 
@@ -63,5 +64,12 @@ public class DefaultCartService implements CartService {
                 .orElseThrow(() -> new NoSuchElementException("errors.404.header"));
 
         cartItemRepository.delete(cartItem);
+    }
+
+    @Override
+    @Transactional
+    public void clearCart(UUID currentUserId) {
+        List<CartItem> cartItems = cartItemRepository.findAllByUserId(currentUserId);
+        cartItemRepository.deleteAll(cartItems);
     }
 }

@@ -1,11 +1,13 @@
 package io.cvvexxx.orders.service;
 
 import io.cvvexxx.orders.client.ProductsRestClient;
+import io.cvvexxx.orders.client.UsersRestClient;
 import io.cvvexxx.orders.domain.OrderStatus;
 import io.cvvexxx.orders.dto.*;
 import io.cvvexxx.orders.entity.Order;
 import io.cvvexxx.orders.entity.OrderItem;
 import io.cvvexxx.orders.event.OrderCreatedEvent;
+import io.cvvexxx.orders.event.OrderItemPayload;
 import io.cvvexxx.orders.exception.OrderAccessDeniedException;
 import io.cvvexxx.orders.exception.OrderCannotCancelException;
 import io.cvvexxx.orders.exception.OrderCannotConfirmException;
@@ -30,7 +32,8 @@ import java.util.stream.Collectors;
 public class DefaultOrderService implements OrderService {
 
     private final OrderRepository orderRepository;
-    private final ProductsRestClient productClient;
+    private final ProductsRestClient productsRestClient;
+    private final UsersRestClient usersRestClient;
     private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
@@ -55,7 +58,7 @@ public class DefaultOrderService implements OrderService {
         for (Map.Entry<UUID, Integer> entry : quantityByProduct.entrySet()) {
             UUID productId = entry.getKey();
             int quantity = entry.getValue();
-            ProductDto product = productClient.findById(productId);
+            ProductDto product = productsRestClient.findById(productId);
             BigDecimal price = product.price();
             BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(quantity));
             totalPrice = totalPrice.add(itemTotal);
@@ -69,8 +72,17 @@ public class DefaultOrderService implements OrderService {
         }
         order.setTotalAmount(totalPrice);
         Order savedOrder = orderRepository.save(order);
+        usersRestClient.clearUserCart();
         applicationEventPublisher.publishEvent(
-                new OrderCreatedEvent(savedOrder.getId(), savedOrder.getTotalAmount())
+                new OrderCreatedEvent(
+                        savedOrder.getId(),
+                        savedOrder.getTotalAmount(),
+                        savedOrder.getItems()
+                                .stream().map(orderItem -> new OrderItemPayload(
+                                        orderItem.getProductId(),
+                                        orderItem.getQuantity()
+                                )).toList()
+                )
         );
         return mapToDto(savedOrder);
     }
