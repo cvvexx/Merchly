@@ -1,6 +1,7 @@
 package io.cvvexxx.orders.service;
 
 import io.cvvexxx.orders.client.ProductsRestClient;
+import io.cvvexxx.orders.client.UsersRestClient;
 import io.cvvexxx.orders.domain.OrderStatus;
 import io.cvvexxx.orders.dto.NewOrderDto;
 import io.cvvexxx.orders.dto.NewOrderItemDto;
@@ -49,6 +50,9 @@ class DefaultOrderServiceTest {
 
     @Mock
     private ProductsRestClient productClient;
+
+    @Mock
+    private UsersRestClient usersRestClient;
 
     @InjectMocks
     private DefaultOrderService orderService;

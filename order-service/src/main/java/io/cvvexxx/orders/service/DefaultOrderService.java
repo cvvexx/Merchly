@@ -60,6 +60,9 @@ public class DefaultOrderService implements OrderService {
             int quantity = entry.getValue();
             ProductDto product = productsRestClient.findById(productId);
             BigDecimal price = product.price();
+            if (price == null) {
+                throw new IllegalStateException("order.errors.product.price_missing");
+            }
             BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(quantity));
             totalPrice = totalPrice.add(itemTotal);
             order.addItem(new OrderItem(
