@@ -59,9 +59,9 @@
 
             <!-- Статус заказа -->
             <span class="badge fs-6 py-2 px-3"
-                  th:classappend="${#strings.toString(order.status) == 'CREATED' ? 'bg-primary' :
+                  th:classappend="${#strings.toString(order.status) == 'PENDING' ? 'bg-primary' :
                                    (#strings.toString(order.status) == 'CONFIRMED' ? 'bg-success' : 'bg-danger')}"
-                  th:text="${order.status}">CREATED</span>
+                  th:text="${order.status}">PENDING</span>
         </div>
 
 
@@ -114,7 +114,7 @@
 
         <!-- 2. КНОПКИ ДЕЙСТВИЙ (показываются только для незавершенных заказов) -->
         <div class="card-footer bg-light p-3 d-flex justify-content-end gap-2"
-             th:if="${#strings.toString(order.status) == 'CREATED'}">
+             th:if="${#strings.toString(order.status) == 'PENDING'}">
 
             <form method="post" th:action="@{/orders/{id}/cancel(id=${order.id})}" class="m-0">
                 <button type="submit" class="btn btn-outline-danger">Отменить заказ</button>
@@ -132,11 +132,11 @@
 <!-- Скрипт для поллинга статуса -->
 <script th:inline="javascript">
     // Получаем текущий статус и ID заказа из Thymeleaf
-    const currentStatus = /*[[${order.status}]]*/ 'CREATED';
+    const currentStatus = /*[[${order.status}]]*/ 'PENDING';
     const orderId = /*[[${order.id}]]*/ '123';
 
-    // Запускаем опрос только если заказ находится в статусе CREATED (или PENDING)
-    if (currentStatus === 'CREATED') {
+    // Запускаем опрос только если заказ находится в статусе PENDING (или PENDING)
+    if (currentStatus === 'PENDING') {
         const pollInterval = setInterval(async () => {
             try {
                 const response = await fetch(`/orders/${orderId}/status`);

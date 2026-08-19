@@ -1,7 +1,7 @@
 package io.cvvexxx.orders.domain;
 
 public enum OrderStatus {
-    CREATED,
+    PENDING,
     CONFIRMED,
     CANCELLED
 }

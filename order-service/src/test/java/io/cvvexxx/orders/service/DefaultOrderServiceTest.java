@@ -86,7 +86,7 @@ class DefaultOrderServiceTest {
 
             assertEquals(ORDER_ID, result.id());
             assertEquals(USER_ID, result.userId());
-            assertEquals(OrderStatus.CREATED, result.status());
+            assertEquals(OrderStatus.PENDING, result.status());
             assertEquals(new BigDecimal("350.00"), result.totalAmount());
             assertEquals(2, result.items().size());
 
@@ -136,7 +136,7 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("переводит CREATED заказ в PAID")
         void confirmOrder_WhenCreated_ShouldMarkPaid() {
-            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CREATED, USER_ID)));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, USER_ID)));
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
                 Order order = invocation.getArgument(0);
                 order.setId(ORDER_ID);
@@ -152,7 +152,7 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("не подтверждает чужой заказ")
         void confirmOrder_WhenNotOwner_ShouldThrowAccessDenied() {
-            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CREATED, OTHER_USER_ID)));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, OTHER_USER_ID)));
 
             AccessDeniedException exception = assertThrows(
                     AccessDeniedException.class,
@@ -165,7 +165,7 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("админ может подтвердить чужой заказ")
         void confirmOrder_WhenAdmin_ShouldConfirmForeignOrder() {
-            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CREATED, OTHER_USER_ID)));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, OTHER_USER_ID)));
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
                 Order order = invocation.getArgument(0);
                 order.setId(ORDER_ID);
@@ -199,7 +199,7 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("переводит CREATED заказ в CANCELLED")
         void cancelOrder_WhenCreated_ShouldMarkCancelled() {
-            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CREATED, USER_ID)));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, USER_ID)));
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
                 Order order = invocation.getArgument(0);
                 order.setId(ORDER_ID);
@@ -246,7 +246,7 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("возвращает заказ владельца")
         void getOrder_WhenOwner_ShouldReturnOrder() {
-            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CREATED, USER_ID)));
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, USER_ID)));
 
             OrderDto result = orderService.getOrder(ORDER_ID, USER_ID, false);
 
@@ -258,7 +258,7 @@ class DefaultOrderServiceTest {
         @DisplayName("возвращает список заказов текущего пользователя")
         void getCurrentUserOrders_ShouldMapRepositoryResult() {
             when(orderRepository.findAllByUserIdOrderByCreatedAtDesc(USER_ID))
-                    .thenReturn(List.of(order(OrderStatus.CREATED, USER_ID)));
+                    .thenReturn(List.of(order(OrderStatus.PENDING, USER_ID)));
 
             List<OrderDto> result = orderService.getCurrentUserOrders(USER_ID);
 

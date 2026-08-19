@@ -50,7 +50,7 @@ public class DefaultOrderService implements OrderService {
                 ));
         Order order = Order.builder()
                 .userId(currentUserId)
-                .status(OrderStatus.CREATED)
+                .status(OrderStatus.PENDING)
                 .deliveryAddress(newOrderDto.deliveryAddress())
                 .comment(newOrderDto.comment())
                 .build();
@@ -100,7 +100,7 @@ public class DefaultOrderService implements OrderService {
             throw new OrderAccessDeniedException();
         }
 
-        if (order.getStatus() != OrderStatus.CREATED) {
+        if (order.getStatus() != OrderStatus.PENDING) {
             throw new OrderCannotConfirmException(orderId);
         }
 
