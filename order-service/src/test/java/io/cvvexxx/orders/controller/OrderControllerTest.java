@@ -142,7 +142,7 @@ class OrderControllerTest {
 
         // when
         ResponseEntity<OrderDto> response = controller.createOrder(
-                dto, bindingResult, jwt, UriComponentsBuilder.fromHttpUrl("http://localhost")
+                dto, bindingResult, jwt, UriComponentsBuilder.fromUriString("http://localhost")
         );
 
         // then

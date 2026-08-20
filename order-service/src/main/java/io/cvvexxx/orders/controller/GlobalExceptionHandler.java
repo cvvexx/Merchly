@@ -46,6 +46,12 @@ public class GlobalExceptionHandler {
         return buildProblemResponse(HttpStatus.NOT_FOUND, ex, locale);
     }
 
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<ProblemDetail> handleNoSuchElementException(NoSuchElementException ex, Locale locale) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        return buildProblemResponse(HttpStatus.NOT_FOUND, ex, locale);
+    }
+
     @ExceptionHandler(OrderAccessDeniedException.class)
     public ResponseEntity<ProblemDetail> handleOrderAccessDeniedException(OrderAccessDeniedException ex, Locale locale) {
         log.warn("Access denied: {}", ex.getMessage());

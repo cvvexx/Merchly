@@ -84,7 +84,7 @@ class ProductsRestControllerTest {
 
         // when
         ResponseEntity<?> response = controller.createProduct(
-                payload, image, UriComponentsBuilder.fromHttpUrl("http://localhost"), bindingResult
+                payload, image, UriComponentsBuilder.fromUriString("http://localhost"), bindingResult
         );
 
         // then
