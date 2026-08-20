@@ -45,7 +45,7 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("createReview: если запрос корректен, то вернуть сохраненный отзыв в виде Dto")
         public void createReview_requestIsValid_returnReviewDto() {
-            //given
+            // given
             UUID userId = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
             String comment = "comment";
@@ -53,14 +53,14 @@ class DefaultReviewServiceTest {
 
             when(reviewRepository.save(any(Review.class))).thenAnswer(i -> i.getArgument(0));
 
-            //when
+            // when
             ReviewDto reviewDto = defaultReviewService.createReview(new NewReviewDto(
                     productId,
                     rating,
                     comment
             ), userId);
 
-            //then
+            // then
             assertNotNull(reviewDto);
             assertEquals("comment", reviewDto.comment());
             assertEquals(rating, reviewDto.rating());
@@ -70,14 +70,14 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("createReview: если отзыв уже существует, то выбросить IllegalStateException")
         public void createReview_reviewAlreadyExists_throwIllegalStateException() {
-            //given
+            // given
             UUID userId = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
             String comment = "comment";
             int rating = 3;
             when(reviewRepository.existsByProductIdAndUserId(productId, userId)).thenReturn(true);
 
-            //when
+            // when
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class, () -> defaultReviewService.createReview(new NewReviewDto(
                             productId,
@@ -86,7 +86,7 @@ class DefaultReviewServiceTest {
                     ), userId)
             );
 
-            //then
+            // then
             assertNotNull(exception);
             assertEquals("You already have an review on this product", exception.getMessage());
         }
@@ -99,7 +99,7 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("getReviewsByProduct: если товар есть, отдать отзывы в виде Page")
         public void getReviewsByProduct_requestIsValid_returnPageOfReviewDto() {
-            //given
+            // given
             UUID userId1 = UUID.randomUUID();
             UUID userId2 = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
@@ -114,10 +114,10 @@ class DefaultReviewServiceTest {
             when(reviewRepository.findAllByProductId(productId, Pageable.unpaged()))
                     .thenReturn(reviewPage);
 
-            //when
+            // when
             var reviewDtoPage = defaultReviewService.getReviewsByProduct(productId, Pageable.unpaged());
 
-            //then
+            // then
             verify(reviewRepository, times(1)).findAllByProductId(productId, Pageable.unpaged());
             assertEquals(2, reviewDtoPage.getTotalElements());
         }
@@ -125,15 +125,15 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("getReviewsByProduct: если отзывов на товар нет, то вернуть пустой объект Page")
         public void getReviewsByProduct_requestIsInvalid_returnEmptyPage() {
-            //given
+            // given
             UUID productId = UUID.randomUUID();
             when(reviewRepository.findAllByProductId(productId, Pageable.unpaged()))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            //when
+            // when
             var result = defaultReviewService.getReviewsByProduct(productId, Pageable.unpaged());
 
-            //then
+            // then
             verify(reviewRepository, times(1)).findAllByProductId(productId, Pageable.unpaged());
             assertTrue(result.isEmpty());
             verifyNoMoreInteractions(reviewRepository);
@@ -418,6 +418,8 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("getProductsStats: возвращает пустой список, если передан null или пустой список")
         void getProductsStats_NullOrEmptyList_ShouldReturnEmptyListWithoutRepositoryCall() {
+            // given - null and empty product id lists require no repository stubbing
+
             // when
             List<ReviewStatsDto> resultNull = defaultReviewService.getProductsStats(null);
             List<ReviewStatsDto> resultEmpty = defaultReviewService.getProductsStats(List.of());

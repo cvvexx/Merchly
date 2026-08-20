@@ -285,7 +285,13 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("findUsersByIds: если передан пустой список валидных ID, возвращает пустой список")
         void findUsersByIds_EmptyValidIds_ReturnsEmpty() {
-            List<UserProductOwnerDto> result = defaultUserService.findUsersByIds(Collections.singletonList(null));
+            // given
+            List<UUID> idsWithOnlyNull = Collections.singletonList(null);
+
+            // when
+            List<UserProductOwnerDto> result = defaultUserService.findUsersByIds(idsWithOnlyNull);
+
+            // then
             assertTrue(result.isEmpty());
             verifyNoInteractions(userRepository);
         }
@@ -293,7 +299,10 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("findUserById: если ID null, возвращает анонимного пользователя")
         void findUserById_NullId_ReturnsAnonymous() {
+            // given / when
             UserProductOwnerDto result = defaultUserService.findUserById(null);
+
+            // then
             assertEquals("Неизвестен", result.username());
             assertNull(result.id());
         }
@@ -325,8 +334,10 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("Если пользователь не найден, выбрасывается UsernameNotFoundException")
         void getPublicUserProfile_NotFound_ShouldThrowException() {
+            // given
             when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
+            // when / then
             assertThrows(
                     UsernameNotFoundException.class,
                     () -> defaultUserService.getPublicUserProfile("unknown")

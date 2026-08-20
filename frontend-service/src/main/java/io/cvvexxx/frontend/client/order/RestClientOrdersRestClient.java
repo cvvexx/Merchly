@@ -94,7 +94,7 @@ public class RestClientOrdersRestClient implements OrdersRestClient {
                 .body(OrderStatusDto.class);
     }
 
-    private List<String> extractBadRequestErrors(HttpClientErrorException.BadRequest exception) {
+    private List<String> extractBadRequestErrors(HttpClientErrorException exception) {
         ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
         if (problemDetail == null) {
             return List.of("Неизвестная ошибка сервера");
@@ -116,16 +116,11 @@ public class RestClientOrdersRestClient implements OrdersRestClient {
         return List.of("Произошла ошибка при обработке запроса");
     }
 
-    private List<String> getErrorsFromException(HttpClientErrorException exception) {
-        ProblemDetail problemDetail = exception.getResponseBodyAs(ProblemDetail.class);
-        return (List<String>) problemDetail.getProperties().get("errors");
-    }
-
     private BaseClientException mapToCustomException(HttpClientErrorException ex) {
-        List<String> errors = getErrorsFromException(ex);
+        List<String> errors = extractBadRequestErrors(ex);
 
         return switch (ex.getStatusCode().value()) {
-            case 400 -> new BadRequestException(extractBadRequestErrors((HttpClientErrorException.BadRequest) ex));
+            case 400 -> new BadRequestException(errors);
             case 403 -> new OrderAccessDeniedException(errors);
             case 404 -> new OrderNotFoundException(errors);
             case 409 -> new OrderCannotChangeStatusException(errors);

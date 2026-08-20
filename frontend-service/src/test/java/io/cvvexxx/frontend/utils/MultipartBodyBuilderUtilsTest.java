@@ -18,6 +18,7 @@ class MultipartBodyBuilderUtilsTest {
 
     @BeforeEach
     void setUp() {
+        // given
         builderUtils = new MultipartBodyBuilderUtils();
     }
 
@@ -31,11 +32,14 @@ class MultipartBodyBuilderUtilsTest {
         @Test
         @DisplayName("Добавляет только 'payload', если файл равен null")
         void multipartBodyBuilder_NullFile_AddsOnlyPayload() {
+            // given
             SampleDto dto = new SampleDto("Item", 100);
 
+            // when
             MultipartBodyBuilder builder = builderUtils.multipartBodyBuilder(dto, null);
             MultiValueMap<String, HttpEntity<?>> body = builder.build();
 
+            // then
             assertTrue(body.containsKey("payload"));
             assertFalse(body.containsKey("image"));
 
@@ -48,12 +52,15 @@ class MultipartBodyBuilderUtilsTest {
         @Test
         @DisplayName("Добавляет только 'payload', если файл пустой (isEmpty() == true)")
         void multipartBodyBuilder_EmptyFile_AddsOnlyPayload() {
+            // given
             SampleDto dto = new SampleDto("Item", 100);
             MockMultipartFile emptyFile = new MockMultipartFile("image", "", "image/png", new byte[0]);
 
+            // when
             MultipartBodyBuilder builder = builderUtils.multipartBodyBuilder(dto, emptyFile);
             MultiValueMap<String, HttpEntity<?>> body = builder.build();
 
+            // then
             assertTrue(body.containsKey("payload"));
             assertFalse(body.containsKey("image"));
         }
@@ -61,6 +68,7 @@ class MultipartBodyBuilderUtilsTest {
         @Test
         @DisplayName("Добавляет и 'payload', и 'image', если передан непустой файл")
         void multipartBodyBuilder_ValidFile_AddsBothParts() {
+            // given
             SampleDto dto = new SampleDto("Item", 100);
             MockMultipartFile validFile = new MockMultipartFile(
                     "image",
@@ -69,9 +77,11 @@ class MultipartBodyBuilderUtilsTest {
                     "test content".getBytes()
             );
 
+            // when
             MultipartBodyBuilder builder = builderUtils.multipartBodyBuilder(dto, validFile);
             MultiValueMap<String, HttpEntity<?>> body = builder.build();
 
+            // then
             assertTrue(body.containsKey("payload"));
             assertTrue(body.containsKey("image"));
 

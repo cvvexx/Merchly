@@ -23,10 +23,15 @@ class OrderKafkaEventListenerTest {
 
     @Test
     void onOrderCreated_ShouldPublishToKafka() {
+        // given
         OrderCreatedEvent event = new OrderCreatedEvent(UUID.randomUUID(), new BigDecimal("100.00"), List.of(
                 new OrderItemPayload(UUID.randomUUID(), 1)
         ));
+
+        // when
         listener.onOrderCreated(event);
+
+        // then
         verify(orderEventPublisher).publishOrderCreated(event);
     }
 }
