@@ -187,6 +187,29 @@ public class DefaultProductService implements ProductService {
         processedOrderEventRepository.save(new ProcessedOrderEvent(orderId, Instant.now()));
     }
 
+    @Transactional
+    @Override
+    @Caching(evict = {
+            @CacheEvict(value = CACHE_PRODUCT_NAME, allEntries = true),
+            @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
+    })
+    public void restoreStock(UUID orderId, List<OrderItemPayload> items) {
+        if (!processedOrderEventRepository.existsById(orderId)) {
+            log.warn("Заказ {} не найден среди обработанных списаний, восстановление остатка пропущено", orderId);
+            return;
+        }
+
+        log.info("Restoring stock for cancelled order {}: {}", orderId, items);
+
+        for (OrderItemPayload item : items) {
+            Product product = productRepository.findByIdForUpdate(item.productId())
+                    .orElseThrow(() -> new EntityNotFoundException("Товар не найден: " + item.productId()));
+            product.setQuantity(product.getQuantity() + item.quantity());
+        }
+
+        processedOrderEventRepository.deleteById(orderId);
+    }
+
     private ProductDto mapToDto(Product product) {
         return new ProductDto(
                 product.getId(),

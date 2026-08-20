@@ -9,6 +9,7 @@ import io.cvvexxx.orders.dto.OrderDto;
 import io.cvvexxx.orders.dto.ProductDto;
 import io.cvvexxx.orders.entity.Order;
 import io.cvvexxx.orders.entity.OrderItem;
+import io.cvvexxx.orders.event.OrderCancelledEvent;
 import io.cvvexxx.orders.event.OrderCreatedEvent;
 import io.cvvexxx.orders.exception.OrderNotFoundException;
 import io.cvvexxx.orders.repository.OrderRepository;
@@ -231,6 +232,25 @@ class DefaultOrderServiceTest {
 
             // then
             assertEquals(OrderStatus.CANCELLED, result.status());
+        }
+
+        @Test
+        @DisplayName("публикует OrderCancelledEvent с товарами заказа, чтобы product-service вернул остаток на склад")
+        void cancelOrder_WhenPending_ShouldPublishOrderCancelledEventWithOrderItems() {
+            // given
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, USER_ID)));
+            when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            // when
+            orderService.cancelOrderByUser(ORDER_ID, USER_ID, false);
+
+            // then
+            ArgumentCaptor<OrderCancelledEvent> eventCaptor = ArgumentCaptor.forClass(OrderCancelledEvent.class);
+            verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
+            OrderCancelledEvent published = eventCaptor.getValue();
+            assertEquals(ORDER_ID, published.orderId());
+            assertEquals(1, published.items().size());
+            assertEquals(PRODUCT_ID, published.items().get(0).productId());
         }
 
         @Test

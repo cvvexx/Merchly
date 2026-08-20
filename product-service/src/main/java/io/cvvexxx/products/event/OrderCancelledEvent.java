@@ -3,8 +3,8 @@ package io.cvvexxx.products.event;
 import java.util.List;
 import java.util.UUID;
 
-public record OrderFailedEvent(
+public record OrderCancelledEvent(
         UUID orderId,
-        List<UUID> productIds,
-        String reason
-) {}
+        List<OrderItemPayload> items
+) {
+}

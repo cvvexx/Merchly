@@ -5,6 +5,7 @@ import io.cvvexxx.products.controller.payload.NewProductPayload;
 import io.cvvexxx.products.controller.payload.UpdateProductPayload;
 import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
+import io.cvvexxx.products.event.OrderCancelledEvent;
 import io.cvvexxx.products.event.OrderCreatedEvent;
 import io.cvvexxx.products.event.OrderFailedEvent;
 import io.cvvexxx.products.event.OrderItemPayload;
@@ -136,6 +137,8 @@ class ProductServiceIT {
     private String orderCreatedTopic;
     @Value("${app.kafka.topics.order-failed}")
     private String orderFailedTopic;
+    @Value("${app.kafka.topics.order-cancelled}")
+    private String orderCancelledTopic;
 
     private Consumer<String, OrderFailedEvent> orderFailedConsumer;
 
@@ -302,6 +305,55 @@ class ProductServiceIT {
     }
 
     @Test
+    void handleOrderCancelled_AfterStockWasDeducted_ShouldRestoreStockViaRealKafkaAndPostgres() {
+        // given: сток по заказу уже списан через реальный Kafka (тот же путь, что и в тесте выше)
+        UUID productId = UUID.randomUUID();
+        productRepository.save(Product.builder()
+                .id(productId).title("Cancelled order product").quantity(10)
+                .price(BigDecimal.TEN).createdBy(UUID.randomUUID()).isAvailable(true)
+                .build());
+        UUID orderId = UUID.randomUUID();
+        kafkaTemplate.send(orderCreatedTopic, orderId.toString(),
+                new OrderCreatedEvent(orderId, new BigDecimal("30.00"), List.of(new OrderItemPayload(productId, 3))));
+        await().atMost(Duration.ofSeconds(15)).untilAsserted(() ->
+                assertEquals(7, productRepository.findById(productId).orElseThrow().getQuantity()));
+
+        // when: заказ отменяется - order-service публикует OrderCancelledEvent с теми же товарами
+        OrderCancelledEvent cancelledEvent = new OrderCancelledEvent(orderId, List.of(new OrderItemPayload(productId, 3)));
+        kafkaTemplate.send(orderCancelledTopic, orderId.toString(), cancelledEvent);
+
+        // then: сток восстановлен до исходного значения, и заказ больше не считается обработанным
+        await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
+            Product refreshed = productRepository.findById(productId).orElseThrow();
+            assertEquals(10, refreshed.getQuantity());
+            assertFalse(processedOrderEventRepository.existsById(orderId));
+        });
+    }
+
+    @Test
+    void handleOrderCancelled_WhenStockWasNeverDeducted_ShouldLeaveStockUnchanged() {
+        // given: сток по заказу никогда не списывался (например, отменён до обработки OrderCreatedEvent)
+        UUID productId = UUID.randomUUID();
+        productRepository.save(Product.builder()
+                .id(productId).title("Never deducted product").quantity(10)
+                .price(BigDecimal.TEN).createdBy(UUID.randomUUID()).isAvailable(true)
+                .build());
+        UUID orderId = UUID.randomUUID();
+
+        // when
+        kafkaTemplate.send(orderCancelledTopic, orderId.toString(),
+                new OrderCancelledEvent(orderId, List.of(new OrderItemPayload(productId, 3))));
+
+        // then: остаток не меняется (10, а не 13) - восстанавливать было нечего.
+        // Даём консьюмеру реальное время обработать сообщение, затем убеждаемся, что сток не менялся
+        // ни в какой момент (а не только в самом конце) - pollDelay гарантирует хотя бы одну проверку
+        // уже после того, как сообщение точно должно было быть обработано.
+        await().pollDelay(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(10)).untilAsserted(() ->
+                assertEquals(10, productRepository.findById(productId).orElseThrow().getQuantity())
+        );
+    }
+
+    @Test
     void handleOrderCreated_WithInsufficientStock_ShouldPublishOrderFailedEventOnRealKafkaAndNotDeduct() {
         // given
         UUID productId = UUID.randomUUID();
@@ -322,7 +374,7 @@ class ProductServiceIT {
         var record = KafkaTestUtils.getSingleRecord(orderFailedConsumer, orderFailedTopic, Duration.ofSeconds(15));
         OrderFailedEvent failedEvent = record.value();
         assertEquals(orderId, failedEvent.orderId());
-        assertEquals(List.of(productId), failedEvent.productId());
+        assertEquals(List.of(productId), failedEvent.productIds());
 
         Product unchanged = productRepository.findById(productId).orElseThrow();
         assertEquals(1, unchanged.getQuantity());

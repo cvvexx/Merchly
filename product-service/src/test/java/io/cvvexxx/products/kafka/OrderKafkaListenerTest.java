@@ -73,7 +73,7 @@ class OrderKafkaListenerTest {
         ArgumentCaptor<OrderFailedEvent> captor = ArgumentCaptor.forClass(OrderFailedEvent.class);
         verify(orderEventPublisher).publishOrderFailed(captor.capture());
         assertEquals(orderId, captor.getValue().orderId());
-        assertEquals(List.of(productId), captor.getValue().productId());
+        assertEquals(List.of(productId), captor.getValue().productIds());
         assertEquals(exception.getMessage(), captor.getValue().reason());
     }
 

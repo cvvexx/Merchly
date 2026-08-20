@@ -7,10 +7,14 @@ import io.cvvexxx.orders.dto.NewOrderDto;
 import io.cvvexxx.orders.dto.NewOrderItemDto;
 import io.cvvexxx.orders.dto.OrderDto;
 import io.cvvexxx.orders.entity.Order;
+import io.cvvexxx.orders.event.OrderCancelledEvent;
 import io.cvvexxx.orders.repository.OrderRepository;
+import org.apache.kafka.clients.consumer.Consumer;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -20,6 +24,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -33,8 +39,10 @@ import org.testcontainers.kafka.ConfluentKafkaContainer;
 import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -105,6 +113,9 @@ class OrderApiIT {
     @Autowired
     private OrderRepository orderRepository;
 
+    @Value("${app.kafka.topics.order-cancelled}")
+    private String orderCancelledTopic;
+
     private RestClient restClient() {
         return RestClient.builder().baseUrl("http://localhost:" + port).build();
     }
@@ -168,6 +179,65 @@ class OrderApiIT {
         // then
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertEquals(ordersBefore, orderRepository.count());
+    }
+
+    @Test
+    void cancelOrder_WhenPending_ShouldPublishOrderCancelledEventToRealKafkaSoProductServiceCanRestoreStock() {
+        // given: заказ создан и уже мог быть обработан product-service (сток списан)
+        UUID productId = UUID.randomUUID();
+        stubProduct(productId, new BigDecimal("49.90"));
+        NewOrderDto newOrderDto = new NewOrderDto(
+                List.of(new NewOrderItemDto(productId, 2)),
+                "Moscow, Lenina 1",
+                null
+        );
+        OrderDto createdOrder = restClient()
+                .post()
+                .uri("/api/orders/create")
+                .headers(headers -> headers.addAll(authHeaders()))
+                .body(newOrderDto)
+                .retrieve()
+                .body(OrderDto.class);
+
+        var orderCancelledConsumer = createOrderCancelledConsumer();
+        try {
+            // when
+            ResponseEntity<OrderDto> cancelResponse = restClient()
+                    .post()
+                    .uri("/api/orders/{id}/cancel", createdOrder.id())
+                    .headers(headers -> headers.addAll(authHeaders()))
+                    .retrieve()
+                    .toEntity(OrderDto.class);
+
+            // then: заказ отменён в БД...
+            assertEquals(HttpStatus.OK, cancelResponse.getStatusCode());
+            assertEquals(OrderStatus.CANCELLED, orderRepository.findById(createdOrder.id()).orElseThrow().getStatus());
+
+            // ...и в реальный топик order-cancelled опубликовано компенсирующее событие с товарами заказа,
+            // чтобы product-service вернул списанный сток обратно на склад
+            var record = KafkaTestUtils.getSingleRecord(orderCancelledConsumer, orderCancelledTopic, Duration.ofSeconds(15));
+            assertEquals(createdOrder.id(), record.value().orderId());
+            assertEquals(1, record.value().items().size());
+            assertEquals(productId, record.value().items().get(0).productId());
+            assertEquals(2, record.value().items().get(0).quantity());
+        } finally {
+            orderCancelledConsumer.close();
+        }
+    }
+
+    private Consumer<String, OrderCancelledEvent> createOrderCancelledConsumer() {
+        Map<String, Object> props = KafkaTestUtils.consumerProps(
+                kafka.getBootstrapServers(), "order-cancelled-it-" + UUID.randomUUID(), "true"
+        );
+        props.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        props.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.springframework.kafka.support.serializer.JsonDeserializer");
+        props.put("spring.json.trusted.packages", "*");
+        props.put("spring.json.value.default.type", "io.cvvexxx.orders.event.OrderCancelledEvent");
+        props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+
+        var consumer = new DefaultKafkaConsumerFactory<String, OrderCancelledEvent>(props).createConsumer();
+        consumer.subscribe(List.of(orderCancelledTopic));
+        return consumer;
     }
 
     private void stubProduct(UUID productId, BigDecimal price) {

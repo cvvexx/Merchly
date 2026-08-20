@@ -15,6 +15,9 @@
     <description>order-service</description>
 
     <properties>
+        <!-- Overrides Spring Boot 3.4.1's managed testcontainers version (1.20.4): that version's
+             Docker connectivity probe hardcodes API version 1.32, which newer Docker Engines
+             (29.x+) reject as too old ("Minimum supported API version is 1.40"). -->
         <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
 
@@ -96,6 +99,16 @@
             <groupId>org.wiremock</groupId>
             <artifactId>wiremock-standalone</artifactId>
             <version>3.13.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -1,5 +1,6 @@
 package io.cvvexxx.orders.kafka;
 
+import io.cvvexxx.orders.event.OrderCancelledEvent;
 import io.cvvexxx.orders.event.OrderCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,15 @@ public class OrderKafkaEventListener {
             orderEventPublisher.publishOrderCreated(event);
         } catch (Exception e) {
             log.error("Failed to publish OrderCreatedEvent for order {}", event.orderId(), e);
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onOrderCancelled(OrderCancelledEvent event) {
+        try {
+            orderEventPublisher.publishOrderCancelled(event);
+        } catch (Exception e) {
+            log.error("Failed to publish OrderCancelledEvent for order {}", event.orderId(), e);
         }
     }
 }

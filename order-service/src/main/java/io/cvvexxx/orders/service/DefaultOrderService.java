@@ -6,6 +6,7 @@ import io.cvvexxx.orders.domain.OrderStatus;
 import io.cvvexxx.orders.dto.*;
 import io.cvvexxx.orders.entity.Order;
 import io.cvvexxx.orders.entity.OrderItem;
+import io.cvvexxx.orders.event.OrderCancelledEvent;
 import io.cvvexxx.orders.event.OrderCreatedEvent;
 import io.cvvexxx.orders.event.OrderItemPayload;
 import io.cvvexxx.orders.exception.OrderAccessDeniedException;
@@ -126,6 +127,19 @@ public class DefaultOrderService implements OrderService {
 
         order.setStatus(OrderStatus.CANCELLED);
         Order savedOrder = orderRepository.save(order);
+
+        // Заказ был PENDING, значит product-service мог уже успеть списать товар по
+        // OrderCreatedEvent — публикуем компенсирующее событие, чтобы вернуть остаток на склад.
+        applicationEventPublisher.publishEvent(
+                new OrderCancelledEvent(
+                        savedOrder.getId(),
+                        savedOrder.getItems()
+                                .stream().map(orderItem -> new OrderItemPayload(
+                                        orderItem.getProductId(),
+                                        orderItem.getQuantity()
+                                )).toList()
+                )
+        );
 
         return mapToDto(savedOrder);
     }

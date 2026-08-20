@@ -20,8 +20,6 @@ public class OrderFailedKafkaListener {
     )
     public void handleOrderFailed(OrderFailedEvent event) {
         log.warn("Получен отказ по заказу {}. Причина: {}", event.orderId(), event.reason());
-        // Исключение намеренно не перехватывается здесь: оно должно долетать до Kafka
-        // error handler'а (retry + DLT) вместо того, чтобы тихо теряться после логирования.
         orderService.cancelOrderBySystem(event.orderId(), event.reason());
         log.info("Заказ {} успешно переведен в статус CANCELLED", event.orderId());
     }

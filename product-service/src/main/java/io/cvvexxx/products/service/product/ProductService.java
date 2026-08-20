@@ -25,4 +25,6 @@ public interface ProductService {
     List<ProductDto> findAllByIdIn(List<UUID> ids);
 
     void deductStock(UUID orderId, List<OrderItemPayload> items);
+
+    void restoreStock(UUID orderId, List<OrderItemPayload> items);
 }

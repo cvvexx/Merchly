@@ -12,26 +12,15 @@
 
     <properties>
         <java.version>17</java.version>
+        <!-- Overrides Spring Boot 3.4.1's managed testcontainers version (1.20.4): that version's
+             Docker connectivity probe hardcodes API version 1.32, which newer Docker Engines
+             (29.x+) reject as too old ("Minimum supported API version is 1.40"). -->
+        <testcontainers.version>1.21.4</testcontainers.version>
     </properties>
 
     <artifactId>product-service</artifactId>
     <name>product-service</name>
     <description>Backend module for Merchly</description>
-
-    <!-- Overrides Spring Boot 3.4.1's managed testcontainers-bom (1.20.4): that version's Docker
-         connectivity probe hardcodes API version 1.32, which this machine's Docker Engine (29.6.1)
-         rejects as too old ("Minimum supported API version is 1.40"). 1.21.4 negotiates correctly. -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.testcontainers</groupId>
-                <artifactId>testcontainers-bom</artifactId>
-                <version>1.21.4</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
         <dependency>

@@ -473,4 +473,40 @@ class DefaultProductServiceTest {
         verify(productRepository, never()).findByIdForUpdate(any());
         verify(processedOrderEventRepository, never()).save(any());
     }
+
+    @Test
+    @DisplayName("restoreStock: если заказ был обработан (сток списан), возвращает товар на склад и снимает пометку обработанности")
+    void restoreStock_WhenOrderWasProcessed_ShouldRestoreQuantityAndUnmarkProcessed() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        Product product = Product.builder().id(productId).quantity(2).build();
+
+        when(processedOrderEventRepository.existsById(orderId)).thenReturn(true);
+        when(productRepository.findByIdForUpdate(productId)).thenReturn(Optional.of(product));
+
+        // when
+        productService.restoreStock(orderId, List.of(new OrderItemPayload(productId, 3)));
+
+        // then
+        assertEquals(5, product.getQuantity());
+        verify(processedOrderEventRepository, times(1)).deleteById(orderId);
+    }
+
+    @Test
+    @DisplayName("restoreStock: если заказ не был обработан (сток никогда не списывался), ничего не меняет")
+    void restoreStock_WhenOrderWasNotProcessed_ShouldDoNothing() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+
+        when(processedOrderEventRepository.existsById(orderId)).thenReturn(false);
+
+        // when
+        productService.restoreStock(orderId, List.of(new OrderItemPayload(productId, 3)));
+
+        // then
+        verify(productRepository, never()).findByIdForUpdate(any());
+        verify(processedOrderEventRepository, never()).deleteById(any());
+    }
 }

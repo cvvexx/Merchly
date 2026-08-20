@@ -13,12 +13,7 @@ import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
 @Configuration
 public class KafkaErrorHandlingConfig {
 
-    /**
-     * Подхватывается автоконфигурацией Spring Boot и применяется ко всем @KafkaListener
-     * в этом сервисе. При непойманном исключении в слушателе: до 4 повторов с экспоненциальной
-     * задержкой, а если и это не помогло — запись публикуется в топик "<topic>.DLT" вместо
-     * того, чтобы тихо потеряться после логирования.
-     */
+
     @Bean
     public DefaultErrorHandler kafkaErrorHandler(KafkaTemplate<Object, Object> kafkaTemplate) {
         DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaTemplate);
@@ -31,12 +26,16 @@ public class KafkaErrorHandlingConfig {
         return new DefaultErrorHandler(recoverer, backOff);
     }
 
-    /**
-     * Явно заводим DLT-топик, чтобы не полагаться на auto.create.topics.enable брокера
-     * (в проде он обычно выключен). Этот сервис слушает order-created, поэтому его DLT — order-created.DLT.
-     */
     @Bean
     public NewTopic orderCreatedDeadLetterTopic(@Value("${app.kafka.topics.order-created}") String topic) {
+        return TopicBuilder.name(topic + ".DLT")
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic orderCancelledDeadLetterTopic(@Value("${app.kafka.topics.order-cancelled}") String topic) {
         return TopicBuilder.name(topic + ".DLT")
                 .partitions(1)
                 .replicas(1)
