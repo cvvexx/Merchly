@@ -9,13 +9,13 @@ import io.cvvexxx.orders.entity.OrderItem;
 import io.cvvexxx.orders.event.OrderCancelledEvent;
 import io.cvvexxx.orders.event.OrderCreatedEvent;
 import io.cvvexxx.orders.event.OrderItemPayload;
-import io.cvvexxx.orders.exception.OrderAccessDeniedException;
-import io.cvvexxx.orders.exception.OrderCannotCancelException;
-import io.cvvexxx.orders.exception.OrderCannotConfirmException;
-import io.cvvexxx.orders.exception.OrderNotFoundException;
+import io.cvvexxx.orders.exception.*;
 import io.cvvexxx.orders.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +32,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DefaultOrderService implements OrderService {
 
+    private static final String DEFAULT_ORDER_NAME = "order";
+    private static final String DEFAULT_USER_ORDER_NAME = "userOrder";
+
     private final OrderRepository orderRepository;
     private final ProductsRestClient productsRestClient;
     private final UsersRestClient usersRestClient;
@@ -39,6 +42,7 @@ public class DefaultOrderService implements OrderService {
 
     @Override
     @Transactional
+    @CacheEvict(value = DEFAULT_USER_ORDER_NAME, key = "#currentUserId")
     public OrderDto createOrder(NewOrderDto newOrderDto, UUID currentUserId) {
         List<NewOrderItemDto> items = newOrderDto.items();
 
@@ -93,6 +97,10 @@ public class DefaultOrderService implements OrderService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = DEFAULT_ORDER_NAME, key = "#orderId"),
+            @CacheEvict(value = DEFAULT_USER_ORDER_NAME, key = "#result.userId()")
+    })
     public OrderDto confirmOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
@@ -113,6 +121,10 @@ public class DefaultOrderService implements OrderService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = DEFAULT_ORDER_NAME, key = "#orderId"),
+            @CacheEvict(value = DEFAULT_USER_ORDER_NAME, key = "#result.userId()")
+    })
     public OrderDto cancelOrderByUser(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
@@ -128,8 +140,6 @@ public class DefaultOrderService implements OrderService {
         order.setStatus(OrderStatus.CANCELLED);
         Order savedOrder = orderRepository.save(order);
 
-        // Заказ был PENDING, значит product-service мог уже успеть списать товар по
-        // OrderCreatedEvent — публикуем компенсирующее событие, чтобы вернуть остаток на склад.
         applicationEventPublisher.publishEvent(
                 new OrderCancelledEvent(
                         savedOrder.getId(),
@@ -144,8 +154,9 @@ public class DefaultOrderService implements OrderService {
         return mapToDto(savedOrder);
     }
 
-    @Override//TODO(ADD CACHING)
+    @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = DEFAULT_ORDER_NAME, key = "#orderId")
     public OrderDto getOrder(UUID orderId, UUID currentUserId, boolean isAdmin) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
@@ -157,27 +168,34 @@ public class DefaultOrderService implements OrderService {
         return mapToDto(order);
     }
 
-    @Override//TODO(ADD CACHING)
+    @Override
     @Transactional(readOnly = true)
+    @Cacheable(value = DEFAULT_USER_ORDER_NAME, key = "#currentUserId")
     public List<OrderDto> getCurrentUserOrders(UUID currentUserId) {
-        return orderRepository.findAllByUserIdOrderByCreatedAtDesc(currentUserId).stream()//TODO(ПЕРЕДЕЛАТЬ В OPTIONAL)
+        return orderRepository.findAllByUserIdOrderByCreatedAtDesc(currentUserId)
+                .orElseThrow(() -> new UserOrdersNotFoundException(currentUserId))
+                .stream()
                 .map(this::mapToDto)
                 .toList();
     }
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = DEFAULT_ORDER_NAME, key = "#orderId"),
+            @CacheEvict(value = DEFAULT_USER_ORDER_NAME, key = "#result.userId()")
+    })
     public OrderDto cancelOrderBySystem(UUID orderId, String reason) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
 
         if (order.getStatus() == OrderStatus.CANCELLED) {
-            log.info("Заказ {} уже отменён, повторное событие OrderFailedEvent проигнорировано", orderId);
+            log.info("Заказ {} уже отменен, повторная обработка OrderFailedEvent игнорируется", orderId);
             return mapToDto(order);
         }
 
         if (order.getStatus() == OrderStatus.CONFIRMED) {
-            log.warn("Получено OrderFailedEvent для уже подтверждённого заказа {}, статус не изменён", orderId);
+            log.warn("Получен OrderFailedEvent для уже подтвержденного заказа {}, статус не изменен", orderId);
             return mapToDto(order);
         }
 

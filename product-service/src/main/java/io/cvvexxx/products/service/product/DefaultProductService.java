@@ -107,7 +107,7 @@ public class DefaultProductService implements ProductService {
     })
     public void updateProduct(UUID productId, String title, String description, Integer quantity, BigDecimal price, MultipartFile image) {
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));//TODO(СДЕЛАТЬ КАСТОМНЫЕ EXC)
+                .orElseThrow(() -> new NoSuchElementException("catalogue.errors.product.not_found"));
 
         log.info("update product {}", product);
 

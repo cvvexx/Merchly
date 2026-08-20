@@ -309,7 +309,7 @@ class DefaultOrderServiceTest {
         void getCurrentUserOrders_ShouldMapRepositoryResult() {
             // given
             when(orderRepository.findAllByUserIdOrderByCreatedAtDesc(USER_ID))
-                    .thenReturn(List.of(order(OrderStatus.PENDING, USER_ID)));
+                    .thenReturn(Optional.of(List.of(order(OrderStatus.PENDING, USER_ID))));
 
             // when
             List<OrderDto> result = orderService.getCurrentUserOrders(USER_ID);

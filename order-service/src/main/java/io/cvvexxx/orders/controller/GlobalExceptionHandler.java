@@ -70,6 +70,12 @@ public class GlobalExceptionHandler {
         return buildProblemResponse(HttpStatus.CONFLICT, ex, locale);
     }
 
+    @ExceptionHandler(UserOrdersNotFoundException.class)
+    public ResponseEntity<ProblemDetail> handleUserOrdersNotFoundException(UserOrdersNotFoundException ex, Locale locale) {
+        log.warn("Resource not found: {}", ex.getMessage());
+        return buildProblemResponse(HttpStatus.NOT_FOUND, ex, locale);
+    }
+
 
     private ResponseEntity<ProblemDetail> buildProblemResponse(HttpStatus status, Throwable ex, Locale locale) {
         String detail = resolveMessage(ex, locale);
