@@ -24,7 +24,7 @@ public class OrderKafkaListener {
     public void handleOrderCreated(OrderCreatedEvent event) {
         log.info("Получено событие OrderCreatedEvent для заказа: {}", event.orderId());
         try {
-            productService.deductStock(event.items());
+            productService.deductStock(event.orderId(), event.items());
             log.info("Успешно списаны товары для заказа: {}", event.orderId());
         } catch (InsufficientStockException e) {
             log.error("Нехватка товара(ов) {} для заказа {}", e.getProductIds(), event.orderId());
@@ -34,8 +34,6 @@ public class OrderKafkaListener {
                     e.getMessage()
             );
             orderEventPublisher.publishOrderFailed(failedEvent);
-        } catch (Exception e) {
-            log.error("Критическая ошибка при обработке заказа: {}", event.orderId(), e);
         }
     }
 }

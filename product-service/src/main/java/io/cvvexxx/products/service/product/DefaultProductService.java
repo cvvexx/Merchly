@@ -2,8 +2,10 @@ package io.cvvexxx.products.service.product;
 
 import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
+import io.cvvexxx.products.entity.ProcessedOrderEvent;
 import io.cvvexxx.products.event.OrderItemPayload;
 import io.cvvexxx.products.exception.InsufficientStockException;
+import io.cvvexxx.products.repository.ProcessedOrderEventRepository;
 import io.cvvexxx.products.repository.ProductRepository;
 import io.cvvexxx.products.service.minio.DefaultMinioService;
 import jakarta.persistence.EntityNotFoundException;
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -27,6 +30,7 @@ public class DefaultProductService implements ProductService {
     public static final String CACHE_PRODUCTS_LIST_NAME = "productList";
     public static final String CACHE_PRODUCT_NAME = "product";
     private final ProductRepository productRepository;
+    private final ProcessedOrderEventRepository processedOrderEventRepository;
     private final DefaultMinioService defaultMinioService;
 
     @Override
@@ -144,14 +148,21 @@ public class DefaultProductService implements ProductService {
             @CacheEvict(value = CACHE_PRODUCT_NAME, allEntries = true),
             @CacheEvict(value = CACHE_PRODUCTS_LIST_NAME, allEntries = true)
     })
-    public void deductStock(List<OrderItemPayload> items) {
+    public void deductStock(UUID orderId, List<OrderItemPayload> items) {
+        if (processedOrderEventRepository.existsById(orderId)) {
+            log.warn("Заказ {} уже был обработан ранее, повторное событие OrderCreatedEvent проигнорировано", orderId);
+            return;
+        }
+
         log.info("Checking stock for items: {}", items);
 
+        Map<UUID, Product> lockedProducts = new LinkedHashMap<>();
         List<UUID> invalidProductIds = new ArrayList<>();
 
         for (OrderItemPayload item : items) {
-            Product product = productRepository.findById(item.productId())
+            Product product = productRepository.findByIdForUpdate(item.productId())
                     .orElseThrow(() -> new EntityNotFoundException("Товар не найден: " + item.productId()));
+            lockedProducts.put(item.productId(), product);
 
             log.info("Product stock: {}. Requested: {}", product.getQuantity(), item.quantity());
 
@@ -159,8 +170,9 @@ public class DefaultProductService implements ProductService {
                 invalidProductIds.add(item.productId());
             }
         }
-        log.info("Product stock for items: {}", Arrays.toString(invalidProductIds.toArray()));
+
         if (!invalidProductIds.isEmpty()) {
+            log.info("Insufficient stock for items: {}", invalidProductIds);
             throw new InsufficientStockException(
                     invalidProductIds,
                     "Недостаточно товара на складе ID: " + invalidProductIds
@@ -168,11 +180,11 @@ public class DefaultProductService implements ProductService {
         }
 
         for (OrderItemPayload item : items) {
-            Product product = productRepository.findById(item.productId())
-                    .orElseThrow(() -> new EntityNotFoundException("Товар не найден: " + item.productId()));
-
+            Product product = lockedProducts.get(item.productId());
             product.setQuantity(product.getQuantity() - item.quantity());
         }
+
+        processedOrderEventRepository.save(new ProcessedOrderEvent(orderId, Instant.now()));
     }
 
     private ProductDto mapToDto(Product product) {

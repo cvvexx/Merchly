@@ -267,6 +267,45 @@ class DefaultOrderServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("cancelOrderBySystem")
+    class CancelOrderBySystemTests {
+
+        @Test
+        @DisplayName("отменяет PENDING заказ и сохраняет причину")
+        void cancelOrderBySystem_WhenPending_ShouldMarkCancelledWithReason() {
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, USER_ID)));
+
+            OrderDto result = orderService.cancelOrderBySystem(ORDER_ID, "Недостаточно товара на складе");
+
+            assertEquals(OrderStatus.CANCELLED, result.status());
+            assertEquals("Недостаточно товара на складе", result.cancellationReason());
+        }
+
+        @Test
+        @DisplayName("повторное событие для уже отменённого заказа игнорируется (идемпотентность)")
+        void cancelOrderBySystem_WhenAlreadyCancelled_ShouldStayCancelledAndNotOverwriteReason() {
+            Order cancelledOrder = order(OrderStatus.CANCELLED, USER_ID);
+            cancelledOrder.setCancellationReason("Первая причина");
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(cancelledOrder));
+
+            OrderDto result = orderService.cancelOrderBySystem(ORDER_ID, "Вторая причина");
+
+            assertEquals(OrderStatus.CANCELLED, result.status());
+            assertEquals("Первая причина", result.cancellationReason());
+        }
+
+        @Test
+        @DisplayName("устаревшее событие не отменяет уже подтверждённый заказ")
+        void cancelOrderBySystem_WhenAlreadyConfirmed_ShouldNotDowngradeStatus() {
+            when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CONFIRMED, USER_ID)));
+
+            OrderDto result = orderService.cancelOrderBySystem(ORDER_ID, "Недостаточно товара на складе");
+
+            assertEquals(OrderStatus.CONFIRMED, result.status());
+        }
+    }
+
     private ProductDto product(UUID productId, BigDecimal price) {
         return new ProductDto(productId, 1, price);
     }

@@ -120,7 +120,7 @@ public class DefaultOrderService implements OrderService {
             throw new OrderAccessDeniedException();
         }
 
-        if (order.getStatus() == OrderStatus.CONFIRMED) {
+        if (OrderStatus.CONFIRMED.equals(order.getStatus()) || OrderStatus.CANCELLED.equals(order.getStatus())) {
             throw new OrderCannotCancelException(orderId);
         }
 
@@ -156,6 +156,16 @@ public class DefaultOrderService implements OrderService {
     public OrderDto cancelOrderBySystem(UUID orderId, String reason) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new OrderNotFoundException(orderId));
+
+        if (order.getStatus() == OrderStatus.CANCELLED) {
+            log.info("Заказ {} уже отменён, повторное событие OrderFailedEvent проигнорировано", orderId);
+            return mapToDto(order);
+        }
+
+        if (order.getStatus() == OrderStatus.CONFIRMED) {
+            log.warn("Получено OrderFailedEvent для уже подтверждённого заказа {}, статус не изменён", orderId);
+            return mapToDto(order);
+        }
 
         order.setStatus(OrderStatus.CANCELLED);
         order.setCancellationReason(reason);

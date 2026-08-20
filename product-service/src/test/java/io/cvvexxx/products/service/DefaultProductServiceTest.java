@@ -2,6 +2,10 @@ package io.cvvexxx.products.service;
 
 import io.cvvexxx.products.dto.ProductDto;
 import io.cvvexxx.products.entity.Product;
+import io.cvvexxx.products.entity.ProcessedOrderEvent;
+import io.cvvexxx.products.event.OrderItemPayload;
+import io.cvvexxx.products.exception.InsufficientStockException;
+import io.cvvexxx.products.repository.ProcessedOrderEventRepository;
 import io.cvvexxx.products.repository.ProductRepository;
 import io.cvvexxx.products.service.minio.DefaultMinioService;
 import io.cvvexxx.products.service.product.DefaultProductService;
@@ -37,6 +41,9 @@ class DefaultProductServiceTest {
 
     @Mock
     private DefaultMinioService defaultMinioService;
+
+    @Mock
+    private ProcessedOrderEventRepository processedOrderEventRepository;
 
     @InjectMocks
     private DefaultProductService productService;
@@ -407,5 +414,63 @@ class DefaultProductServiceTest {
         ));
 
         verify(defaultMinioService, times(1)).removeObject(oldImage);
+    }
+
+    @Test
+    @DisplayName("deductStock: списывает товар и помечает заказ обработанным")
+    void deductStock_WithSufficientStock_ShouldDeductAndMarkProcessed() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        Product product = Product.builder().id(productId).quantity(5).build();
+
+        when(processedOrderEventRepository.existsById(orderId)).thenReturn(false);
+        when(productRepository.findByIdForUpdate(productId)).thenReturn(Optional.of(product));
+
+        // when
+        productService.deductStock(orderId, List.of(new OrderItemPayload(productId, 3)));
+
+        // then
+        assertEquals(2, product.getQuantity());
+        ArgumentCaptor<ProcessedOrderEvent> eventCaptor = ArgumentCaptor.forClass(ProcessedOrderEvent.class);
+        verify(processedOrderEventRepository, times(1)).save(eventCaptor.capture());
+        assertEquals(orderId, eventCaptor.getValue().getOrderId());
+    }
+
+    @Test
+    @DisplayName("deductStock: если товара не хватает, выбрасывает исключение и не помечает заказ обработанным")
+    void deductStock_WithInsufficientStock_ShouldThrowAndNotMarkProcessed() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        Product product = Product.builder().id(productId).quantity(1).build();
+
+        when(processedOrderEventRepository.existsById(orderId)).thenReturn(false);
+        when(productRepository.findByIdForUpdate(productId)).thenReturn(Optional.of(product));
+
+        // when & then
+        assertThrows(InsufficientStockException.class, () ->
+                productService.deductStock(orderId, List.of(new OrderItemPayload(productId, 3)))
+        );
+
+        assertEquals(1, product.getQuantity());
+        verify(processedOrderEventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("deductStock: если заказ уже был обработан ранее (повтор из Kafka), товар повторно не списывается")
+    void deductStock_WhenOrderAlreadyProcessed_ShouldSkipSilently() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+
+        when(processedOrderEventRepository.existsById(orderId)).thenReturn(true);
+
+        // when
+        productService.deductStock(orderId, List.of(new OrderItemPayload(productId, 3)));
+
+        // then
+        verify(productRepository, never()).findByIdForUpdate(any());
+        verify(processedOrderEventRepository, never()).save(any());
     }
 }
