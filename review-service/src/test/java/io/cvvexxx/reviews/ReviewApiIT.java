@@ -150,6 +150,38 @@ class ReviewApiIT {
     }
 
     @Test
+    @DisplayName("повторное чтение статистики отзывов - второй запрос отдаётся из реального Redis-кеша без ошибок")
+    void getProductStats_ReadTwiceInARow_ShouldServeSecondReadFromRedisCacheWithoutThrowing() {
+        // given
+        UUID productId = UUID.randomUUID();
+        restClient()
+                .post()
+                .uri("/api/reviews/products")
+                .headers(headers -> headers.addAll(authHeaders()))
+                .body(new NewReviewDto(productId, 5, "Great"))
+                .retrieve()
+                .toBodilessEntity();
+
+        // when: первое чтение наполняет кеш статистики в Redis
+        ResponseEntity<ReviewStatsDto> firstRead = restClient()
+                .get()
+                .uri("/api/reviews/products/{productId}/stats", productId)
+                .retrieve()
+                .toEntity(ReviewStatsDto.class);
+
+        // then: второе чтение - настоящий cache hit, читает и десериализует ReviewStatsDto из Redis
+        ResponseEntity<ReviewStatsDto> secondRead = restClient()
+                .get()
+                .uri("/api/reviews/products/{productId}/stats", productId)
+                .retrieve()
+                .toEntity(ReviewStatsDto.class);
+
+        assertEquals(HttpStatus.OK, secondRead.getStatusCode());
+        assertEquals(firstRead.getBody().productId(), secondRead.getBody().productId());
+        assertEquals(firstRead.getBody().averageRating(), secondRead.getBody().averageRating());
+    }
+
+    @Test
     @DisplayName("создание отзыва с некорректным рейтингом возвращает 400 и не сохраняет ничего в Postgres")
     void createReview_WithInvalidRating_ReturnsBadRequestAndPersistsNothing() {
         // given

@@ -18,6 +18,7 @@ import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -200,6 +201,61 @@ class ProductServiceIT {
         assertDoesNotThrow(() -> minioClient.statObject(
                 StatObjectArgs.builder().bucket(bucket).object(created.imageFileName()).build()
         ));
+    }
+
+    @Test
+    @DisplayName("повторное чтение продукта - второй запрос отдаётся из реального Redis-кеша без ошибок")
+    void getProduct_ReadTwiceInARow_ShouldServeSecondReadFromRedisCacheWithoutThrowing() {
+        // given
+        ProductDto created = createProduct(
+                new NewProductPayload("Cached product", "desc", 5, new BigDecimal("9.99"), UUID.randomUUID()),
+                null, ADMIN_TOKEN
+        ).getBody();
+        assertNotNull(created);
+
+        // when: первое чтение наполняет кеш в Redis
+        ProductDto firstRead = restClient()
+                .get()
+                .uri("/api/products/{id}", created.id())
+                .retrieve()
+                .body(ProductDto.class);
+
+        // then: второе чтение - настоящий cache hit, читает и десериализует значение из Redis
+        ProductDto secondRead = restClient()
+                .get()
+                .uri("/api/products/{id}", created.id())
+                .retrieve()
+                .body(ProductDto.class);
+
+        assertEquals(firstRead.id(), secondRead.id());
+        assertEquals(firstRead.title(), secondRead.title());
+    }
+
+    @Test
+    @DisplayName("повторное чтение списка продуктов - второй запрос отдаётся из реального Redis-кеша без ошибок")
+    void getAllProducts_ReadTwiceInARow_ShouldServeSecondReadFromRedisCacheWithoutThrowing() {
+        // given
+        createProduct(
+                new NewProductPayload("Listed product", "desc", 2, BigDecimal.ONE, UUID.randomUUID()),
+                null, ADMIN_TOKEN
+        );
+
+        // when: первое чтение наполняет кеш списка в Redis
+        List<ProductDto> firstRead = restClient()
+                .get()
+                .uri("/api/products")
+                .retrieve()
+                .body(new org.springframework.core.ParameterizedTypeReference<List<ProductDto>>() { });
+
+        // then: второе чтение - настоящий cache hit по списку (Stream.toList() - final класс,
+        // тот самый случай, что раньше валился с SerializationException)
+        List<ProductDto> secondRead = restClient()
+                .get()
+                .uri("/api/products")
+                .retrieve()
+                .body(new org.springframework.core.ParameterizedTypeReference<List<ProductDto>>() { });
+
+        assertEquals(firstRead.size(), secondRead.size());
     }
 
     @Test

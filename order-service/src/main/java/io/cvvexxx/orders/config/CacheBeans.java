@@ -3,6 +3,7 @@ package io.cvvexxx.orders.config;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
@@ -12,14 +13,19 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import java.time.Duration;
 
 @Configuration
+@EnableCaching
 public class CacheBeans {
 
     @Bean
     public RedisCacheConfiguration cacheConfiguration(ObjectMapper objectMapper) {
         ObjectMapper cacheObjectMapper = objectMapper.copy();
+        // NON_FINAL skips writing a type id for final root values (records, and the immutable
+        // List returned by Stream.toList()) - GenericJackson2JsonRedisSerializer always reads
+        // the cached value back as Object though, so it always requires one. That mismatch made
+        // every cache hit fail with a SerializationException; EVERYTHING closes the gap.
         cacheObjectMapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,
-                ObjectMapper.DefaultTyping.NON_FINAL,
+                ObjectMapper.DefaultTyping.EVERYTHING,
                 JsonTypeInfo.As.PROPERTY
         );
 
