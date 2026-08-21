@@ -1,199 +1,206 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Корзина | Merchly</title>
-    <!-- CSRF токены для Spring Security (необходимы для DELETE запросов) -->
-    <meta name="_csrf" th:content="${_csrf?.token}"/>
-    <meta name="_csrf_header" th:content="${_csrf?.headerName}"/>
-
-    <!-- Библиотека Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-</head>
+<head th:replace="~{fragments/layout :: head('Корзина')}"></head>
 <body>
 
-<!-- Навигация -->
-<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
-    <div class="container">
-        <a class="navbar-brand fw-bold text-primary" th:href="@{/}">Merchly</a>
+<nav th:replace="~{fragments/layout :: topbar('cart')}"></nav>
 
-        <div class="d-flex align-items-center gap-2">
-            <a class="btn btn-outline-light btn-sm me-2" th:href="@{/cart}">
-                <i class="bi bi-cart3 me-1"></i> Корзина
-            </a>
-            <a class="btn btn-outline-info btn-sm" th:href="@{/profile}">В профиль</a>
+<main class="container my-4 my-lg-5">
+
+    <div class="page-head">
+        <div>
+            <p class="eyebrow mb-0">Перед оформлением</p>
+            <h1 class="page-title">Ваша корзина</h1>
         </div>
-    </div>
-</nav>
 
-<div class="container">
-    <h2 class="mb-4">Ваша корзина</h2>
-
-    <!-- Если корзина пуста -->
-    <div class="alert alert-info" th:if="${items.isEmpty()}">
-        Ваша корзина пока пуста. <a th:href="@{/catalogue/products/list}">Перейти к покупкам</a>.
+        <a class="back-link" th:href="@{/catalogue/products/list}">
+            <span class="back-link__arrow" aria-hidden="true">&larr;</span> Продолжить покупки
+        </a>
     </div>
 
-    <!-- Если в корзине есть товары -->
-    <div id="cart-content" th:if="${!items.isEmpty()}">
-        <table class="table table-hover align-middle">
-            <thead class="table-light">
-            <tr>
-                <th scope="col">Товар</th>
-                <th scope="col">Цена</th>
-                <th scope="col">Количество</th>
-                <th scope="col">Итого</th>
-                <th scope="col">Действие</th>
-            </tr>
-            </thead>
-            <tbody>
-            <!-- Добавлен id для строки (tr), чтобы JS мог ее удалить -->
-            <tr th:each="item : ${items}" th:id="'cart-item-' + ${item.product.id}">
-                <td>
-                    <a class="d-flex align-items-center text-decoration-none text-dark"
-                       th:href="@{/catalogue/products/{id}(id=${item.product.id})}">
+    <!-- Пустая корзина -->
+    <div class="empty-state reveal" th:if="${items.isEmpty()}">
+        <span class="empty-state__icon"><i aria-hidden="true" class="bi bi-bag"></i></span>
+        <h2 class="empty-state__title">В корзине пока пусто</h2>
+        <p class="empty-state__text">Добавьте что-нибудь из каталога — тиражи небольшие, вещи расходятся быстро.</p>
+        <a class="btn btn-primary btn-lg px-4" th:href="@{/catalogue/products/list}">Перейти в каталог</a>
+    </div>
 
-                        <img alt="product"
-                             class="img-thumbnail me-3"
-                             style="width: 64px; height: 64px; object-fit: cover;"
-                             th:src="@{${item.productImageUrl}}">
+    <div class="row g-4" id="cart-content" th:if="${!items.isEmpty()}">
 
-                        <span class="fw-bold hover-link" th:text="${item.product.title}">Название товара</span>
-                    </a>
-                </td>
+        <!-- Список товаров -->
+        <div class="col-lg-7 reveal">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                            <tr>
+                                <th scope="col">Товар</th>
+                                <th scope="col">Цена</th>
+                                <th scope="col">Кол-во</th>
+                                <th scope="col">Сумма</th>
+                                <th scope="col"><span class="visually-hidden">Действие</span></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="item : ${items}" th:id="'cart-item-' + ${item.product.id}">
+                                <td>
+                                    <a class="d-flex align-items-center gap-3 text-decoration-none text-dark"
+                                       th:href="@{/catalogue/products/{id}(id=${item.product.id})}">
+                                        <img alt=""
+                                             class="img-thumbnail"
+                                             style="width: 60px; height: 60px; object-fit: cover;"
+                                             th:src="@{${item.productImageUrl}}">
+                                        <span class="fw-bold hover-link" th:text="${item.product.title}">Название</span>
+                                    </a>
+                                </td>
 
-                <td th:text="${item.product.price + ' ₽'}">1000 ₽</td>
+                                <td class="price text-nowrap" th:text="${item.product.price + ' ₽'}">1000 ₽</td>
 
-                <td th:text="${item.quantity}">2</td>
+                                <td class="mono" th:text="${item.quantity}">2</td>
 
-                <td class="fw-bold" th:text="${item.subtotal + ' ₽'}">2000 ₽</td>
+                                <td class="price fw-bold text-nowrap" th:text="${item.subtotal + ' ₽'}">2000 ₽</td>
 
-                <td>
-                    <!--
-                      Добавлены data-атрибуты:
-                      data-product-id - для формирования URL запроса
-                      data-subtotal - для вычитания из общей суммы в JS
-                    -->
-                    <button class="btn btn-sm btn-outline-danger delete-btn"
-                            th:data-product-id="${item.product.id}"
-                            th:data-subtotal="${item.subtotal}">
-                        Удалить
-                    </button>
-                </td>
-            </tr>
-            </tbody>
-        </table>
-
-        <!-- Блок оформления заказа -->
-        <div class="row mt-5">
-            <!-- Кнопка возврата в каталог (слева) -->
-            <div class="col-md-5 mb-4">
-                <a class="btn btn-outline-secondary" th:href="@{/catalogue/products/list}">
-                    <i class="bi bi-arrow-left"></i> Вернуться в каталог
-                </a>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-danger delete-btn"
+                                            th:aria-label="'Убрать «' + ${item.product.title} + '» из корзины'"
+                                            th:data-product-id="${item.product.id}"
+                                            th:data-quantity="${item.quantity}"
+                                            th:data-subtotal="${item.subtotal}"
+                                            type="button">
+                                        <i aria-hidden="true" class="bi bi-x-lg"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <!-- Форма оформления заказа (справа) -->
-            <div class="col-md-7">
-                <div class="card shadow-sm border-0 p-4">
+        <!-- Оформление заказа -->
+        <div class="col-lg-5 reveal">
+            <div class="card shadow border-0">
+                <div class="card-body p-4">
 
-                    <!-- Форма POST-запроса -->
+                    <p class="eyebrow">Оформление</p>
+                    <h2 class="h5 fw-bold mb-4">Куда доставить</h2>
+
                     <form method="post" th:action="@{/orders/create}">
 
                         <th:block th:each="item, stat : ${items}">
-                            <input type="hidden" th:name="|items[${stat.index}].productId|" th:value="${item.product.id}" />
-                            <input type="hidden" th:name="|items[${stat.index}].quantity|" th:value="${item.quantity}" />
+                            <input th:name="|items[${stat.index}].productId|" th:value="${item.product.id}"
+                                   type="hidden"/>
+                            <input th:name="|items[${stat.index}].quantity|" th:value="${item.quantity}"
+                                   type="hidden"/>
                         </th:block>
 
-                        <!-- Адрес доставки -->
-                        <div class="mb-3 text-start">
-                            <label for="address" class="form-label fw-bold">Адрес доставки <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="address" name="deliveryAddress" required
-                                   placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold" for="address">
+                                Адрес доставки <span class="text-danger">*</span>
+                            </label>
+                            <input class="form-control" id="address" name="deliveryAddress"
+                                   placeholder="г. Москва, ул. Пушкина, д. 10, кв. 5" required type="text">
                         </div>
 
-                        <!-- Комментарий -->
-                        <div class="mb-4 text-start">
-                            <label for="comment" class="form-label fw-bold">Комментарий к заказу</label>
-                            <textarea class="form-control" id="comment" name="comment" rows="2"
-                                      placeholder="Например: Позвонить за час до доставки"></textarea>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold" for="comment">Комментарий к заказу</label>
+                            <textarea class="form-control" id="comment" name="comment"
+                                      placeholder="Например: позвонить за час до доставки" rows="2"></textarea>
                         </div>
 
-                        <!-- Итого и кнопка -->
-                        <div class="d-flex justify-content-between align-items-center border-top pt-4 mt-2">
-                            <h4 class="mb-0">Итого:
-                                <span class="text-primary fw-bold"
-                                      id="total-price-value"
-                                      th:data-total="${totalPrice}"
-                                      th:text="${totalPrice + ' ₽'}"></span>
-                            </h4>
-                            <button type="submit" class="btn btn-success btn-lg">
-                                Оформить заказ
-                            </button>
+                        <div class="d-flex justify-content-between align-items-center border-top pt-3 mb-3">
+                            <span class="eyebrow mb-0">Итого</span>
+                            <span class="price fs-3 fw-bold text-dark"
+                                  id="total-price-value"
+                                  th:data-total="${totalPrice}"
+                                  th:text="${totalPrice + ' ₽'}">0 ₽</span>
                         </div>
 
+                        <button class="btn btn-success btn-lg w-100" type="submit">Оформить заказ</button>
+
+                        <p class="text-muted small mb-0 mt-3">
+                            После оформления склад подтвердит наличие. Статус заказа обновится сам.
+                        </p>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Скрипт для асинхронного удаления -->
+</main>
+
+<nav th:replace="~{fragments/layout :: dock('cart')}"></nav>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+<!-- Удаление товара без перезагрузки страницы -->
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
-
-        const deleteButtons = document.querySelectorAll('.delete-btn');
-
-        deleteButtons.forEach(button => {
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.delete-btn').forEach(function (button) {
             button.addEventListener('click', function () {
-                const productId = this.getAttribute('data-product-id');
-                const subtotal = parseFloat(this.getAttribute('data-subtotal')) || 0;
-                const buttonElement = this;
+                const productId = button.dataset.productId;
+                const subtotal = parseFloat(button.dataset.subtotal) || 0;
+                const quantity = parseInt(button.dataset.quantity, 10) || 1;
 
-                buttonElement.disabled = true;
+                button.disabled = true;
 
-                const headers = {};
-                if (csrfToken && csrfHeader) {
-                    headers[csrfHeader] = csrfToken;
-                }
-
-                fetch(`/cart/${productId}`, {
+                fetch('/cart/' + productId, {
                     method: 'DELETE',
-                    headers: headers
+                    headers: Merchly.csrfHeaders({})
                 })
-                    .then(response => {
-                        if (response.ok) {
-                            const itemRow = document.getElementById(`cart-item-${productId}`);
-                            if (itemRow) {
-                                itemRow.remove();
+                    .then(function (response) {
+                        if (!response.ok) {
+                            throw new Error('HTTP ' + response.status);
+                        }
+
+                        const row = document.getElementById('cart-item-' + productId);
+
+                        // Пересчёт итога
+                        const totalEl = document.getElementById('total-price-value');
+                        if (totalEl) {
+                            const current = parseFloat(totalEl.dataset.total) || 0;
+                            const next = Math.max(0, current - subtotal);
+                            totalEl.dataset.total = next;
+                            totalEl.textContent = next.toFixed(2) + ' ₽';
+                        }
+
+                        // Счётчик в панели навигации
+                        Merchly.writeCartCount(Merchly.readCartCount() - quantity);
+                        Merchly.setCartCount(Merchly.readCartCount(), false);
+
+                        Merchly.notify('Товар убран из корзины', 'ok');
+
+                        let finished = false;
+                        const finish = function () {
+                            if (finished) {
+                                return;
                             }
+                            finished = true;
 
-                            const totalEl = document.getElementById('total-price-value');
-                            if (totalEl) {
-                                let currentTotal = parseFloat(totalEl.getAttribute('data-total')) || 0;
-                                let newTotal = currentTotal - subtotal;
-
-                                if (newTotal < 0) newTotal = 0;
-
-                                totalEl.setAttribute('data-total', newTotal);
-                                totalEl.innerText = newTotal.toFixed(2) + ' ₽';
+                            if (row) {
+                                row.remove();
                             }
-
+                            // Последний товар убран — показываем пустое состояние
                             if (document.querySelectorAll('.delete-btn').length === 0) {
                                 window.location.reload();
                             }
+                        };
+
+                        if (row) {
+                            row.classList.add('is-removing');
+                            row.addEventListener('animationend', finish, {once: true});
+                            // Страховка, если анимации отключены
+                            window.setTimeout(finish, 400);
                         } else {
-                            throw new Error('Ошибка сервера');
+                            finish();
                         }
                     })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Не удалось удалить товар из корзины. Попробуйте снова.');
-                        buttonElement.disabled = false;
+                    .catch(function (error) {
+                        console.error('Не удалось убрать товар из корзины:', error);
+                        Merchly.notify('Товар не убран из корзины. Попробуйте ещё раз.', 'error');
+                        button.disabled = false;
                     });
             });
         });

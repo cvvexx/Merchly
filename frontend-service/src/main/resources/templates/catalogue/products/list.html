@@ -1,69 +1,31 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:sec="http://www.thymeleaf.org/extras/spring-security" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta name="_csrf" th:content="${_csrf.token}"/>
-    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
-    <meta charset="UTF-8">
-    <title>Каталог товаров &ndash; Merchly</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-    <style>
-        .product-card-img-wrapper {
-            height: 220px;
-            overflow: hidden;
-            background-color: #f8f9fa;
-        }
+<head th:replace="~{fragments/layout :: head('Каталог товаров')}"></head>
+<body>
 
-        .product-card-img-wrapper img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            object-position: center;
-        }
+<nav th:replace="~{fragments/layout :: topbar('catalogue')}"></nav>
 
-        .creator-avatar {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            object-fit: cover;
-        }
+<main class="container my-4 my-lg-5">
 
-        .rating-block {
-            font-size: 0.9rem;
-        }
-    </style>
-</head>
-<body class="bg-light">
-
-<!-- Навигация -->
-<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
-    <div class="container">
-        <a class="navbar-brand fw-bold text-primary" th:href="@{/}">Merchly</a>
-
-        <div class="d-flex align-items-center gap-2">
-            <!-- Кнопки корзины и профиля -->
-            <a class="btn btn-outline-light btn-sm me-2" th:href="@{/cart}">
-                <i class="bi bi-cart3 me-1"></i> Корзина
-            </a>
-            <a class="btn btn-outline-info btn-sm" th:href="@{/profile}">В профиль</a>
+    <div class="page-head">
+        <div>
+            <p class="eyebrow mb-0">Все авторы</p>
+            <h1 class="page-title">Каталог товаров</h1>
         </div>
-    </div>
-</nav>
 
-<div class="container mb-5">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h2 text-dark m-0">Каталог товаров</h1>
-        <a class="btn btn-success" sec:authorize="hasRole('ADMIN')" th:href="@{/catalogue/products/create}">+ Добавить
-            товар</a>
+        <a class="btn btn-success" sec:authorize="hasRole('ADMIN')" th:href="@{/catalogue/products/create}">
+            <i aria-hidden="true" class="bi bi-plus-lg"></i> Добавить товар
+        </a>
     </div>
 
-    <!-- Поиск / Фильтр -->
+    <!-- Поиск по названию -->
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-body">
             <form class="row g-2 align-items-center" method="get" th:action="@{/catalogue/products/list}">
                 <div class="col-sm-9">
-                    <input class="form-control" name="filter" placeholder="Поиск по названию..." th:value="${filter}"
-                           type="text">
+                    <label class="visually-hidden" for="filter">Поиск по названию</label>
+                    <input class="form-control" id="filter" name="filter" placeholder="Поиск по названию..."
+                           th:value="${filter}" type="text">
                 </div>
                 <div class="col-sm-3 d-grid">
                     <button class="btn btn-primary" type="submit">Найти</button>
@@ -72,136 +34,87 @@
         </div>
     </div>
 
-    <!-- Сетка товаров -->
-    <div class="row row-cols-1 row-cols-md-3 g-4">
-        <!-- Блок, если товаров нет -->
-        <div class="col-12" th:if="${products.isEmpty()}">
-            <div class="alert alert-info text-center">
-                Товары не найдены.
-            </div>
-        </div>
+    <!-- Ничего не нашлось -->
+    <div class="empty-state reveal" th:if="${products.isEmpty()}">
+        <span class="empty-state__icon"><i aria-hidden="true" class="bi bi-search"></i></span>
+        <h2 class="empty-state__title">Ничего не нашлось</h2>
+        <p class="empty-state__text" th:if="${filter != null and !filter.isEmpty()}">
+            По запросу «<span th:text="${filter}">запрос</span>» товаров нет. Попробуйте другое слово или откройте
+            весь каталог.
+        </p>
+        <p class="empty-state__text" th:unless="${filter != null and !filter.isEmpty()}">
+            Каталог пока пуст. Загляните позже — авторы готовят новые тиражи.
+        </p>
+        <a class="btn btn-outline-primary" th:href="@{/catalogue/products/list}">Показать все товары</a>
+    </div>
 
-        <div class="col" th:each="item : ${products}">
-            <div class="card h-100 shadow-sm border-0">
-                <!-- Картинка товара -->
+    <!-- Сетка товаров -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
+        <div class="col reveal" data-reveal-group="products" th:each="item : ${products}">
+            <div class="card card-lift h-100 shadow-sm border-0">
+
+                <!-- Изображение с ценником-биркой -->
                 <div class="product-card-img-wrapper rounded-top">
-                    <img alt="Изображение товара" class="card-img-top" th:src="@{${item.productImageUrl}}">
+                    <img alt="" class="card-img-top" data-cart-image th:src="@{${item.productImageUrl}}">
+                    <span class="price-tag"
+                          th:text="${#numbers.formatDecimal(item.product.price, 1, 'WHITESPACE', 2, 'POINT')} + ' ₽'">0.00 ₽</span>
                 </div>
 
                 <div class="card-body d-flex flex-column">
-                    <!-- Мета / Создатель -->
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="text-muted small">ID: <span th:text="${item.product.id}"></span></span>
 
-                        <div class="d-flex align-items-center gap-1">
-                            <img alt="Аватар автора" class="creator-avatar border" th:src="@{${item.userAvatarUrl}}">
-                            <span class="text-muted small">
-                                <span class="fw-bold"
-                                      th:text="${item.user != null ? item.user.username : 'Неизвестен'}"></span>
-                            </span>
-                        </div>
+                    <!-- Автор и оценка -->
+                    <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
+                        <a class="d-flex align-items-center gap-1 text-decoration-none hover-link text-muted small"
+                           th:if="${item.user != null}"
+                           th:href="@{/users/{username}(username=${item.user.username})}">
+                            <img alt="" class="creator-avatar border" th:src="@{${item.userAvatarUrl}}">
+                            <span class="fw-bold" th:text="${item.user.username}">автор</span>
+                        </a>
+                        <span class="d-flex align-items-center gap-1 text-muted small" th:if="${item.user == null}">
+                            <img alt="" class="creator-avatar border" th:src="@{${item.userAvatarUrl}}">
+                            <span class="fw-bold">Автор неизвестен</span>
+                        </span>
+
+                        <span class="rating-block text-nowrap">
+                            <th:block th:if="${item.reviewsCount > 0}">
+                                <i aria-hidden="true" class="bi bi-star-fill text-warning"></i>
+                                <span class="fw-bold mono"
+                                      th:text="${#numbers.formatDecimal(item.averageRating, 1, 1)}">4.5</span>
+                                <span class="text-muted" th:text="'(' + ${item.reviewsCount} + ')'">(12)</span>
+                            </th:block>
+                            <th:block th:if="${item.reviewsCount == 0}">
+                                <span class="text-muted">Нет отзывов</span>
+                            </th:block>
+                        </span>
                     </div>
 
-                    <!-- Рейтинг и отзывы (НОВЫЙ БЛОК) -->
-                    <div class="mb-2 rating-block">
-                        <th:block th:if="${item.reviewsCount > 0}">
-                            <i class="bi bi-star-fill text-warning"></i>
-                            <span class="fw-bold"
-                                  th:text="${#numbers.formatDecimal(item.averageRating, 1, 1)}">4.5</span>
-                            <span class="text-muted ms-1" th:text="'(' + ${item.reviewsCount} + ')'">(12)</span>
-                        </th:block>
-                        <th:block th:if="${item.reviewsCount == 0}">
-                            <i class="bi bi-star text-muted"></i>
-                            <span class="text-muted ms-1">Нет отзывов</span>
-                        </th:block>
-                    </div>
+                    <h2 class="card-title h5 fw-bold text-dark" th:text="${item.product.title}">Название товара</h2>
 
-                    <!-- Цена -->
-                    <div class="mb-2">
-                        <span class="text-muted small">Цена: </span>
-                        <span class="fw-bold fs-5 text-success"
-                              th:text="${#numbers.formatDecimal(item.product.price, 1, 'WHITESPACE', 2, 'POINT')} + ' ₽'">0.00 ₽</span>
-                    </div>
-
-                    <!-- Название и описание -->
-                    <h5 class="card-title fw-bold text-dark" th:text="${item.product.title}">Название товара</h5>
                     <p class="card-text text-muted flex-grow-1"
-                       th:text="${item.product.description != null ? #strings.abbreviate(item.product.description, 100) : 'Описание отсутствует...'}"></p>
+                       th:text="${item.product.description != null ? #strings.abbreviate(item.product.description, 100) : 'Описание отсутствует.'}"></p>
 
-                    <!-- Кнопки действий -->
                     <div class="mt-3 d-flex gap-2">
                         <a class="btn btn-outline-primary flex-grow-1"
                            th:href="@{/catalogue/products/{productId}(productId=${item.product.id})}">
                             Подробнее
                         </a>
 
-                        <button class="btn btn-success"
-                                onclick="addToCart(this)"
+                        <button class="btn btn-success text-nowrap" data-add-to-cart
+                                th:aria-label="'Добавить «' + ${item.product.title} + '» в корзину'"
                                 th:data-product-id="${item.product.id}"
                                 type="button">
-                            <i class="bi bi-bag-plus"></i> В корзину
+                            <i aria-hidden="true" class="bi bi-bag-plus"></i> В корзину
                         </button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- JS скрипт для добавления AJAX запросом в корзину -->
-<script>
-    async function addToCart(buttonElement) {
-        const productId = buttonElement.getAttribute('data-product-id');
-        const originalText = buttonElement.innerHTML;
+</main>
 
-        buttonElement.disabled = true;
-        buttonElement.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
-
-        // Получаем CSRF-токены из meta-тегов
-        const csrfToken = document.querySelector('meta[name="_csrf"]')?.getAttribute('content');
-        const csrfHeader = document.querySelector('meta[name="_csrf_header"]')?.getAttribute('content');
-
-        const headers = {
-            'Content-Type': 'application/json'
-        };
-
-        // Прокидываем CSRF-заголовок, если он присутствует в DOM
-        if (csrfToken && csrfHeader) {
-            headers[csrfHeader] = csrfToken;
-        }
-
-        try {
-            const response = await fetch('/cart/add', {
-                method: 'POST',
-                headers: headers, // Используем сформированные заголовки
-                body: JSON.stringify({
-                    productId: productId,
-                    quantity: 1
-                })
-            });
-
-            if (response.ok) {
-                buttonElement.className = 'btn btn-outline-success';
-                buttonElement.innerHTML = '<i class="bi bi-check2"></i> В корзине';
-
-                setTimeout(() => {
-                    buttonElement.className = 'btn btn-success';
-                    buttonElement.innerHTML = originalText;
-                    buttonElement.disabled = false;
-                }, 1500);
-            } else {
-                alert('Не удалось добавить товар в корзину');
-                buttonElement.disabled = false;
-                buttonElement.innerHTML = originalText;
-            }
-        } catch (error) {
-            console.error('Ошибка:', error);
-            alert('Произошла ошибка сети');
-            buttonElement.disabled = false;
-            buttonElement.innerHTML = originalText;
-        }
-    }
-</script>
+<nav th:replace="~{fragments/layout :: dock('catalogue')}"></nav>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 
 </body>
 </html>

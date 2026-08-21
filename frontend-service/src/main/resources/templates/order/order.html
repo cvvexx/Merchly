@@ -1,92 +1,100 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Заказ #[[${order.id}]] | Merchly</title>
-    <!-- Подключение Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+<head th:replace="~{fragments/layout :: head('Заказ #' + ${#strings.toUpperCase(#strings.substring(order.id, 0, 8))})}"></head>
+<body>
 
-<!-- Навигация -->
-<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
-    <div class="container">
-        <a class="navbar-brand fw-bold text-primary" th:href="@{/}">Merchly</a>
-        <div class="d-flex align-items-center gap-2">
-            <a class="btn btn-outline-light btn-sm me-2" th:href="@{/cart}">
-                <i class="bi bi-cart3 me-1"></i> Корзина
-            </a>
-            <a class="btn btn-outline-info btn-sm" th:href="@{/profile}">К профилю</a>
-        </div>
-    </div>
-</nav>
+<nav th:replace="~{fragments/layout :: topbar('orders')}"></nav>
 
-<div class="container">
-    <!-- Кнопка Назад -->
+<main class="container my-4 my-lg-5">
+
     <div class="mb-3">
-        <a th:href="@{/orders}" class="text-decoration-none text-secondary">
-            <i class="bi bi-arrow-left"></i> К списку заказов
+        <a class="back-link" th:href="@{/orders}">
+            <span class="back-link__arrow" aria-hidden="true">&larr;</span> К списку заказов
         </a>
     </div>
 
-    <!-- Ошибки валидации -->
-    <div th:if="${errors}" class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
-        <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Ошибка обработки заказа</h5>
+    <!-- Ошибки обработки заказа -->
+    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" th:if="${errors}">
+        <h2 class="alert-heading h6">
+            <i aria-hidden="true" class="bi bi-exclamation-triangle-fill me-2"></i>Заказ не обработан
+        </h2>
         <ul class="mb-0">
             <li th:each="error : ${errors}" th:text="${error}">Текст ошибки</li>
         </ul>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+        <button aria-label="Закрыть" class="btn-close" data-bs-dismiss="alert" type="button"></button>
     </div>
 
-    <div th:if="${#strings.toString(order.status) == 'CANCELLED' && order.cancellationReason != null}"
-         class="alert alert-warning alert-dismissible fade show shadow-sm mb-4" role="alert">
-        <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill me-2"></i>Причина отмены</h5>
+    <!-- Причина отмены -->
+    <div class="alert alert-warning alert-dismissible fade show shadow-sm mb-4" role="alert"
+         th:if="${#strings.toString(order.status) == 'CANCELLED' && order.cancellationReason != null}">
+        <h2 class="alert-heading h6">
+            <i aria-hidden="true" class="bi bi-exclamation-triangle-fill me-2"></i>Почему заказ отменён
+        </h2>
 
-        <!-- 1. Находим все товары из заказа, чей ID есть в тексте причины отмены -->
+        <!-- Ищем товары заказа, чьи ID упомянуты в тексте причины отмены -->
         <p class="mb-0"
            th:with="matchedItems=${order.items.?[#root.order.cancellationReason != null && #root.order.cancellationReason.contains(productId.toString())]}">
 
-            <!-- 2. Если нашли совпадения — собираем их названия через запятую -->
             <span th:if="${!matchedItems.isEmpty()}">
-                Недостаточно товара на складе:
+                Не хватило товара на складе:
                 <strong th:each="item, iterStat : ${matchedItems}"
-                        th:text="${'«' + item.title + '»' + (iterStat.last ? '' : ', ')}">
-                    «Товар»
-                </strong>
+                        th:text="${'«' + item.title + '»' + (iterStat.last ? '' : ', ')}">«Товар»</strong>
             </span>
 
-            <!-- 3. Если специфических ID в тексте нет — выводим исходную причину -->
-            <span th:if="${matchedItems.isEmpty()}" th:text="${order.cancellationReason}">
-                Причина отмены
-            </span>
+            <span th:if="${matchedItems.isEmpty()}" th:text="${order.cancellationReason}">Причина отмены</span>
         </p>
 
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+        <button aria-label="Закрыть" class="btn-close" data-bs-dismiss="alert" type="button"></button>
     </div>
 
-    <!-- Карточка заказа -->
-    <div class="card shadow border-0">
-        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-            <h4 class="mb-0 fw-bold">Заказ #<span th:text="${order.id}">12345</span></h4>
+    <div class="card shadow border-0 reveal">
 
-            <!-- Статус заказа -->
-            <span class="badge fs-6 py-2 px-3"
-                  th:classappend="${#strings.toString(order.status) == 'PENDING' ? 'bg-primary' :
-                                   (#strings.toString(order.status) == 'CONFIRMED' ? 'bg-success' : 'bg-danger')}"
-                  th:text="${order.status}">PENDING</span>
+        <div class="card-header bg-white border-bottom py-3">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+                <div>
+                    <p class="eyebrow mb-1">Заказ</p>
+                    <h1 class="h4 mb-1 fw-bold order-id"
+                        th:text="'#' + ${#strings.toUpperCase(#strings.substring(order.id, 0, 8))}">#3A7F21C4</h1>
+                    <!-- Полный идентификатор нужен только для обращения в поддержку -->
+                    <span class="mono text-muted d-block" style="font-size: 0.72rem;"
+                          th:text="${order.id}">полный идентификатор</span>
+                </div>
+
+                <!-- Штамп статуса -->
+                <span class="stamp"
+                      th:classappend="${#strings.toString(order.status) == 'CONFIRMED' ? 'stamp--confirmed' :
+                                       (#strings.toString(order.status) == 'PENDING' ? 'stamp--pending' : 'stamp--cancelled')}"
+                      th:text="${#strings.toString(order.status) == 'CONFIRMED' ? 'Подтверждён' :
+                                (#strings.toString(order.status) == 'PENDING' ? 'В обработке' : 'Отменён')}">
+                    В обработке
+                </span>
+            </div>
         </div>
 
-
         <div class="card-body p-4">
-            <!-- Дата оформления -->
-            <p class="text-muted mb-4" th:if="${order.createdAt != null}">
-                Дата оформления: <strong class="text-dark"
-                                         th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2026
-                15:00</strong>
-            </p>
 
-            <h5 class="mb-3">Состав заказа</h5>
+            <div class="row g-3 mb-4">
+                <div class="col-sm-6" th:if="${order.createdAt != null}">
+                    <p class="eyebrow mb-1">Оформлен</p>
+                    <strong class="mono"
+                            th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2026 15:00</strong>
+                </div>
+
+                <div class="col-sm-6">
+                    <p class="eyebrow mb-1">Что дальше</p>
+                    <span th:if="${#strings.toString(order.status) == 'PENDING'}">
+                        Склад проверяет наличие. Страница обновится сама.
+                    </span>
+                    <span th:if="${#strings.toString(order.status) == 'CONFIRMED'}">
+                        Заказ собирают к отправке.
+                    </span>
+                    <span th:if="${#strings.toString(order.status) == 'CANCELLED'}">
+                        Заказ закрыт. Товары можно выбрать заново в каталоге.
+                    </span>
+                </div>
+            </div>
+
+            <p class="eyebrow">Состав заказа</p>
             <div class="table-responsive mb-4">
                 <table class="table table-hover align-middle">
                     <thead class="table-light">
@@ -94,20 +102,20 @@
                         <th scope="col">Товар</th>
                         <th scope="col">Цена</th>
                         <th scope="col">Кол-во</th>
-                        <th scope="col">Итого</th>
+                        <th scope="col">Сумма</th>
                     </tr>
                     </thead>
                     <tbody>
                     <tr th:each="item : ${order.items}">
                         <td>
-                            <a class="fw-bold text-decoration-none text-dark"
-                               th:href="@{/catalogue/products/{id}(id=${item.productId})}">
-                                <span class="fw-bold" th:text="${item.title}">Название товара</span>
-                            </a>
+                            <a class="fw-bold text-decoration-none text-dark hover-link"
+                               th:href="@{/catalogue/products/{id}(id=${item.productId})}"
+                               th:text="${item.title}">Название товара</a>
                         </td>
-                        <td th:text="${#numbers.formatDecimal(item.price, 1, 'COMMA', 2, 'POINT') + ' ₽'}">1000 ₽</td>
-                        <td th:text="${item.quantity}">2</td>
-                        <td class="fw-bold"
+                        <td class="price text-nowrap"
+                            th:text="${#numbers.formatDecimal(item.price, 1, 'COMMA', 2, 'POINT') + ' ₽'}">1000 ₽</td>
+                        <td class="mono" th:text="${item.quantity}">2</td>
+                        <td class="price fw-bold text-nowrap"
                             th:text="${#numbers.formatDecimal(item.price * item.quantity, 1, 'COMMA', 2, 'POINT') + ' ₽'}">
                             2000 ₽
                         </td>
@@ -116,60 +124,76 @@
                 </table>
             </div>
 
-            <!-- Итоговая сумма -->
-            <div class="d-flex justify-content-end mb-2">
-                <h4 class="mb-0">Итого к оплате:
-                    <span class="text-primary fw-bold"
-                          th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'COMMA', 2, 'POINT') + ' ₽'}">0 ₽</span>
-                </h4>
+            <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                <span class="eyebrow mb-0">Итого к оплате</span>
+                <span class="price fs-3 fw-bold text-dark"
+                      th:text="${#numbers.formatDecimal(order.totalAmount, 1, 'COMMA', 2, 'POINT') + ' ₽'}">0 ₽</span>
             </div>
         </div>
 
-        <!-- 2. КНОПКИ ДЕЙСТВИЙ (показываются только для незавершенных заказов) -->
-        <div class="card-footer bg-light p-3 d-flex justify-content-end gap-2"
+        <!-- Действия доступны, пока заказ не решён -->
+        <div class="card-footer p-3 d-flex flex-wrap justify-content-end gap-2"
              th:if="${#strings.toString(order.status) == 'PENDING'}">
 
-            <form method="post" th:action="@{/orders/{id}/cancel(id=${order.id})}" class="m-0">
-                <button type="submit" class="btn btn-outline-danger">Отменить заказ</button>
+            <form class="m-0" method="post" th:action="@{/orders/{id}/cancel(id=${order.id})}">
+                <button class="btn btn-outline-danger" type="submit">Отменить заказ</button>
             </form>
 
-            <form method="post" th:action="@{/orders/{id}/confirm(id=${order.id})}" class="m-0">
-                <button type="submit" class="btn btn-success">Подтвердить заказ</button>
+            <form class="m-0" method="post" th:action="@{/orders/{id}/confirm(id=${order.id})}">
+                <button class="btn btn-success px-4" type="submit">Подтвердить заказ</button>
             </form>
         </div>
+
+        <!-- Отменённый заказ: путь обратно в каталог -->
+        <div class="card-footer p-3 d-flex justify-content-end"
+             th:if="${#strings.toString(order.status) == 'CANCELLED'}">
+            <a class="btn btn-outline-primary" th:href="@{/catalogue/products/list}">Собрать заказ заново</a>
+        </div>
     </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</main>
 
-<!-- Скрипт для поллинга статуса -->
+<nav th:replace="~{fragments/layout :: dock('orders')}"></nav>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+<!-- Пока склад думает, страница сама отслеживает смену статуса -->
 <script th:inline="javascript">
-    // Получаем текущий статус и ID заказа из Thymeleaf
-    const currentStatus = /*[[${order.status}]]*/ 'PENDING';
-    const orderId = /*[[${order.id}]]*/ '123';
+    (function () {
+        const currentStatus = /*[[${#strings.toString(order.status)}]]*/ 'PENDING';
+        const orderId = /*[[${order.id}]]*/ '123';
 
-    // Запускаем опрос только если заказ находится в статусе PENDING (или PENDING)
-    if (currentStatus === 'PENDING') {
-        const pollInterval = setInterval(async () => {
+        if (currentStatus !== 'PENDING') {
+            return;
+        }
+
+        const pollInterval = setInterval(async function () {
             try {
-                const response = await fetch(`/orders/${orderId}/status`);
-                if (response.ok) {
-                    const data = await response.json();
-
-                    // Если статус на сервере отличается от того, что сейчас на странице
-                    if (data.status !== currentStatus) {
-                        clearInterval(pollInterval); // Останавливаем таймер
-                        console.log('Статус изменился на:', data.status, 'Перезагружаем страницу...');
-
-                        // Перезагружаем страницу. Thymeleaf отрендерит всё в новом виде
-                        window.location.reload();
-                    }
+                const response = await fetch('/orders/' + orderId + '/status');
+                if (!response.ok) {
+                    return;
                 }
+
+                const data = await response.json();
+                if (data.status === currentStatus) {
+                    return;
+                }
+
+                clearInterval(pollInterval);
+                Merchly.notify(
+                    data.status === 'CONFIRMED' ? 'Заказ подтверждён' : 'Заказ отменён',
+                    data.status === 'CONFIRMED' ? 'ok' : 'error'
+                );
+
+                // Даём уведомлению проявиться, затем показываем новое состояние
+                setTimeout(function () {
+                    window.location.reload();
+                }, 900);
             } catch (error) {
-                console.error("Ошибка при проверке статуса заказа:", error);
+                console.error('Не удалось проверить статус заказа:', error);
             }
-        }, 3000); // Опрашиваем каждые 3 секунды (3000 мс)
-    }
+        }, 3000);
+    })();
 </script>
+
 </body>
 </html>

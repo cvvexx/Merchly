@@ -1,0 +1,1369 @@
+/* =========================================================================
+   Merchly — фирменный стиль поверх Bootstrap 5.
+   Направление: «Тираж» — визуальный язык печатного цеха.
+   Две краски (фиолетовая и пурпурная), штампы статусов, моноширинные цифры.
+
+   Подключается ОДНОЙ строкой сразу после CDN-ссылки на bootstrap.min.css
+   и ничего не знает о бизнес-логике — только внешний вид.
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+:root {
+    /* Фирменная палитра — две печатные краски по бумаге */
+    --brand: #5b3df0;
+    --brand-dark: #4527c9;
+    --brand-darker: #34209e;
+    --brand-light: #efeafe;
+    --brand-rgb: 91, 61, 240;
+
+    /* Вторая краска. Используется точечно: активный пункт меню,
+       счётчик корзины, штрих в заголовке главной. */
+    --flare: #ff2e7e;
+    --flare-dark: #d81b62;
+    --flare-rgb: 255, 46, 126;
+
+    --ok: #12a150;
+    --ok-dark: #0d7c3d;
+    --danger: #e11d48;
+    --danger-dark: #be123c;
+    --warn: #f59e0b;
+    --warn-dark: #d97706;
+    --info: #0ea5e9;
+    --info-dark: #0284c7;
+    --slate: #64748b;
+    --slate-dark: #475569;
+
+    --ink: #16123a;
+    --ink-soft: #5b5578;
+    --paper: #ffffff;
+    --canvas: #f4f2fa;
+    --hairline: rgba(22, 18, 58, 0.09);
+
+    --radius-sm: 0.6rem;
+    --radius: 0.9rem;
+    --radius-lg: 1.25rem;
+    --radius-pill: 50rem;
+
+    --shadow-sm: 0 4px 14px -6px rgba(22, 18, 58, 0.14);
+    --shadow: 0 14px 34px -14px rgba(22, 18, 58, 0.22);
+    --shadow-lg: 0 24px 48px -18px rgba(22, 18, 58, 0.28);
+
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    --font-display: 'Unbounded', 'Manrope', system-ui, sans-serif;
+    --font-body: 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+    /* Высота верхней панели — от неё считаются отступы и «липкие» блоки */
+    --rail-h: 68px;
+    --dock-h: 64px;
+
+    color-scheme: light;
+}
+
+/* ---------- База ---------- */
+
+html {
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--rail-h) + 1rem);
+}
+
+body {
+    background: var(--canvas) !important;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-optical-sizing: auto;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+}
+
+/* Наборный шрифт-акцидент: только крупные заголовки страниц и главной. */
+h1, .h1, .display-1, .display-4, .page-title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+}
+
+a {
+    color: var(--brand);
+}
+
+a:hover {
+    color: var(--brand-dark);
+}
+
+::selection {
+    background: var(--flare);
+    color: #fff;
+}
+
+/* Единое кольцо фокуса — клавиатурная навигация должна быть видна везде */
+:focus-visible {
+    outline: 3px solid rgba(var(--brand-rgb), 0.55);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+}
+
+/* Тонкий скроллбар в духе общего стиля (webkit) */
+::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(91, 61, 240, 0.28);
+    border-radius: var(--radius-pill);
+    border: 2px solid var(--canvas);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(91, 61, 240, 0.45);
+}
+
+/* Моноширинные цифры — номера заказов, суммы, количества.
+   Табличные цифры не «прыгают» при пересчёте итога. */
+.mono,
+.price,
+.order-id {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.02em;
+}
+
+/* Надзаголовок: короткая метка над блоком */
+.eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-soft);
+}
+
+/* =========================================================================
+   ВЕРХНЯЯ ПАНЕЛЬ  (fragments/layout.html :: topbar)
+   Одна панель на все страницы: каталог, заказы, корзина, профиль.
+   ========================================================================= */
+
+.top-rail {
+    position: sticky;
+    top: 0;
+    z-index: 1030;
+    background: rgba(20, 16, 52, 0.92);
+    backdrop-filter: saturate(180%) blur(14px);
+    -webkit-backdrop-filter: saturate(180%) blur(14px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    transition: box-shadow 0.3s var(--ease), background-color 0.3s var(--ease);
+}
+
+.top-rail.is-scrolled {
+    background: rgba(20, 16, 52, 0.97);
+    box-shadow: 0 10px 30px -12px rgba(22, 18, 58, 0.55);
+}
+
+.top-rail__inner {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    min-height: var(--rail-h);
+    padding-top: 0.6rem;
+    padding-bottom: 0.6rem;
+}
+
+/* Логотип: точка-краска + наборное начертание */
+.rail-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: -0.03em;
+    color: #fff;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+
+.rail-brand:hover {
+    color: #fff;
+}
+
+.rail-brand__dot {
+    width: 0.62rem;
+    height: 0.62rem;
+    border-radius: 50%;
+    background: var(--flare);
+    box-shadow: 0 0 0 4px rgba(var(--flare-rgb), 0.22);
+    transition: transform 0.4s var(--ease-back), box-shadow 0.4s var(--ease);
+}
+
+.rail-brand:hover .rail-brand__dot {
+    transform: scale(1.35);
+    box-shadow: 0 0 0 6px rgba(var(--flare-rgb), 0.3);
+}
+
+/* Ссылки-разделы. Активный подчёркнут второй краской. */
+.rail-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-right: auto;
+}
+
+.rail-link {
+    position: relative;
+    padding: 0.45rem 0.85rem;
+    border-radius: var(--radius-sm);
+    color: rgba(255, 255, 255, 0.72);
+    font-weight: 600;
+    font-size: 0.93rem;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.2s var(--ease), background-color 0.2s var(--ease);
+}
+
+.rail-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.rail-link::after {
+    content: '';
+    position: absolute;
+    left: 0.85rem;
+    right: 0.85rem;
+    bottom: 0.15rem;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--flare);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.28s var(--ease);
+}
+
+.rail-link:hover::after {
+    transform: scaleX(1);
+}
+
+.rail-link.is-active {
+    color: #fff;
+}
+
+.rail-link.is-active::after {
+    transform: scaleX(1);
+}
+
+.rail-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+}
+
+/* Кнопки панели — один размер для всех, без разнобоя */
+.rail-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 1rem;
+    border-radius: var(--radius-pill);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    background: transparent;
+    color: #efecff;
+    font-weight: 700;
+    font-size: 0.88rem;
+    line-height: 1.4;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color 0.2s var(--ease), border-color 0.2s var(--ease),
+    color 0.2s var(--ease), transform 0.2s var(--ease);
+}
+
+.rail-btn:hover {
+    background: rgba(255, 255, 255, 0.13);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.rail-btn--solid {
+    background: linear-gradient(135deg, var(--brand), #7c5cff);
+    border-color: transparent;
+    color: #fff;
+    box-shadow: 0 10px 22px -12px rgba(var(--brand-rgb), 0.9);
+}
+
+.rail-btn--solid:hover {
+    background: linear-gradient(135deg, #6b4dff, #8a6bff);
+    border-color: transparent;
+    color: #fff;
+}
+
+/* Корзина со счётчиком — цель «полёта» товара */
+.cart-pill {
+    position: relative;
+}
+
+.cart-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 0.35rem;
+    border-radius: var(--radius-pill);
+    background: var(--flare);
+    color: #fff;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1;
+    transition: transform 0.35s var(--ease-back);
+}
+
+.cart-count[hidden] {
+    display: none;
+}
+
+/* Штамп: счётчик «впечатывается» при добавлении товара */
+.cart-pill.is-stamped .cart-count {
+    animation: stamp 0.45s var(--ease-back);
+}
+
+.cart-pill.is-stamped {
+    animation: rail-btn-pop 0.45s var(--ease-back);
+}
+
+@keyframes stamp {
+    0% {
+        transform: scale(2.1);
+        opacity: 0.35;
+    }
+    60% {
+        transform: scale(0.88);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes rail-btn-pop {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(var(--flare-rgb), 0);
+    }
+    40% {
+        box-shadow: 0 0 0 8px rgba(var(--flare-rgb), 0.22);
+    }
+}
+
+/* На узких экранах разделы уезжают в нижний док, панель остаётся компактной */
+@media (max-width: 767.98px) {
+    .rail-nav {
+        display: none;
+    }
+
+    .rail-brand {
+        margin-right: auto;
+    }
+
+    .top-rail__inner {
+        gap: 0.75rem;
+    }
+
+    .rail-btn__label {
+        display: none;
+    }
+
+    .rail-btn {
+        padding: 0.45rem 0.7rem;
+    }
+}
+
+/* =========================================================================
+   НИЖНИЙ ДОК — мобильная навигация (fragments/layout.html :: dock)
+   Разделы всегда под большим пальцем, без раскрывающегося меню.
+   ========================================================================= */
+
+.dock {
+    display: none;
+}
+
+@media (max-width: 767.98px) {
+    .dock {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1035;
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: 1fr;
+        align-items: stretch;
+        min-height: var(--dock-h);
+        padding-bottom: env(safe-area-inset-bottom, 0);
+        background: rgba(255, 255, 255, 0.94);
+        backdrop-filter: saturate(180%) blur(14px);
+        -webkit-backdrop-filter: saturate(180%) blur(14px);
+        border-top: 1px solid var(--hairline);
+        box-shadow: 0 -8px 24px -16px rgba(22, 18, 58, 0.4);
+    }
+
+    /* Чтобы док не перекрывал последний элемент страницы */
+    body {
+        padding-bottom: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px));
+    }
+
+    .dock__item {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.15rem;
+        padding: 0.5rem 0.25rem;
+        color: var(--ink-soft);
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: color 0.2s var(--ease);
+    }
+
+    .dock__item i {
+        font-size: 1.2rem;
+        transition: transform 0.3s var(--ease-back);
+    }
+
+    .dock__item:active i {
+        transform: scale(0.86);
+    }
+
+    .dock__item.is-active {
+        color: var(--brand);
+    }
+
+    /* Метка активного раздела — короткий штрих второй краской */
+    .dock__item.is-active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        width: 26px;
+        height: 3px;
+        border-radius: 0 0 3px 3px;
+        background: var(--flare);
+        transform: translateX(-50%);
+    }
+
+    .dock__badge {
+        position: absolute;
+        top: 0.3rem;
+        left: 50%;
+        margin-left: 0.35rem;
+        min-width: 1.05rem;
+        height: 1.05rem;
+        padding: 0 0.25rem;
+        border-radius: var(--radius-pill);
+        background: var(--flare);
+        color: #fff;
+        font-family: var(--font-mono);
+        font-size: 0.62rem;
+        font-weight: 700;
+        line-height: 1.05rem;
+        text-align: center;
+    }
+
+    .dock__badge[hidden] {
+        display: none;
+    }
+}
+
+/* =========================================================================
+   Заголовок страницы — общий блок под панелью
+   ========================================================================= */
+
+.page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.75rem;
+}
+
+.page-title {
+    margin: 0.15rem 0 0;
+    font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem);
+}
+
+/* Ссылка «назад» с уезжающей стрелкой */
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    color: var(--ink-soft);
+    font-weight: 600;
+    font-size: 0.92rem;
+    text-decoration: none;
+    transition: color 0.2s var(--ease);
+}
+
+.back-link:hover {
+    color: var(--brand);
+}
+
+.back-link i,
+.back-link .back-link__arrow {
+    transition: transform 0.25s var(--ease);
+}
+
+.back-link:hover i,
+.back-link:hover .back-link__arrow {
+    transform: translateX(-4px);
+}
+
+/* Тот же приём, но стрелка ведёт вперёд */
+.back-link--forward:hover i,
+.back-link--forward:hover .back-link__arrow {
+    transform: translateX(4px);
+}
+
+/* Центрирование страниц входа и ошибок без вертикального переполнения:
+   vh-100 вместе с панелью давало лишнюю полосу прокрутки. */
+.page-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - var(--rail-h) - 3rem);
+    padding: 2rem 0;
+}
+
+/* ---------- Кнопки ---------- */
+
+.btn {
+    font-weight: 700;
+    border-radius: var(--radius-pill);
+    letter-spacing: 0.01em;
+    transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease), background-color 0.18s var(--ease), border-color 0.18s var(--ease), color 0.18s var(--ease);
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn-lg {
+    border-radius: var(--radius-pill);
+}
+
+.btn.rounded, .btn.rounded-top, .modal .btn {
+    border-radius: var(--radius-pill);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--brand), #7c5cff);
+    border-color: var(--brand);
+    box-shadow: 0 10px 20px -10px rgba(var(--brand-rgb), 0.65);
+}
+
+.btn-primary:hover, .btn-primary:focus {
+    background: linear-gradient(135deg, var(--brand-dark), var(--brand));
+    border-color: var(--brand-dark);
+    box-shadow: 0 12px 24px -8px rgba(var(--brand-rgb), 0.55);
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary {
+    color: var(--brand);
+    border-color: rgba(var(--brand-rgb), 0.4);
+}
+
+.btn-outline-primary:hover {
+    background: var(--brand);
+    border-color: var(--brand);
+    transform: translateY(-1px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--ok), #1cc464);
+    border-color: var(--ok);
+    box-shadow: 0 10px 20px -10px rgba(18, 161, 80, 0.55);
+}
+
+.btn-success:hover, .btn-success:focus {
+    background: linear-gradient(135deg, var(--ok-dark), var(--ok));
+    border-color: var(--ok-dark);
+    transform: translateY(-1px);
+}
+
+.btn-outline-success:hover {
+    background: var(--ok);
+    border-color: var(--ok);
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--danger), #f43f5e);
+    border-color: var(--danger);
+    box-shadow: 0 10px 20px -10px rgba(225, 29, 72, 0.5);
+}
+
+.btn-danger:hover, .btn-danger:focus {
+    background: linear-gradient(135deg, var(--danger-dark), var(--danger));
+    border-color: var(--danger-dark);
+    transform: translateY(-1px);
+}
+
+.btn-outline-danger:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+    transform: translateY(-1px);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, var(--warn), #fbbf24);
+    border-color: var(--warn);
+    color: var(--ink);
+    box-shadow: 0 10px 20px -10px rgba(245, 158, 11, 0.5);
+}
+
+.btn-warning:hover, .btn-warning:focus {
+    background: linear-gradient(135deg, var(--warn-dark), var(--warn));
+    border-color: var(--warn-dark);
+    color: var(--ink);
+    transform: translateY(-1px);
+}
+
+.btn-outline-secondary {
+    color: var(--slate-dark);
+    border-color: rgba(100, 116, 139, 0.4);
+}
+
+.btn-outline-secondary:hover {
+    background: var(--slate-dark);
+    border-color: var(--slate-dark);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: var(--slate);
+    border-color: var(--slate);
+}
+
+.btn-secondary:hover {
+    background: var(--slate-dark);
+    border-color: var(--slate-dark);
+}
+
+.btn:disabled, .btn.disabled {
+    transform: none;
+    box-shadow: none;
+    opacity: 0.65;
+}
+
+/* Кнопка в состоянии «готово» — краткое подтверждение вместо всплывающего окна */
+.btn.is-done {
+    background: var(--ok) !important;
+    border-color: var(--ok) !important;
+    color: #fff !important;
+    animation: rail-btn-pop 0.45s var(--ease-back);
+}
+
+/* ---------- Карточки ---------- */
+
+.card {
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-lg);
+}
+
+.card.shadow-sm {
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.card.shadow, .card.shadow-sm.mb-4, .card.shadow.border-0 {
+    box-shadow: var(--shadow) !important;
+}
+
+.card.border-0 {
+    border-color: transparent;
+}
+
+.card-header {
+    border-bottom: 1px solid var(--hairline);
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+}
+
+.card-header.bg-primary {
+    background: linear-gradient(120deg, var(--brand), #7c5cff) !important;
+}
+
+.card-header.bg-success {
+    background: linear-gradient(120deg, var(--ok), #1cc464) !important;
+}
+
+.card-header.bg-warning {
+    background: linear-gradient(120deg, var(--warn), #fbbf24) !important;
+}
+
+.card-footer {
+    border-top: 1px solid var(--hairline);
+    border-radius: 0 0 var(--radius-lg) var(--radius-lg) !important;
+    background: rgba(91, 61, 240, 0.03) !important;
+}
+
+/* Наведение только на кликабельные карточки (список товаров, список заказов).
+   Обычные карточки-контейнеры не двигаются: подъём обещает переход. */
+.card-lift:hover,
+.hover-shadow:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.card, .hover-shadow {
+    transition: transform 0.22s var(--ease), box-shadow 0.22s var(--ease);
+}
+
+.transition-all {
+    transition: all 0.22s var(--ease);
+}
+
+/* ---------- Формы ---------- */
+
+.form-label {
+    color: var(--ink-soft);
+    letter-spacing: 0.04em;
+}
+
+/* Подпись поля, набранная как надзаголовок, сохраняет свой трекинг */
+.form-label.eyebrow {
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.14em;
+}
+
+.form-control, .form-select {
+    border: 1px solid rgba(22, 18, 58, 0.14);
+    border-radius: var(--radius-sm);
+    background-color: #fdfcff;
+    transition: border-color 0.18s var(--ease), box-shadow 0.18s var(--ease), background-color 0.18s var(--ease);
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 0.2rem rgba(var(--brand-rgb), 0.18);
+    background-color: #fff;
+}
+
+.form-control.is-invalid, .invalid-feedback {
+    border-color: var(--danger);
+}
+
+.input-group-text {
+    background: var(--brand-light);
+    border: 1px solid rgba(22, 18, 58, 0.14);
+    color: var(--brand-dark);
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+}
+
+/* ---------- Значки, бейджи ---------- */
+
+.badge {
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+.badge.bg-primary { background: var(--brand) !important; }
+.badge.bg-success { background: var(--ok) !important; }
+.badge.bg-danger { background: var(--danger) !important; }
+.badge.bg-warning { background: var(--warn) !important; color: var(--ink) !important; }
+.badge.bg-info { background: var(--info) !important; color: #fff !important; }
+.badge.bg-secondary { background: var(--slate) !important; }
+
+/* Штамп статуса заказа: заказ проходит по инстанциям и получает оттиск.
+   Прямоугольная рамка, моноширинный набор, лёгкий наклон — как оттиск печати. */
+.stamp {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    border: 2px solid currentColor;
+    border-radius: 0.35rem;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    background: transparent;
+    transform: rotate(-1.5deg);
+}
+
+.stamp--pending {
+    color: var(--brand);
+    background: rgba(var(--brand-rgb), 0.07);
+}
+
+.stamp--confirmed {
+    color: var(--ok-dark);
+    background: rgba(18, 161, 80, 0.08);
+}
+
+.stamp--cancelled {
+    color: var(--danger-dark);
+    background: rgba(225, 29, 72, 0.07);
+}
+
+/* Пульсация, пока заказ ожидает решения склада */
+.stamp--pending::before {
+    content: '';
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse-dot 1.6s var(--ease) infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.35;
+        transform: scale(0.7);
+    }
+}
+
+/* ---------- Утилитарные цветовые классы Bootstrap ---------- */
+
+.text-primary { color: var(--brand) !important; }
+.text-success { color: var(--ok) !important; }
+.text-danger { color: var(--danger) !important; }
+.text-warning { color: var(--warn-dark) !important; }
+.text-info { color: var(--info-dark) !important; }
+.text-secondary { color: var(--slate) !important; }
+.text-dark { color: var(--ink) !important; }
+.text-muted { color: var(--ink-soft) !important; }
+.text-flare { color: var(--flare) !important; }
+
+.bg-primary { background-color: var(--brand) !important; }
+.bg-success { background-color: var(--ok) !important; }
+.bg-danger { background-color: var(--danger) !important; }
+.bg-warning { background-color: var(--warn) !important; }
+.bg-info { background-color: var(--info) !important; }
+.bg-light { background-color: var(--canvas) !important; }
+
+/* ---------- Алерты ---------- */
+
+.alert {
+    border: 1px solid transparent;
+    border-left: 4px solid transparent;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+}
+
+.alert-info {
+    background: #eaf7ff;
+    border-left-color: var(--info);
+    color: #075985;
+}
+
+.alert-info .alert-link { color: var(--info-dark); }
+
+.alert-success {
+    background: #eafbf1;
+    border-left-color: var(--ok);
+    color: #14532d;
+}
+
+.alert-danger {
+    background: #fdedf1;
+    border-left-color: var(--danger);
+    color: #881337;
+}
+
+.alert-warning {
+    background: #fef6e7;
+    border-left-color: var(--warn);
+    color: #7c4a03;
+}
+
+.alert-secondary {
+    background: #f1f0f7;
+    border-left-color: var(--slate);
+    color: var(--ink-soft);
+}
+
+/* ---------- Таблицы ---------- */
+
+.table {
+    --bs-table-bg: transparent;
+    color: var(--ink);
+}
+
+.table > :not(caption) > * > * {
+    border-bottom-color: var(--hairline);
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+}
+
+.table thead.table-light th,
+.table > thead {
+    background: var(--brand-light) !important;
+    color: var(--brand-darker);
+    border-bottom: none;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.table-hover > tbody > tr:hover > * {
+    background-color: rgba(91, 61, 240, 0.05);
+}
+
+/* Строка корзины, которую удаляют: сворачивается, а не исчезает рывком */
+tr.is-removing {
+    animation: row-out 0.32s var(--ease) forwards;
+}
+
+@keyframes row-out {
+    to {
+        opacity: 0;
+        transform: translateX(-24px);
+    }
+}
+
+/* ---------- Модальные окна ---------- */
+
+.modal-content {
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+}
+
+.modal-header, .modal-footer {
+    border-color: var(--hairline);
+}
+
+/* =========================================================================
+   ДВИЖЕНИЕ
+   ========================================================================= */
+
+/* Появление блоков при прокрутке. Стартовое состояние ставится из JS
+   (класс js-motion на <html>), чтобы без скриптов контент был виден. */
+.js-motion .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+}
+
+.js-motion .reveal.is-in {
+    opacity: 1;
+    transform: none;
+    transition: opacity 0.55s var(--ease), transform 0.55s var(--ease);
+    transition-delay: var(--reveal-delay, 0ms);
+}
+
+/* «Полёт в корзину»: клон изображения товара, летящий в панель */
+.flying-item {
+    position: fixed;
+    z-index: 2000;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    box-shadow: var(--shadow);
+    pointer-events: none;
+}
+
+/* Всплывающие уведомления вместо alert() */
+.toast-rail {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 2050;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    max-width: min(360px, calc(100vw - 2rem));
+    pointer-events: none;
+}
+
+@media (max-width: 767.98px) {
+    .toast-rail {
+        bottom: calc(var(--dock-h) + 1rem + env(safe-area-inset-bottom, 0px));
+        left: 1rem;
+        right: 1rem;
+        max-width: none;
+    }
+}
+
+.toast-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.65rem;
+    padding: 0.85rem 1rem;
+    border-radius: var(--radius);
+    border-left: 4px solid var(--brand);
+    background: var(--paper);
+    color: var(--ink);
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: var(--shadow);
+    pointer-events: auto;
+    animation: toast-in 0.35s var(--ease-back);
+}
+
+.toast-note--error {
+    border-left-color: var(--danger);
+}
+
+.toast-note--ok {
+    border-left-color: var(--ok);
+}
+
+.toast-note.is-out {
+    animation: toast-out 0.3s var(--ease) forwards;
+}
+
+@keyframes toast-in {
+    from {
+        opacity: 0;
+        transform: translateY(14px) scale(0.96);
+    }
+}
+
+@keyframes toast-out {
+    to {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+}
+
+/* Кто просил меньше движения — тот получает статичный интерфейс */
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
+
+    .js-motion .reveal {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* =========================================================================
+   Компоненты страниц
+   ========================================================================= */
+
+/* ---------- Главная: обложка ---------- */
+
+/* Обложка живёт прямо на бумаге страницы: белая панель вокруг заголовка
+   превращала свободное поле справа в пустую коробку. */
+.hero {
+    position: relative;
+    padding: clamp(2rem, 1rem + 5vw, 4.5rem) 0 clamp(2.5rem, 2rem + 3vw, 4rem);
+}
+
+.hero__title {
+    max-width: 20ch;
+    margin: 0.75rem 0 0;
+    font-size: clamp(2rem, 1.2rem + 4vw, 3.9rem);
+}
+
+/* Ключевое слово обведено пурпурной краской: штрих «прокатывается»
+   по слову при загрузке — как валик по трафарету. */
+.ink-stroke {
+    position: relative;
+    display: inline-block;
+    white-space: nowrap;
+}
+
+.ink-stroke::before {
+    content: '';
+    position: absolute;
+    left: -0.12em;
+    right: -0.12em;
+    bottom: 0.01em;
+    height: 0.26em;
+    border-radius: 0.13em;
+    background: rgba(var(--flare-rgb), 0.85);
+    transform: scaleX(0) rotate(-0.6deg);
+    transform-origin: left center;
+}
+
+/* Текст лежит поверх штриха */
+.ink-stroke__text {
+    position: relative;
+}
+
+.js-motion .ink-stroke::before {
+    animation: ink-roll 0.75s var(--ease) 0.45s forwards;
+}
+
+@keyframes ink-roll {
+    to {
+        transform: scaleX(1) rotate(-0.6deg);
+    }
+}
+
+.hero__lead {
+    max-width: 52ch;
+    margin-top: 1.25rem;
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+}
+
+.hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+}
+
+/* Три коротких факта о магазине под обложкой */
+.facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1.25rem;
+}
+
+.fact {
+    padding: 1.25rem 1.35rem;
+    border-radius: var(--radius);
+    background: var(--paper);
+    border: 1px solid var(--hairline);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+}
+
+.fact:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+}
+
+.fact__title {
+    margin: 0.4rem 0 0.25rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+}
+
+.fact__text {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+}
+
+/* ---------- Аватары ---------- */
+
+.avatar-wrapper,
+.avatar-preview-wrapper {
+    width: 120px;
+    height: 120px;
+    overflow: hidden;
+    border-radius: 50%;
+    margin: 0 auto 1.5rem auto;
+    border: 3px solid var(--brand);
+    background-color: var(--brand-light);
+}
+
+.avatar-wrapper img,
+.avatar-preview-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.profile-avatar {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    box-shadow: var(--shadow);
+}
+
+.header-bg {
+    background: linear-gradient(135deg, var(--brand) 0%, var(--flare) 100%);
+    height: 120px;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+/* Строка «поле — значение» в профиле */
+.field-row {
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--hairline);
+}
+
+.field-row:last-of-type {
+    border-bottom: none;
+}
+
+.field-row__value {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+/* ---------- Каталог ---------- */
+
+.product-card-img-wrapper {
+    position: relative;
+    height: 220px;
+    overflow: hidden;
+    background-color: var(--canvas);
+}
+
+.product-card-img-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.5s var(--ease);
+}
+
+.card:hover .product-card-img-wrapper img {
+    transform: scale(1.06);
+}
+
+/* Ценник-бирка поверх изображения: цена читается до наведения */
+.price-tag {
+    position: absolute;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem 0.4rem 0.6rem;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    box-shadow: var(--shadow-sm);
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: var(--ink);
+}
+
+/* Пробитое отверстие бирки */
+.price-tag::before {
+    content: '';
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: var(--flare);
+    flex-shrink: 0;
+}
+
+.creator-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.rating-block {
+    font-size: 0.9rem;
+}
+
+.product-detail-img-wrapper {
+    width: 100%;
+    min-height: 320px;
+    max-height: 450px;
+    overflow: hidden;
+    background-color: var(--canvas);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: var(--radius);
+}
+
+.product-detail-img-wrapper img {
+    max-height: 450px;
+    width: auto;
+    object-fit: contain;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* ---------- Прочее ---------- */
+
+.hover-link {
+    transition: color 0.2s var(--ease);
+}
+
+.hover-link:hover {
+    color: var(--brand) !important;
+}
+
+.spinner-border {
+    color: currentColor;
+}
+
+hr, .border-top, .border-bottom, .border-start {
+    border-color: var(--hairline) !important;
+}
+
+/* Пустое состояние — приглашение к действию, а не сообщение об ошибке */
+.empty-state {
+    padding: 3rem 1.5rem;
+    border-radius: var(--radius-lg);
+    background: var(--paper);
+    border: 1px dashed rgba(var(--brand-rgb), 0.28);
+    text-align: center;
+}
+
+.empty-state__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-bottom: 1rem;
+    border-radius: 50%;
+    background: var(--brand-light);
+    color: var(--brand);
+    font-size: 1.5rem;
+}
+
+.empty-state__title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+}
+
+.empty-state__text {
+    max-width: 46ch;
+    margin: 0.5rem auto 1.5rem;
+    color: var(--ink-soft);
+}

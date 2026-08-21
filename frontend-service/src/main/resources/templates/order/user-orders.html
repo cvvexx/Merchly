@@ -1,103 +1,83 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Мои заказы | Merchly</title>
-    <!-- Подключаем Bootstrap -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+<head th:replace="~{fragments/layout :: head('Мои заказы')}"></head>
+<body>
 
-</head>
+<nav th:replace="~{fragments/layout :: topbar('orders')}"></nav>
 
-<style>
-    .transition-all {
-        transition: all 0.2s ease-in-out;
-    }
-    .hover-shadow:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
-    }
-</style>
+<main class="container my-4 my-lg-5">
 
-<body class="bg-light">
-<!-- Навигация -->
-<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
-    <div class="container">
-        <a class="navbar-brand fw-bold text-primary" th:href="@{/}">Merchly</a>
-        <div class="d-flex align-items-center gap-2">
-            <a class="btn btn-outline-light btn-sm me-2" th:href="@{/cart}">
-                <i class="bi bi-cart3 me-1"></i> Корзина
-            </a>
-            <a class="btn btn-outline-info btn-sm" th:href="@{/profile}">В профиль</a>
+    <div class="page-head">
+        <div>
+            <p class="eyebrow mb-0">История покупок</p>
+            <h1 class="page-title">Мои заказы</h1>
         </div>
-    </div>
-</nav>
 
-<div class="container">
-    <!-- Заголовок и кнопка назад -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Мои заказы</h2>
-        <a th:href="@{/profile}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-arrow-left"></i> Назад в профиль
+        <a class="back-link" th:href="@{/catalogue/products/list}">
+            <span class="back-link__arrow" aria-hidden="true">&larr;</span> В каталог
         </a>
     </div>
 
-    <!-- Блок, если список заказов пуст -->
-    <div class="alert alert-info shadow-sm" th:if="${orders == null or orders.isEmpty()}">
-        <h5 class="alert-heading"><i class="bi bi-info-circle me-2"></i>У вас пока нет заказов</h5>
-        <p class="mb-0">Вы еще не сделали ни одной покупки. <a th:href="@{/catalogue/products/list}" class="alert-link">Перейти в каталог</a>, чтобы это исправить!</p>
+    <!-- Заказов ещё нет -->
+    <div class="empty-state reveal" th:if="${orders == null or orders.isEmpty()}">
+        <span class="empty-state__icon"><i aria-hidden="true" class="bi bi-receipt"></i></span>
+        <h2 class="empty-state__title">Заказов пока нет</h2>
+        <p class="empty-state__text">Здесь появятся ваши покупки со статусом и составом заказа.</p>
+        <a class="btn btn-primary btn-lg px-4" th:href="@{/catalogue/products/list}">Выбрать первый товар</a>
     </div>
 
     <!-- Список заказов -->
-    <div th:if="${orders != null and !orders.isEmpty()}">
-        <div class="row row-cols-1 g-3">
+    <div class="row row-cols-1 g-3" th:if="${orders != null and !orders.isEmpty()}">
+        <div class="col reveal" data-reveal-group="orders" th:each="order : ${orders}">
 
-            <!-- Итерируемся по списку заказов -->
-            <div class="col" th:each="order : ${orders}">
-                <div class="card shadow-sm border-0 h-100 hover-shadow transition-all">
-                    <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <a class="card shadow-sm border-0 h-100 hover-shadow text-decoration-none"
+               th:href="@{/orders/{id}(id=${order.id})}">
+                <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
 
-                        <!-- Информация о заказе -->
+                    <div>
+                        <p class="eyebrow mb-1">Заказ</p>
+                        <!-- Короткий код: полный UUID нечитаем и не нужен в списке -->
+                        <h2 class="h5 mb-2 fw-bold text-dark order-id"
+                            th:text="'#' + ${#strings.toUpperCase(#strings.substring(order.id, 0, 8))}">#3A7F21C4</h2>
+
+                        <p class="text-muted mb-2 small" th:if="${order.createdAt != null}">
+                            <i aria-hidden="true" class="bi bi-calendar3 me-1"></i>
+                            Оформлен
+                            <span class="mono"
+                                  th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2026 15:00</span>
+                        </p>
+
                         <div>
-                            <h5 class="mb-1 fw-bold text-dark">
-                                Заказ #<span th:text="${order.id}">123456</span>
-                            </h5>
-
-                            <!-- Вывод даты, если она есть в DTO -->
-                            <p class="text-muted mb-2 small" th:if="${order.createdAt != null}">
-                                <i class="bi bi-calendar3 me-1"></i>
-                                Оформлен: <span th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2026 15:00</span>
-                            </p>
-
-                            <div>
-                                <span class="text-secondary me-1">Итого:</span>
-                                <strong class="text-primary fs-5" th:text="${order.totalAmount != null ? order.totalAmount + ' ₽' : '0 ₽'}">2500 ₽</strong>
-                            </div>
+                            <span class="text-muted me-1">Итого:</span>
+                            <strong class="price fs-5 text-dark"
+                                    th:text="${order.totalAmount != null ? order.totalAmount + ' ₽' : '0 ₽'}">2500 ₽</strong>
                         </div>
-
-                        <!-- Статус и кнопка подробнее -->
-                        <div class="d-flex flex-column align-items-md-end gap-2 mt-2 mt-md-0">
-                            <!-- Статус заказа -->
-                            <span class="badge bg-secondary px-3 py-2 text-uppercase"
-                                  th:classappend="${order.status == 'CONFIRMED' ? 'bg-success' : (order.status == 'CANCELED' ? 'bg-danger' : 'bg-primary')}"
-                                  th:text="${order.status}">
-                                CREATED
-                            </span>
-
-                            <!-- Переход на страницу конкретного заказа (order.html) -->
-                            <a class="btn btn-outline-primary btn-sm mt-1" th:href="@{/orders/{id}(id=${order.id})}">
-                                Подробнее <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </div>
-
                     </div>
-                </div>
-            </div>
 
+                    <div class="d-flex flex-column align-items-md-end gap-3">
+                        <!-- Штамп статуса -->
+                        <span class="stamp"
+                              th:classappend="${#strings.toString(order.status) == 'CONFIRMED' ? 'stamp--confirmed' :
+                                               (#strings.toString(order.status) == 'PENDING' ? 'stamp--pending' : 'stamp--cancelled')}"
+                              th:text="${#strings.toString(order.status) == 'CONFIRMED' ? 'Подтверждён' :
+                                        (#strings.toString(order.status) == 'PENDING' ? 'В обработке' : 'Отменён')}">
+                            В обработке
+                        </span>
+
+                        <span class="back-link back-link--forward text-primary">
+                            Подробнее <i aria-hidden="true" class="bi bi-chevron-right"></i>
+                        </span>
+                    </div>
+
+                </div>
+            </a>
         </div>
     </div>
-</div>
 
+</main>
+
+<nav th:replace="~{fragments/layout :: dock('orders')}"></nav>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 
 </body>
 </html>
