@@ -179,6 +179,9 @@ services:
     depends_on:
       minio:
         condition: service_healthy
+    volumes:
+      # Демо-изображения товаров и аватаров для стартового наполнения
+      - ./.seed/minio:/seed:ro
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin};
@@ -186,6 +189,8 @@ services:
       /usr/bin/mc mb myminio/merchly-users --ignore-existing;
       /usr/bin/mc anonymous set download myminio/merchly-products;
       /usr/bin/mc anonymous set download myminio/merchly-users;
+      /usr/bin/mc mirror --overwrite /seed/products myminio/merchly-products;
+      /usr/bin/mc mirror --overwrite /seed/users myminio/merchly-users;
       exit 0;
       "
 
@@ -198,6 +203,8 @@ services:
     env_file:
       - .env.prod
     environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
       SPRING_DATASOURCE_URL: jdbc:postgresql://users_db:5432/${USERS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
@@ -224,6 +231,8 @@ services:
     env_file:
       - .env.prod
     environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
       SPRING_DATASOURCE_URL: jdbc:postgresql://products_db:5432/${PRODUCTS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
@@ -256,6 +265,7 @@ services:
     env_file:
       - .env.prod
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://orders_db:5432/${ORDERS_DB_NAME}
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/merchly/protocol/openid-connect/token
@@ -287,6 +297,8 @@ services:
     env_file:
       - .env.prod
     environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
       SPRING_DATASOURCE_URL: jdbc:postgresql://reviews_db:5432/${REVIEWS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
@@ -313,12 +325,13 @@ services:
     env_file:
       - .env.prod
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       SPRING_RESTCLIENT_URI_USER_SERVICE: http://users-service:8082
       SPRING_RESTCLIENT_URI_PRODUCT_SERVICE: http://products-service:8081
       SPRING_RESTCLIENT_URI_REVIEWS_SERVICE: http://reviews-service:8083
       SPRING_RESTCLIENT_URI_ORDERS_SERVICE: http://order-service:8084
       SPRING_DATA_REDIS_HOST: redis
-      MINIO_URL: http://minio:9000
+      MINIO_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_USER_NAME_ATTRIBUTE: preferred_username
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_AUTHORIZATION_URI: http://localhost:8090/realms/merchly/protocol/openid-connect/auth
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/merchly/protocol/openid-connect/token

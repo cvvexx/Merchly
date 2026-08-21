@@ -29,7 +29,7 @@
                         <div class="col-6">
                             <span class="eyebrow"><i aria-hidden="true" class="bi bi-person-fill"></i> Пол</span>
                             <span class="field-row__value"
-                                  th:text="${profile.gender == 'M' ? 'Мужской' : (profile.gender == 'F' ? 'Женский' : (profile.gender != null ? profile.gender : 'Не указан'))}">
+                                  th:text="${profile.gender == 'M' ? 'Мужской' : (profile.gender == 'F' ? 'Женский' : 'Не указан')}">
                                 Мужской
                             </span>
                         </div>
