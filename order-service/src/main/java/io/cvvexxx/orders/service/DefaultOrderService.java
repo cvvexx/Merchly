@@ -21,10 +21,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -53,21 +51,40 @@ public class DefaultOrderService implements OrderService {
                         Integer::sum,
                         LinkedHashMap::new
                 ));
+
+        List<UUID> productIds = new ArrayList<>(quantityByProduct.keySet());
+
+        List<ProductDto> fetchedProducts = productsRestClient.findAllProductsByIds(productIds);
+
+        Map<UUID, ProductDto> productMap = fetchedProducts.stream()
+                .collect(Collectors.toMap(ProductDto::id, Function.identity()));
+
+        if (productMap.size() != productIds.size()) {
+            throw new NoSuchElementException("order.errors.product.not_found");
+        }
+
         Order order = Order.builder()
                 .userId(currentUserId)
                 .status(OrderStatus.PENDING)
                 .deliveryAddress(newOrderDto.deliveryAddress())
                 .comment(newOrderDto.comment())
                 .build();
+
         BigDecimal totalPrice = BigDecimal.ZERO;
         for (Map.Entry<UUID, Integer> entry : quantityByProduct.entrySet()) {
             UUID productId = entry.getKey();
             int quantity = entry.getValue();
-            ProductDto product = productsRestClient.findById(productId);
+
+            ProductDto product = productMap.get(productId);
+            if (product == null) {
+                throw new NoSuchElementException("order.errors.product.not_found");
+            }
+
             BigDecimal price = product.price();
             if (price == null) {
                 throw new IllegalStateException("order.errors.product.price_missing");
             }
+
             BigDecimal itemTotal = price.multiply(BigDecimal.valueOf(quantity));
             totalPrice = totalPrice.add(itemTotal);
             order.addItem(new OrderItem(
@@ -78,6 +95,7 @@ public class DefaultOrderService implements OrderService {
                     quantity
             ));
         }
+
         order.setTotalAmount(totalPrice);
         Order savedOrder = orderRepository.save(order);
         usersRestClient.clearUserCart();

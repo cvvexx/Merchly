@@ -12,7 +12,7 @@ public interface CartService {
 
     List<CartItemDto> getCartItems(UUID currentUserId);
 
-    void deleterItemFromCart(UUID productId, UUID currentUserId);
+    void deleteritemfromcart(UUID productId, UUID currentUserId);
 
     void clearCart(UUID currentUserId);
 }

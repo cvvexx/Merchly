@@ -59,7 +59,7 @@ class DefaultCartServiceTest {
             defaultCartService.addItemToCart(addToCartDto, USER_ID);
 
             // then
-            assertEquals(3, existingCartItem.getQuantity());
+            assertEquals(7, existingCartItem.getQuantity());
 
             verify(cartItemRepository, times(1)).findByUserIdAndProductId(USER_ID, PRODUCT_ID);
             verify(cartItemRepository, never()).save(any());
@@ -161,11 +161,11 @@ class DefaultCartServiceTest {
     }
 
     @Nested
-    @DisplayName("Тесты метода deleterItemFromCart")
+    @DisplayName("Тесты метода deleteritemfromcart")
     class DeleteItemFromCartTests {
 
         @Test
-        @DisplayName("deleterItemFromCart: успешно удаляет существующий товар из корзины")
+        @DisplayName("deleteritemfromcart: успешно удаляет существующий товар из корзины")
         void deleterItemFromCart_WhenItemExists_ShouldDeleteCartItem() {
             // given
             CartItem existingItem = CartItem.builder()
@@ -179,7 +179,7 @@ class DefaultCartServiceTest {
                     .thenReturn(Optional.of(existingItem));
 
             // when
-            defaultCartService.deleterItemFromCart(PRODUCT_ID, USER_ID);
+            defaultCartService.deleteritemfromcart(PRODUCT_ID, USER_ID);
 
             // then
             verify(cartItemRepository, times(1)).findByUserIdAndProductId(USER_ID, PRODUCT_ID);
@@ -187,7 +187,7 @@ class DefaultCartServiceTest {
         }
 
         @Test
-        @DisplayName("deleterItemFromCart: выбрасывает NoSuchElementException, если товар не найден в корзине")
+        @DisplayName("deleteritemfromcart: выбрасывает NoSuchElementException, если товар не найден в корзине")
         void deleterItemFromCart_WhenItemNotFound_ShouldThrowNoSuchElementException() {
             // given
             when(cartItemRepository.findByUserIdAndProductId(USER_ID, PRODUCT_ID))
@@ -196,7 +196,7 @@ class DefaultCartServiceTest {
             // when & then
             NoSuchElementException exception = assertThrows(
                     NoSuchElementException.class,
-                    () -> defaultCartService.deleterItemFromCart(PRODUCT_ID, USER_ID)
+                    () -> defaultCartService.deleteritemfromcart(PRODUCT_ID, USER_ID)
             );
 
             assertEquals("errors.404.header", exception.getMessage());

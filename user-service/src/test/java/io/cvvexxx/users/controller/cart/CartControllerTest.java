@@ -76,7 +76,7 @@ class CartControllerTest {
 
         // then
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
-        verify(cartService).deleterItemFromCart(productId, userId);
+        verify(cartService).deleteritemfromcart(productId, userId);
     }
 
     @Test

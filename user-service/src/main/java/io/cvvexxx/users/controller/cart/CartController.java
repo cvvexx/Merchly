@@ -4,6 +4,7 @@ package io.cvvexxx.users.controller.cart;
 import io.cvvexxx.users.dto.cart.AddToCartDto;
 import io.cvvexxx.users.dto.cart.CartItemDto;
 import io.cvvexxx.users.service.cart.DefaultCartService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +38,7 @@ public class CartController {
 
     @PostMapping
     public ResponseEntity<Void> addProductToCart(
-            @RequestBody AddToCartDto addToCartDto,
+            @Valid @RequestBody AddToCartDto addToCartDto,
             @AuthenticationPrincipal Jwt jwt
     ) {
         UUID currentUserId = UUID.fromString(jwt.getClaimAsString("sub"));
@@ -53,7 +54,7 @@ public class CartController {
     ) {
         UUID currentUserId = UUID.fromString(jwt.getClaimAsString("sub"));
 
-        cartService.deleterItemFromCart(productId, currentUserId);
+        cartService.deleteritemfromcart(productId, currentUserId);
 
         return ResponseEntity.noContent().build();
     }
