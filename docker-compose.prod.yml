@@ -267,6 +267,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://orders_db:5432/${ORDERS_DB_NAME}
+      SPRING_DATA_REDIS_HOST: redis
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/merchly/protocol/openid-connect/token
       SPRING_RESTCLIENT_URI_PRODUCT_SERVICE: http://products-service:8081
@@ -279,6 +280,8 @@ services:
       retries: 10
     depends_on:
       orders_db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
       keycloak:
         condition: service_healthy

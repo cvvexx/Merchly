@@ -2,6 +2,7 @@ package io.cvvexxx.orders;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
+import com.redis.testcontainers.RedisContainer;
 import io.cvvexxx.orders.domain.OrderStatus;
 import io.cvvexxx.orders.dto.NewOrderDto;
 import io.cvvexxx.orders.dto.NewOrderItemDto;
@@ -47,12 +48,14 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.delete;
+import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.noContent;
 import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -78,6 +81,11 @@ class OrderApiIT {
                         """)));
         wireMockServer.stubFor(delete(urlEqualTo("/api/users/cart"))
                 .willReturn(noContent()));
+        // Запасной ответ для незастабленных товаров: настоящий product-service на неизвестные
+        // id отдаёт пустой список, а не 404
+        wireMockServer.stubFor(get(urlPathEqualTo("/api/internal/products"))
+                .atPriority(10)
+                .willReturn(okJson("[]")));
     }
 
     @Container
@@ -85,6 +93,10 @@ class OrderApiIT {
 
     @Container
     static ConfluentKafkaContainer kafka = new ConfluentKafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"));
+
+    // Кеш заказов работает через Redis: без своего контейнера тест ушёл бы на localhost:6379
+    @Container
+    static RedisContainer redis = new RedisContainer("redis:7-alpine");
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
@@ -96,6 +108,9 @@ class OrderApiIT {
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
         registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
         registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
+        registry.add("spring.data.redis.host", redis::getRedisHost);
+        registry.add("spring.data.redis.port", redis::getRedisPort);
+        registry.add("spring.cache.type", () -> "redis");
         registry.add("spring.restclient.uri.product_service", wireMockServer::baseUrl);
         registry.add("spring.restclient.uri.user_service", wireMockServer::baseUrl);
         registry.add("spring.security.oauth2.client.provider.internal-service-client.token-uri",
@@ -158,7 +173,7 @@ class OrderApiIT {
     @Test
     void createOrder_WhenProductServiceHasNoSuchProduct_ShouldFailAndNotPersistOrder() {
         // given
-        UUID unknownProductId = UUID.randomUUID(); // deliberately not stubbed -> WireMock replies 404 by default
+        UUID unknownProductId = UUID.randomUUID(); // deliberately not stubbed -> product-service replies with an empty list
         NewOrderDto newOrderDto = new NewOrderDto(
                 List.of(new NewOrderItemDto(unknownProductId, 1)),
                 "Moscow, Lenina 1",
@@ -240,10 +255,15 @@ class OrderApiIT {
         return consumer;
     }
 
+    /**
+     * order-service забирает товары заказа одним батчевым запросом
+     * {@code GET /api/internal/products?ids=...}, поэтому стаб отвечает списком.
+     */
     private void stubProduct(UUID productId, BigDecimal price) {
-        wireMockServer.stubFor(get(urlEqualTo("/api/products/" + productId))
+        wireMockServer.stubFor(get(urlPathEqualTo("/api/internal/products"))
+                .withQueryParam("ids", equalTo(productId.toString()))
                 .willReturn(okJson("""
-                        {"id":"%s","quantity":1,"price":%s}
+                        [{"id":"%s","quantity":1,"price":%s}]
                         """.formatted(productId, price))));
     }
 

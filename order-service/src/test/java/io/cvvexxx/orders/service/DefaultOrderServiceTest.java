@@ -26,13 +26,16 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -75,8 +78,10 @@ class DefaultOrderServiceTest {
                     "comment"
             );
 
-            when(productClient.findById(PRODUCT_ID)).thenReturn(product(PRODUCT_ID, new BigDecimal("100.00")));
-            when(productClient.findById(secondProductId)).thenReturn(product(secondProductId, new BigDecimal("50.00")));
+            when(productClient.findAllProductsByIds(anyList())).thenReturn(List.of(
+                    product(PRODUCT_ID, new BigDecimal("100.00")),
+                    product(secondProductId, new BigDecimal("50.00"))
+            ));
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
                 Order order = invocation.getArgument(0);
                 order.setId(ORDER_ID);
@@ -93,6 +98,10 @@ class DefaultOrderServiceTest {
             assertEquals(OrderStatus.PENDING, result.status());
             assertEquals(new BigDecimal("350.00"), result.totalAmount());
             assertEquals(2, result.items().size());
+
+            ArgumentCaptor<List<UUID>> productIdsCaptor = ArgumentCaptor.captor();
+            verify(productClient).findAllProductsByIds(productIdsCaptor.capture());
+            assertEquals(Set.of(PRODUCT_ID, secondProductId), new HashSet<>(productIdsCaptor.getValue()));
 
             ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
             verify(orderRepository).save(orderCaptor.capture());
@@ -114,7 +123,8 @@ class DefaultOrderServiceTest {
         @DisplayName("если у товара нет цены, не сохраняет заказ")
         void createOrder_WhenProductPriceIsMissing_ShouldThrowAndNotSave() {
             // given
-            when(productClient.findById(PRODUCT_ID)).thenReturn(product(PRODUCT_ID, null));
+            when(productClient.findAllProductsByIds(List.of(PRODUCT_ID)))
+                    .thenReturn(List.of(product(PRODUCT_ID, null)));
 
             // when
             IllegalStateException exception = assertThrows(

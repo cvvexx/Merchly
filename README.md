@@ -1,117 +1,257 @@
 # Merchly 🛒
 
-Multi-module merchandise marketplace built with Spring Boot 3 (Java 17, PostgreSQL, Spring Security, Flyway).
+[![CI](https://github.com/cvvexx/Merchly/actions/workflows/ci.yml/badge.svg)](https://github.com/cvvexx/Merchly/actions/workflows/ci.yml)
+
+Маркетплейс мерча на микросервисах: Java 17, Spring Boot 3.4.1, PostgreSQL, Redis, Kafka,
+Keycloak, MinIO. Пять сервисов вокруг BFF-шлюза, асинхронное оформление заказа через Kafka,
+сессии и кеш в Redis, интеграционные тесты на Testcontainers.
+
+Весь стек поднимается одной командой вместе с демо-каталогом и тестовыми аккаунтами —
+Java и Maven на хосте не нужны.
+
+## 🚀 Быстрый старт
+
+```bash
+git clone https://github.com/cvvexx/Merchly.git && cd Merchly
+cp .env.example .env.prod
+docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
+```
+
+Когда контейнеры станут `healthy` — http://localhost:8080.
+Демо-аккаунт администратора: `ink_studio` / `demo1234`.
+
+Подробности запуска, режим разработки, состав демо-данных и решение типовых проблем —
+в [docs/Running.md](docs/Running.md).
 
 ## 📖 О проекте
 
-Merchly — это современный маркетплейс мерча, построенный на базе микросервисной архитектуры. Проект отходит от устаревшего монолитного подхода и использует паттерн BFF (Backend for Frontend), что обеспечивает высокую изоляцию сбоев, независимое масштабирование сервисов и позволяет использовать единую безопасную точку входа для пользователя.
+Merchly — учебно-показательный проект интернет-магазина мерча, собранный как набор
+независимых сервисов вокруг BFF-шлюза. Пять Spring Boot приложений в одном
+Maven-мультимодуле:
+
+* каждый сервис владеет своей базой (`merchly_users`, `merchly_products`,
+  `merchly_orders`, `merchly_reviews`), связи между сущностями — только по UUID,
+  без физических внешних ключей между базами;
+* пользователь общается только с `frontend-service` (BFF), который рендерит
+  Thymeleaf-страницы и сам ходит в остальные сервисы по внутренней сети Compose;
+* заказ проходит через Kafka: `order-service` публикует событие, `product-service`
+  списывает остатки и при нехватке товара присылает отказ.
+
+## 🏗 Архитектура
+
+```mermaid
+flowchart LR
+    Browser["Браузер<br/>(Thymeleaf + Bootstrap 5)"] -->|"cookie сессии"| FE
+
+    subgraph Compose["docker-compose.prod.yml"]
+        FE["frontend-service :8080<br/>BFF"]
+        US["user-service :8082"]
+        PS["product-service :8081"]
+        OS["order-service :8084"]
+        RS["review-service :8083"]
+        KC["Keycloak :8090"]
+        KAFKA["Kafka"]
+        REDIS["Redis"]
+        MINIO["MinIO :9000"]
+
+        FE -->|"Bearer JWT"| US
+        FE -->|"Bearer JWT"| PS
+        FE -->|"Bearer JWT"| OS
+        FE -->|"Bearer JWT"| RS
+        FE -->|"сессия"| REDIS
+        FE -->|"login / refresh"| KC
+
+        OS -->|"client_credentials"| PS
+        OS -->|"токен пользователя"| US
+        OS <-->|"order-created / order-failed / order-cancelled"| KAFKA
+        PS <--> KAFKA
+
+        US --> REDIS
+        PS --> REDIS
+        OS --> REDIS
+        RS --> REDIS
+
+        US --> MINIO
+        PS --> MINIO
+
+        US -->|"admin-cli"| KC
+
+        US --- USDB[("users_db")]
+        PS --- PSDB[("products_db")]
+        OS --- OSDB[("orders_db")]
+        RS --- RSDB[("reviews_db")]
+        KC --- KCDB[("keycloak_db")]
+    end
+
+    Browser -->|"картинки товаров и аватары"| MINIO
+    Browser -->|"страница входа"| KC
+```
+
+| Сервис             | Порт | Зона ответственности                                                                                 |
+|--------------------|------|-------------------------------------------------------------------------------------------------------|
+| `frontend-service` | 8080 | BFF: Thymeleaf-страницы, сессия в Redis, обновление токенов, агрегация ответов остальных сервисов       |
+| `product-service`  | 8081 | Каталог, поиск по названию, CRUD товаров (ADMIN), картинки в MinIO, списание и возврат остатков по Kafka |
+| `user-service`     | 8082 | Регистрация в Keycloak + локальный профиль с тем же UUID, аватары в MinIO, корзина                      |
+| `review-service`   | 8083 | Отзывы с пагинацией, один отзыв на товар от пользователя, агрегированная статистика оценок               |
+| `order-service`    | 8084 | Заказы, статусы, история, интеграция с Kafka, OpenAPI-схема                                             |
+
+Наружу пробрасывает порт только `frontend-service` и инфраструктура — бэкенд-сервисы
+доступны лишь внутри сети Compose.
 
 ## 🛠 Технологический стек
 
-| Категория          | Технологии                                                                                 |
-|--------------------|--------------------------------------------------------------------------------------------|
-| **Core**           | Java 17, Spring Boot 3.4.1                                                                 |
-| **Архитектура**    | Microservices, BFF (Backend for Frontend)                                                  |
-| **Базы данных**    | PostgreSQL (изолированные БД), Redis                                                       |
-| **Безопасность**   | Spring Security, Keycloak (OIDC), JWT                                                      |
-| **Хранилище файлов**| MinIO (S3-совместимое хранилище)                                                          |
-| **Инфраструктура** | Docker, Docker Compose, Flyway                                                             |
-| **Frontend**       | Thymeleaf, HTML5, JavaScript (Fetch API)                                                   |
+| Категория            | Что используется                                                                     |
+|----------------------|--------------------------------------------------------------------------------------|
+| **Core**             | Java 17, Spring Boot 3.4.1, Maven (мультимодуль, 5 модулей)                            |
+| **Архитектура**      | Микросервисы, BFF (Backend for Frontend)                                              |
+| **Базы данных**      | PostgreSQL 16 — отдельный инстанс на каждый сервис, миграции Flyway                    |
+| **Кеш и сессии**     | Redis 7 — Spring Cache в четырёх сервисах + Spring Session для сессий BFF              |
+| **Асинхронность**    | Apache Kafka (KRaft) — три топика между `order-service` и `product-service`            |
+| **Безопасность**     | Spring Security, Keycloak 24 (OIDC), JWT, resource server в каждом бэкенд-сервисе      |
+| **Хранилище файлов** | MinIO (S3-совместимое), клиент `io.minio:minio`                                        |
+| **Инфраструктура**   | Docker, Docker Compose (multi-stage сборка внутри контейнеров)                         |
+| **Frontend**         | Thymeleaf, Bootstrap 5.3 (CDN), собственный CSS, ванильный JS с Fetch API              |
+| **Тестирование**     | JUnit 5, Mockito, MockMvc, Testcontainers (Postgres, Redis, Kafka, MinIO), WireMock     |
+| **Документация API** | springdoc-openapi в `order-service` (`/swagger-ui.html`)                               |
 
-## 🚀 Почему этот проект заслуживает внимания (Ключевые фичи)
+## 🔐 Авторизация
 
-- **Разграничение прав доступа (RBAC):**  
-  В проекте реализована строгая ролевая модель. Обычный пользователь (`USER`) не может создавать, изменять или удалять товары — ему доступен только функционал покупок и оставления отзывов. Администратор (`ADMIN`) обладает расширенными правами: он может полностью управлять каталогом товаров (создание/изменение/удаление), а также модерировать систему комментариев (редактировать или удалять отзывы других людей). *Для удобства тестирования функционала получить роль администратора можно в один клик прямо на главной странице сразу после регистрации.*
+Единственная точка входа для браузера — BFF. Схема входа:
 
-- **Продвинутая безопасность (Token Storage in BFF):**  
-  В приложении реализована Stateless авторизация. JWT-токены не хранятся в уязвимом localStorage браузера, а надёжно спрятаны в HttpOnly куках на стороне BFF-сервера, что полностью исключает риск XSS-атак.
+1. Пользователь отправляет форму на `POST /do-login`.
+2. `frontend-service` меняет логин/пароль на пару токенов у Keycloak
+   (direct access grant клиента `merchly_frontend_client`).
+3. Access- и refresh-токены кладутся в `KeycloakJwtAuthenticationToken` внутри
+   HTTP-сессии. Сессия хранится **в Redis** (Spring Session), браузер получает
+   только cookie с идентификатором сессии — сами JWT наружу не уходят и в
+   `localStorage` не попадают.
+4. `KeycloakTokenRefreshFilter` на каждом запросе проверяет `exp` access-токена и,
+   если до истечения осталось меньше 10 секунд, прозрачно обновляет пару токенов
+   через Keycloak. Если обновить не удалось — сессия инвалидируется и пользователя
+   редиректит на `/login?error=session_expired`.
+5. В бэкенд-сервисы BFF ходит с `Authorization: Bearer <access token>` — каждый из
+   них является OAuth2 resource server со `SessionCreationPolicy.STATELESS` и сам
+   валидирует подпись по JWKS Keycloak.
 
-- **Автоматическая ротация сессий:**  
-  Настроен прозрачный механизм Refresh Token. Если срок действия Access-токена истекает, BFF-сервер перехватывает ошибку авторизации и автоматически обновляет токены через Keycloak, не прерывая работу пользователя.
+Для служебных вызовов, где нет пользователя, используется `client_credentials`:
+`order-service` ходит в `/api/internal/products` под клиентом `merchly_orders_client`,
+BFF — под `merchly_frontend_client`. Оба сервис-аккаунта имеют роль `INTERNAL_SERVICE`,
+и внутренние эндпоинты закрыты `@PreAuthorize("hasRole('INTERNAL_SERVICE')")`.
 
-- **Слабая связность (Loose Coupling):**  
-  Микросервисы работают с изолированными базами данных (merchly_users, merchly_products). Связи между сущностями строятся исключительно по ID на уровне бизнес-логики без использования физических Foreign Key ограничений между сервисами.
+CSRF на BFF включён (`CookieCsrfTokenRepository`), токен пробрасывается в страницы
+мета-тегами и подставляется в fetch-запросы.
 
-- **Чистая архитектура и стандарты:**  
-  Код написан с соблюдением слоистой архитектуры (Controller → Service → Repository). Контроллеры не содержат бизнес-логики и остаются «тонкими». В разработке используются стандарты Conventional Commits для чистоты истории Git.
+**Роли.** Живут в Keycloak (`ROLE_USER` — композитная роль по умолчанию, `ROLE_ADMIN` —
+точечно) и дублируются в таблице `user_roles` user-service. `USER` покупает, оставляет
+свои отзывы и управляет своими заказами; `ADMIN` дополнительно ведёт каталог, модерирует
+чужие отзывы и видит чужие заказы. Проверки продублированы на BFF (`hasRole("ADMIN")`
+в `SecurityBeans` и `sec:authorize` в шаблонах) и в самих сервисах.
 
-- **Интернационализация (i18n):**  
-  Сообщения об ошибках валидации не захардкожены в Java, а вынесены в локализованные `.properties` файлы.
+## 📦 Оформление заказа (Kafka)
 
-- **Работа с медиафайлами:**  
-  Фотографии товаров и аватарки сохраняются в локально развёрнутое S3-хранилище (MinIO), а в базах данных хранятся лишь URL-ссылки.
+```mermaid
+sequenceDiagram
+    participant U as Пользователь
+    participant OS as order-service
+    participant K as Kafka
+    participant PS as product-service
 
-## 📦 Структура микросервисов
+    U->>OS: POST /api/orders/create
+    OS->>OS: заказ сохранён в статусе PENDING
+    Note over OS: событие публикуется только<br/>после коммита транзакции
+    OS->>K: order-created
+    K->>PS: order-created
+    alt товара хватает
+        PS->>PS: SELECT ... FOR UPDATE, списание остатка,<br/>заказ помечен в processed_order_events
+    else товара не хватает
+        PS->>K: order-failed (список товаров + причина)
+        K->>OS: order-failed
+        OS->>OS: статус CANCELLED + cancellation_reason
+    end
+    U->>OS: POST /api/orders/{id}/confirm — вручную
+    OS->>OS: PENDING → CONFIRMED
+    U->>OS: POST /api/orders/{id}/cancel
+    OS->>K: order-cancelled
+    K->>PS: order-cancelled → остаток возвращается
+```
 
-| Сервис             | Зона ответственности                                                                                 |
-|--------------------|------------------------------------------------------------------------------------------------------|
-| `frontend-service` | BFF-шлюз. Рендерит UI, прячет токены в куки, маршрутизирует запросы на бэкенд через RestClient.      |
-| `user-service`     | Управление профилями, синхронизация UUID с Keycloak, корзина покупок.                                |
-| `product-service`  | Каталог мерча, управление ценами и CRUD-операции над товарами.                                       |
-| `review-service`   | Изолированная система отзывов, пагинация комментариев и агрегация статистики.                        |
-| `Keycloak`         | Автономный Identity and Access Management (IAM) сервер для выпуска стандартизированных OIDC токенов. |
+Что здесь важно:
 
-## ⚙️ Запуск проекта локально
+* **Публикация после коммита.** `OrderKafkaEventListener` слушает доменное событие
+  с `@TransactionalEventListener(AFTER_COMMIT)`, поэтому в Kafka не уйдёт событие
+  по заказу, который не сохранился. Если брокер недоступен, ошибка логируется, а
+  заказ остаётся в `PENDING`.
+* **Идемпотентность.** `product-service` хранит обработанные заказы в таблице
+  `processed_order_events` и повторную доставку `order-created` игнорирует;
+  возврат остатка тоже выполняется только для реально списанного заказа.
+* **Гонки по остатку.** Товары выбираются `findByIdForUpdate` (пессимистичная
+  блокировка), так что параллельные заказы на последнюю единицу не уведут остаток в минус.
+* **Статусы.** `PENDING → CONFIRMED` или `PENDING → CANCELLED`; подтверждение —
+  ручное действие пользователя или админа, отдельного события «заказ подтверждён» нет.
+  Страница заказа опрашивает `/orders/{id}/status`, поэтому асинхронная отмена
+  из-за нехватки товара появляется на экране без перезагрузки.
 
-Для быстрого старта инфраструктуры используется Docker Compose.
-1. Скопируйте проект в папку на своем компьютере:
-   ```bash
-   git clone https://github.com/cvvexx/Merchly.git
-   ```
-2. Перейдите в эту папку
-   ```bash
-   cd Merchly/
-   ```
-3. Скопируйте файл конфигурации окружения:  
-   Скопируйте `.env.example` в `.env`.  
-   Для Linux/MacOS:
-   ```bash
-   cp .env.prod.example .env.prod
-   ```
-   Для Windows (cmd):
-   ```bash
-   copy .env.prod.example .env.prod
-   ```
-4. Запустите микросервисы:  
-   - Соберите и запустите проект:  
-     ```bash
-     docker compose up -d --build
-     ```
-   - По умолчанию `frontend-service` будет доступен на порту `8080`:  
-     [http://localhost:8080](http://localhost:8080)
+## ⚡ Кеш, сессии и файлы
 
-## 🎒 Демо-данные
+Redis выступает и кешем (`spring.cache.type=redis`, JSON-сериализация), и хранилищем
+сессий BFF. Кеш включён в четырёх сервисах — каталог и карточка товара, корзина,
+профили, заказы, статистика отзывов — с TTL от 2 до 10 минут и инвалидацией через
+`@CacheEvict` в сервисном слое. Корзина при этом остаётся персистентной: она лежит
+в таблице `cart_item` user-service, Redis только ускоряет чтение.
+Полная раскладка кешей — в [docs/Running.md](docs/Running.md#кеши).
 
-Стек поднимается с уже наполненным каталогом — создавать товары вручную не нужно.
-При первом старте на чистых томах заводятся восемь товаров трёх авторов, семнадцать
-отзывов и шесть пользователей. Пароль у всех демо-аккаунтов — `demo1234`.
+Ещё пара решений, которые видно из кода:
 
-| Логин         | Роль    | Что можно посмотреть                                  |
-|---------------|---------|-------------------------------------------------------|
-| `ink_studio`  | `ADMIN` | Управление каталогом: создание, редактирование, удаление |
-| `tirazh_lab`  | `USER`  | Профиль автора с тремя товарами                       |
-| `okhta_press` | `USER`  | Профиль автора, у одного товара распродан тираж       |
-| `kate_v`      | `USER`  | Покупатель, оставил отзывы почти на все товары        |
-| `roman_d`     | `USER`  | Покупатель, среди отзывов есть критические            |
-| `nastya_m`    | `USER`  | Покупатель                                            |
+* при регистрации пользователь сначала создаётся в Keycloak, затем сохраняется
+  локально с тем же UUID; если локальное сохранение упало — пользователь в Keycloak
+  удаляется, а загруженный аватар подчищается в MinIO;
+* в БД хранятся только имена файлов, публичные ссылки на MinIO собирает
+  `ImageUrlFormatter` из `MINIO_PUBLIC_URL`;
+* сообщения валидации вынесены из кода в `messages.properties` каждого сервиса
+  (пока только русская локаль).
 
-Где что лежит:
+## ⚠️ Ограничения демо-сборки
 
-- пользователи Keycloak — `.keycloak/realm-export.json`;
-- строки в БД — файлы `db/seed/R__seed_demo_*.sql` в `user-service`, `product-service`
-  и `review-service`. Они подключаются только когда задан
-  `SPRING_FLYWAY_LOCATIONS=classpath:db/migration,classpath:db/seed`
-  (задаётся в `docker-compose.prod.yml`), поэтому в dev и в тестах не выполняются;
-- изображения товаров и аватары — `.seed/minio`, их заливает контейнер `minio-init`.
+Это учебный проект, и часть решений сделана ради простоты запуска:
 
-Идентификаторы демо-записей зафиксированы (`a0000000-…` — пользователи,
-`b0000000-…` — товары, `c0000000-…` — отзывы) и связывают три независимые базы,
-поэтому менять их нужно во всех файлах сразу.
+* секреты (`.env.example`, `FRONTEND_SERVICE_CLIENT_SECRET`, ключи MinIO, пароль
+  Keycloak `admin`/`admin`) лежат в репозитории в открытом виде;
+* весь трафик внутри Compose идёт по HTTP, Keycloak работает в режиме `start-dev`;
+* вход реализован через direct access grant, а не через redirect-флоу
+  `authorization_code` — форма логина живёт на стороне BFF;
+* интерфейс и сообщения валидации только на русском;
+* уровень логирования Spring Security и REST-клиентов выставлен в `DEBUG`.
 
-Демо-данные заводятся **при первом старте на пустых томах**. Чтобы получить их
-на уже запущенном окружении, пересоздайте тома:
+## 🧪 Тесты
 
 ```bash
-docker compose -f docker-compose.prod.yml down -v
-docker compose -f docker-compose.prod.yml up -d --build
+mvn test        # юнит-тесты всех модулей
+mvn verify      # + интеграционные тесты (*IT.java, нужен запущенный Docker)
 ```
+
+Юнит-тесты покрывают сервисный слой (Mockito), контроллеры (MockMvc + `spring-security-test`),
+REST-клиенты (WireMock) и Kafka-компоненты. Интеграционные тесты поднимают реальную
+инфраструктуру через Testcontainers:
+
+| Тест                       | Что поднимает                    | Что проверяет                                    |
+|----------------------------|----------------------------------|--------------------------------------------------|
+| `ProductServiceIT`         | Postgres, Kafka, MinIO, Redis    | сценарии каталога и обработку событий заказа      |
+| `OrderApiIT`               | Postgres, Kafka, WireMock        | создание заказа и отмену по `order-failed`        |
+| `OrderServiceRedisCacheIT` | Postgres, Redis                  | что `@Cacheable`/`@CacheEvict` действительно работают |
+| `UserApiIT`                | Postgres, Redis, MinIO           | регистрацию, профиль, загрузку аватара            |
+| `CartServiceRedisCacheIT`  | Postgres, Redis                  | кеш корзины и его инвалидацию                     |
+| `ReviewApiIT`              | Postgres, Redis                  | отзывы и агрегированную статистику                |
+| `ProductsListFlowIT`       | Redis, WireMock                  | сквозной рендер списка товаров на BFF             |
+
+Версия Testcontainers поднята до 1.21.4: управляемая Spring Boot 3.4.1 версия 1.20.4
+не работает с Docker Engine 29+ (проба соединения использует API 1.32).
+
+### CI
+
+`.github/workflows/ci.yml` запускается на каждый push и pull request:
+
+| Джоба            | Что делает                                                                    |
+|------------------|-------------------------------------------------------------------------------|
+| `Сборка и тесты` | JDK 17 (Temurin) + кеш Maven, `mvn compile`, затем `mvn verify` — юнит-тесты и Testcontainers-тесты; отчёты surefire/failsafe сохраняются как артефакт |
+| `Сборка образов` | делает `.env.prod` и `.env.dev` из `.env.example`, валидирует оба compose-файла и собирает образы всех пяти сервисов |
+

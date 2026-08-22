@@ -3,7 +3,7 @@ WORKDIR /app
 
 COPY . .
 
-RUN mvn clean package -pl frontend-service -am
+RUN mvn clean package -pl frontend-service -am -DskipTests -Dmaven.test.skip=true
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
