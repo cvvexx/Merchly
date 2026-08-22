@@ -51,7 +51,7 @@
 
 </main>
 
-<form id="logoutForm" th:action="@{/logout}" method="post" style="display: none;"></form>
+<form id="logoutForm" method="post" style="display: none;" th:action="@{/logout}"></form>
 
 <nav th:replace="~{fragments/layout :: dock('none')}"></nav>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>

@@ -95,7 +95,7 @@ services:
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-12345678} ping | grep PONG"]
+      test: [ "CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-12345678} ping | grep PONG" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -211,7 +211,7 @@ services:
       KEYCLOAK_SERVER_URL: http://keycloak:8090
       MINIO_URL: http://minio:9000
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep UP || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep UP || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -241,7 +241,7 @@ services:
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep UP || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep UP || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -274,7 +274,7 @@ services:
       SPRING_RESTCLIENT_URI_USER_SERVICE: http://users-service:8082
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep UP || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep UP || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -306,7 +306,7 @@ services:
       SPRING_DATA_REDIS_HOST: redis
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health | grep UP || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health | grep UP || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10

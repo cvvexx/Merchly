@@ -8,11 +8,7 @@ import io.cvvexxx.users.entity.CartItem;
 import io.cvvexxx.users.entity.User;
 import io.cvvexxx.users.repository.CartItemRepository;
 import io.cvvexxx.users.repository.UserRepository;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.keycloak.admin.client.Keycloak;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,13 +34,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 /**
  * Exercises {@link DefaultCartService} against a real Redis (Testcontainers) instead of mocking
@@ -65,6 +56,15 @@ class CartServiceRedisCacheIT {
 
     @Container
     static RedisContainer redis = new RedisContainer("redis:7-alpine");
+    private final UUID userId = UUID.randomUUID();
+    @Autowired
+    private CartService cartService;
+    @MockitoSpyBean
+    private CartItemRepository cartItemRepository;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private CacheManager cacheManager;
 
     @DynamicPropertySource
     static void properties(DynamicPropertyRegistry registry) {
@@ -80,39 +80,6 @@ class CartServiceRedisCacheIT {
         registry.add("spring.data.redis.port", redis::getRedisPort);
         registry.add("spring.cache.type", () -> "redis");
     }
-
-    @TestConfiguration
-    static class ITConfig {
-
-        @Bean
-        JwtDecoder jwtDecoder() {
-            return token -> Jwt.withTokenValue(token)
-                    .header("alg", "none")
-                    .claim("sub", token)
-                    .issuedAt(Instant.now())
-                    .expiresAt(Instant.now().plusSeconds(3600))
-                    .build();
-        }
-
-        @Bean
-        Keycloak keycloak() {
-            return mock(Keycloak.class, Mockito.RETURNS_DEEP_STUBS);
-        }
-    }
-
-    @Autowired
-    private CartService cartService;
-
-    @MockitoSpyBean
-    private CartItemRepository cartItemRepository;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private CacheManager cacheManager;
-
-    private final UUID userId = UUID.randomUUID();
 
     @BeforeEach
     void createOwningUser() {
@@ -141,6 +108,25 @@ class CartServiceRedisCacheIT {
                 .productId(productId)
                 .quantity(quantity)
                 .build());
+    }
+
+    @TestConfiguration
+    static class ITConfig {
+
+        @Bean
+        JwtDecoder jwtDecoder() {
+            return token -> Jwt.withTokenValue(token)
+                    .header("alg", "none")
+                    .claim("sub", token)
+                    .issuedAt(Instant.now())
+                    .expiresAt(Instant.now().plusSeconds(3600))
+                    .build();
+        }
+
+        @Bean
+        Keycloak keycloak() {
+            return mock(Keycloak.class, Mockito.RETURNS_DEEP_STUBS);
+        }
     }
 
     @Nested

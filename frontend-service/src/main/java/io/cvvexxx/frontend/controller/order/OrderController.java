@@ -3,7 +3,6 @@ package io.cvvexxx.frontend.controller.order;
 import io.cvvexxx.frontend.client.order.OrdersRestClient;
 import io.cvvexxx.frontend.dto.order.NewOrderDto;
 import io.cvvexxx.frontend.dto.order.OrderDto;
-import io.cvvexxx.frontend.dto.order.OrderStatusDto;
 import io.cvvexxx.frontend.service.order.DefaultOrderService;
 import io.cvvexxx.frontend.view.OrderDetailsView;
 import lombok.RequiredArgsConstructor;

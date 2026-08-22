@@ -786,12 +786,31 @@ a:hover {
     letter-spacing: 0.02em;
 }
 
-.badge.bg-primary { background: var(--brand) !important; }
-.badge.bg-success { background: var(--ok) !important; }
-.badge.bg-danger { background: var(--danger) !important; }
-.badge.bg-warning { background: var(--warn) !important; color: var(--ink) !important; }
-.badge.bg-info { background: var(--info) !important; color: #fff !important; }
-.badge.bg-secondary { background: var(--slate) !important; }
+.badge.bg-primary {
+    background: var(--brand) !important;
+}
+
+.badge.bg-success {
+    background: var(--ok) !important;
+}
+
+.badge.bg-danger {
+    background: var(--danger) !important;
+}
+
+.badge.bg-warning {
+    background: var(--warn) !important;
+    color: var(--ink) !important;
+}
+
+.badge.bg-info {
+    background: var(--info) !important;
+    color: #fff !important;
+}
+
+.badge.bg-secondary {
+    background: var(--slate) !important;
+}
 
 /* Штамп статуса заказа: заказ проходит по инстанциям и получает оттиск.
    Прямоугольная рамка, моноширинный набор, лёгкий наклон — как оттиск печати. */
@@ -849,22 +868,65 @@ a:hover {
 
 /* ---------- Утилитарные цветовые классы Bootstrap ---------- */
 
-.text-primary { color: var(--brand) !important; }
-.text-success { color: var(--ok) !important; }
-.text-danger { color: var(--danger) !important; }
-.text-warning { color: var(--warn-dark) !important; }
-.text-info { color: var(--info-dark) !important; }
-.text-secondary { color: var(--slate) !important; }
-.text-dark { color: var(--ink) !important; }
-.text-muted { color: var(--ink-soft) !important; }
-.text-flare { color: var(--flare) !important; }
+.text-primary {
+    color: var(--brand) !important;
+}
 
-.bg-primary { background-color: var(--brand) !important; }
-.bg-success { background-color: var(--ok) !important; }
-.bg-danger { background-color: var(--danger) !important; }
-.bg-warning { background-color: var(--warn) !important; }
-.bg-info { background-color: var(--info) !important; }
-.bg-light { background-color: var(--canvas) !important; }
+.text-success {
+    color: var(--ok) !important;
+}
+
+.text-danger {
+    color: var(--danger) !important;
+}
+
+.text-warning {
+    color: var(--warn-dark) !important;
+}
+
+.text-info {
+    color: var(--info-dark) !important;
+}
+
+.text-secondary {
+    color: var(--slate) !important;
+}
+
+.text-dark {
+    color: var(--ink) !important;
+}
+
+.text-muted {
+    color: var(--ink-soft) !important;
+}
+
+.text-flare {
+    color: var(--flare) !important;
+}
+
+.bg-primary {
+    background-color: var(--brand) !important;
+}
+
+.bg-success {
+    background-color: var(--ok) !important;
+}
+
+.bg-danger {
+    background-color: var(--danger) !important;
+}
+
+.bg-warning {
+    background-color: var(--warn) !important;
+}
+
+.bg-info {
+    background-color: var(--info) !important;
+}
+
+.bg-light {
+    background-color: var(--canvas) !important;
+}
 
 /* ---------- Алерты ---------- */
 
@@ -881,7 +943,9 @@ a:hover {
     color: #075985;
 }
 
-.alert-info .alert-link { color: var(--info-dark); }
+.alert-info .alert-link {
+    color: var(--info-dark);
+}
 
 .alert-success {
     background: #eafbf1;

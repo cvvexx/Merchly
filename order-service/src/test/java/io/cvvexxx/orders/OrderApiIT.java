@@ -20,11 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -47,18 +43,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.delete;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.deleteRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.noContent;
-import static com.github.tomakehurst.wiremock.client.WireMock.okJson;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Full-stack integration test: real Postgres and Kafka via Testcontainers, downstream
@@ -72,6 +58,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class OrderApiIT {
 
     private static final WireMockServer wireMockServer = new WireMockServer(WireMockConfiguration.options().dynamicPort());
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
+    @Container
+    static ConfluentKafkaContainer kafka = new ConfluentKafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"));
+    // Кеш заказов работает через Redis: без своего контейнера тест ушёл бы на localhost:6379
+    @Container
+    static RedisContainer redis = new RedisContainer("redis:7-alpine");
 
     static {
         wireMockServer.start();
@@ -88,15 +81,12 @@ class OrderApiIT {
                 .willReturn(okJson("[]")));
     }
 
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
-
-    @Container
-    static ConfluentKafkaContainer kafka = new ConfluentKafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"));
-
-    // Кеш заказов работает через Redis: без своего контейнера тест ушёл бы на localhost:6379
-    @Container
-    static RedisContainer redis = new RedisContainer("redis:7-alpine");
+    @LocalServerPort
+    private int port;
+    @Autowired
+    private OrderRepository orderRepository;
+    @Value("${app.kafka.topics.order-cancelled}")
+    private String orderCancelledTopic;
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
@@ -121,15 +111,6 @@ class OrderApiIT {
     static void stopWireMock() {
         wireMockServer.stop();
     }
-
-    @LocalServerPort
-    private int port;
-
-    @Autowired
-    private OrderRepository orderRepository;
-
-    @Value("${app.kafka.topics.order-cancelled}")
-    private String orderCancelledTopic;
 
     private RestClient restClient() {
         return RestClient.builder().baseUrl("http://localhost:" + port).build();
@@ -188,7 +169,8 @@ class OrderApiIT {
                 .headers(headers -> headers.addAll(authHeaders()))
                 .body(newOrderDto)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, res) -> { })
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
                 .toEntity(String.class);
 
         // then

@@ -16,4 +16,5 @@ public record NewOrderDto(
 
         @Size(max = 500, message = "{orders.create.comment.too_long}")
         String comment
-) {}
+) {
+}

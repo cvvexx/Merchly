@@ -18,4 +18,5 @@ public record OrderDto(
         List<OrderItemDto> items,
         Instant createdAt,
         Instant updatedAt
-) {}
+) {
+}

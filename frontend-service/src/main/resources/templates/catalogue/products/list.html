@@ -65,8 +65,8 @@
                     <!-- Автор и оценка -->
                     <div class="d-flex justify-content-between align-items-center gap-2 mb-2">
                         <a class="d-flex align-items-center gap-1 text-decoration-none hover-link text-muted small"
-                           th:if="${item.user != null}"
-                           th:href="@{/users/{username}(username=${item.user.username})}">
+                           th:href="@{/users/{username}(username=${item.user.username})}"
+                           th:if="${item.user != null}">
                             <img alt="" class="creator-avatar border" th:src="@{${item.userAvatarUrl}}">
                             <span class="fw-bold" th:text="${item.user.username}">автор</span>
                         </a>

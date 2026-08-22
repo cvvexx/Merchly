@@ -14,7 +14,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
@@ -243,7 +242,6 @@ public class DefaultUserService implements UserService {
                 user.getAvatarFileName()
         );
     }
-
 
 
     private UserRepresentation getUserRepresentation(NewUserDto newUserDto) {

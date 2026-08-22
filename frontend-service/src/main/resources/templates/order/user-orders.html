@@ -14,7 +14,7 @@
         </div>
 
         <a class="back-link" th:href="@{/catalogue/products/list}">
-            <span class="back-link__arrow" aria-hidden="true">&larr;</span> В каталог
+            <span aria-hidden="true" class="back-link__arrow">&larr;</span> В каталог
         </a>
     </div>
 
@@ -50,7 +50,8 @@
                         <div>
                             <span class="text-muted me-1">Итого:</span>
                             <strong class="price fs-5 text-dark"
-                                    th:text="${order.totalAmount != null ? order.totalAmount + ' ₽' : '0 ₽'}">2500 ₽</strong>
+                                    th:text="${order.totalAmount != null ? order.totalAmount + ' ₽' : '0 ₽'}">2500
+                                ₽</strong>
                         </div>
                     </div>
 

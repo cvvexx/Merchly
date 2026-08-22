@@ -83,6 +83,10 @@ class UserControllerTest {
         assertEquals("/img/avatar.png", model.getAttribute("userAvatar"));
     }
 
+    private UserInfoDto userInfo() {
+        return new UserInfoDto("username", "user@mail.com", "MALE", LocalDate.of(1990, 1, 1), Set.of("USER"), "avatar.png");
+    }
+
     @Nested
     @DisplayName("editUserProfile")
     class EditUserProfileTests {
@@ -149,9 +153,5 @@ class UserControllerTest {
             assertEquals(updateUserDto, model.getAttribute("payload"));
             assertEquals(List.of("Username already exists"), model.getAttribute("errors"));
         }
-    }
-
-    private UserInfoDto userInfo() {
-        return new UserInfoDto("username", "user@mail.com", "MALE", LocalDate.of(1990, 1, 1), Set.of("USER"), "avatar.png");
     }
 }

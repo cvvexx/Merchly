@@ -7,4 +7,5 @@ public record OrderFailedEvent(
         UUID orderId,
         List<UUID> productIds,
         String reason
-) {}
+) {
+}

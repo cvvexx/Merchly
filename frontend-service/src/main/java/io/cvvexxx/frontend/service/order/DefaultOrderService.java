@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class DefaultOrderService implements  OrderService {
+public class DefaultOrderService implements OrderService {
 
     private final ProductsInternalRestClient productsRestClient;
 

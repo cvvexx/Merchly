@@ -110,8 +110,7 @@ public class RestClientBeans {
                         HttpHeaders.AUTHORIZATION,
                         "Bearer " + jwtToken.getToken().getTokenValue()
                 );
-            }
-            else if (authentication instanceof OAuth2AuthenticationToken oauth2Token) {
+            } else if (authentication instanceof OAuth2AuthenticationToken oauth2Token) {
                 OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
                         .withClientRegistrationId(oauth2Token.getAuthorizedClientRegistrationId())
                         .principal(authentication)

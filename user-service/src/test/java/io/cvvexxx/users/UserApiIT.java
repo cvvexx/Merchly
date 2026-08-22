@@ -45,9 +45,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -74,6 +72,14 @@ class UserApiIT {
 
     @Container
     static MinIOContainer minio = new MinIOContainer("minio/minio:latest");
+    @LocalServerPort
+    private int port;
+    @Autowired
+    private UserRepository userRepository;
+    @Autowired
+    private CartItemRepository cartItemRepository;
+    @Autowired
+    private Keycloak keycloak;
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
@@ -93,38 +99,6 @@ class UserApiIT {
         registry.add("minio.access.name", minio::getUserName);
         registry.add("minio.access.secret", minio::getPassword);
     }
-
-    @TestConfiguration
-    static class ITConfig {
-
-        @Bean
-        JwtDecoder jwtDecoder() {
-            return token -> Jwt.withTokenValue(token)
-                    .header("alg", "none")
-                    .claim("sub", token)
-                    .claim("realm_access", Map.of("roles", List.of("USER")))
-                    .issuedAt(Instant.now())
-                    .expiresAt(Instant.now().plusSeconds(3600))
-                    .build();
-        }
-
-        @Bean
-        Keycloak keycloak() {
-            return mock(Keycloak.class, Mockito.RETURNS_DEEP_STUBS);
-        }
-    }
-
-    @LocalServerPort
-    private int port;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private CartItemRepository cartItemRepository;
-
-    @Autowired
-    private Keycloak keycloak;
 
     @BeforeEach
     void resetKeycloakMock() {
@@ -237,5 +211,25 @@ class UserApiIT {
         assertEquals(1, getCartResponse.getBody().length);
         assertEquals(addToCartDto.productId(), getCartResponse.getBody()[0].productId());
         assertEquals(2, getCartResponse.getBody()[0].quantity());
+    }
+
+    @TestConfiguration
+    static class ITConfig {
+
+        @Bean
+        JwtDecoder jwtDecoder() {
+            return token -> Jwt.withTokenValue(token)
+                    .header("alg", "none")
+                    .claim("sub", token)
+                    .claim("realm_access", Map.of("roles", List.of("USER")))
+                    .issuedAt(Instant.now())
+                    .expiresAt(Instant.now().plusSeconds(3600))
+                    .build();
+        }
+
+        @Bean
+        Keycloak keycloak() {
+            return mock(Keycloak.class, Mockito.RETURNS_DEEP_STUBS);
+        }
     }
 }

@@ -9,7 +9,7 @@
 
     <div class="mb-3">
         <a class="back-link" th:href="@{/orders}">
-            <span class="back-link__arrow" aria-hidden="true">&larr;</span> К списку заказов
+            <span aria-hidden="true" class="back-link__arrow">&larr;</span> К списку заказов
         </a>
     </div>
 
@@ -77,7 +77,8 @@
                 <div class="col-sm-6" th:if="${order.createdAt != null}">
                     <p class="eyebrow mb-1">Оформлен</p>
                     <strong class="mono"
-                            th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2026 15:00</strong>
+                            th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2026
+                        15:00</strong>
                 </div>
 
                 <div class="col-sm-6">
@@ -113,7 +114,8 @@
                                th:text="${item.title}">Название товара</a>
                         </td>
                         <td class="price text-nowrap"
-                            th:text="${#numbers.formatDecimal(item.price, 1, 'COMMA', 2, 'POINT') + ' ₽'}">1000 ₽</td>
+                            th:text="${#numbers.formatDecimal(item.price, 1, 'COMMA', 2, 'POINT') + ' ₽'}">1000 ₽
+                        </td>
                         <td class="mono" th:text="${item.quantity}">2</td>
                         <td class="price fw-bold text-nowrap"
                             th:text="${#numbers.formatDecimal(item.price * item.quantity, 1, 'COMMA', 2, 'POINT') + ' ₽'}">

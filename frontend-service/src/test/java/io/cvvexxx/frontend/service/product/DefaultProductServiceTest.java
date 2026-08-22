@@ -53,6 +53,23 @@ class DefaultProductServiceTest {
     @InjectMocks
     private DefaultProductService productService;
 
+    private Product product(UUID productId, UUID creatorId) {
+        return new Product(productId, "title", "desc", 1, BigDecimal.TEN, "image.png", creatorId);
+    }
+
+    private KeycloakJwtAuthenticationToken tokenWithRoles(String username, List<String> roles) {
+        return new KeycloakJwtAuthenticationToken(
+                username,
+                UUID.randomUUID(),
+                "access-token",
+                "refresh-token",
+                roles.stream()
+                        .map(SimpleGrantedAuthority::new)
+                        .map(GrantedAuthority.class::cast)
+                        .toList()
+        );
+    }
+
     @Nested
     @DisplayName("getProductsList")
     class GetProductsListTests {
@@ -209,22 +226,5 @@ class DefaultProductServiceTest {
             assertEquals(0L, result.viewModel().reviewsCount());
             assertEquals(0.0, result.viewModel().averageRating());
         }
-    }
-
-    private Product product(UUID productId, UUID creatorId) {
-        return new Product(productId, "title", "desc", 1, BigDecimal.TEN, "image.png", creatorId);
-    }
-
-    private KeycloakJwtAuthenticationToken tokenWithRoles(String username, List<String> roles) {
-        return new KeycloakJwtAuthenticationToken(
-                username,
-                UUID.randomUUID(),
-                "access-token",
-                "refresh-token",
-                roles.stream()
-                        .map(SimpleGrantedAuthority::new)
-                        .map(GrantedAuthority.class::cast)
-                        .toList()
-        );
     }
 }

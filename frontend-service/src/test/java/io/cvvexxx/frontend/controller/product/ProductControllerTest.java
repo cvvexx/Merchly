@@ -48,37 +48,6 @@ class ProductControllerTest {
     @InjectMocks
     private ProductController controller;
 
-    @Nested
-    @DisplayName("product (@ModelAttribute)")
-    class ProductModelAttributeTests {
-
-        @Test
-        @DisplayName("если товар найден, возвращает его")
-        void product_WhenFound_ShouldReturnProduct() {
-            // given
-            UUID productId = UUID.randomUUID();
-            Product product = product(productId);
-            when(productsPublicRestClient.findProductById(productId)).thenReturn(java.util.Optional.of(product));
-
-            // when
-            Product result = controller.product(productId);
-
-            // then
-            assertEquals(product, result);
-        }
-
-        @Test
-        @DisplayName("если товар не найден, выбрасывает NoSuchElementException")
-        void product_WhenNotFound_ShouldThrowNoSuchElementException() {
-            // given
-            UUID productId = UUID.randomUUID();
-            when(productsPublicRestClient.findProductById(productId)).thenReturn(java.util.Optional.empty());
-
-            // when / then
-            assertThrows(NoSuchElementException.class, () -> controller.product(productId));
-        }
-    }
-
     @Test
     @DisplayName("getProductPage: наполняет модель данными из сервиса и возвращает вьюху товара")
     void getProductPage_ShouldPopulateModelFromService() {
@@ -111,54 +80,6 @@ class ProductControllerTest {
 
         // then
         assertEquals("catalogue/products/edit", result);
-    }
-
-    @Nested
-    @DisplayName("updateProduct")
-    class UpdateProductTests {
-
-        @Test
-        @DisplayName("при успешном обновлении делает редирект на страницу товара")
-        void updateProduct_WhenValid_ShouldRedirectToProductPage() {
-            // given
-            UUID productId = UUID.randomUUID();
-            Product product = product(productId);
-            var payload = new UpdateProductPayload("title", "desc", 5, BigDecimal.TEN);
-            var image = new MockMultipartFile("image", "image.png", "image/png", "123".getBytes());
-            var model = new ConcurrentModel();
-
-            // when
-            String result = controller.updateProduct(product, image, payload, model);
-
-            // then
-            assertEquals("redirect:/catalogue/products/" + productId, result);
-            verify(productsPublicRestClient).updateProduct(
-                    productId, "title", "desc", 5, BigDecimal.TEN, image
-            );
-        }
-
-        @Test
-        @DisplayName("при ошибке валидации возвращает страницу редактирования с ошибками")
-        void updateProduct_WhenBadRequest_ShouldReturnEditPageWithErrors() {
-            // given
-            UUID productId = UUID.randomUUID();
-            Product product = product(productId);
-            var payload = new UpdateProductPayload("", null, -1, BigDecimal.ZERO);
-            var image = new MockMultipartFile("image", "image.png", "image/png", "123".getBytes());
-            var model = new ConcurrentModel();
-
-            doThrow(new BadRequestException(List.of("error1")))
-                    .when(productsPublicRestClient)
-                    .updateProduct(productId, "", null, -1, BigDecimal.ZERO, image);
-
-            // when
-            String result = controller.updateProduct(product, image, payload, model);
-
-            // then
-            assertEquals("catalogue/products/edit", result);
-            assertEquals(payload, model.getAttribute("payload"));
-            assertEquals(List.of("error1"), model.getAttribute("errors"));
-        }
     }
 
     @Test
@@ -221,5 +142,84 @@ class ProductControllerTest {
                         .map(GrantedAuthority.class::cast)
                         .toList()
         );
+    }
+
+    @Nested
+    @DisplayName("product (@ModelAttribute)")
+    class ProductModelAttributeTests {
+
+        @Test
+        @DisplayName("если товар найден, возвращает его")
+        void product_WhenFound_ShouldReturnProduct() {
+            // given
+            UUID productId = UUID.randomUUID();
+            Product product = product(productId);
+            when(productsPublicRestClient.findProductById(productId)).thenReturn(java.util.Optional.of(product));
+
+            // when
+            Product result = controller.product(productId);
+
+            // then
+            assertEquals(product, result);
+        }
+
+        @Test
+        @DisplayName("если товар не найден, выбрасывает NoSuchElementException")
+        void product_WhenNotFound_ShouldThrowNoSuchElementException() {
+            // given
+            UUID productId = UUID.randomUUID();
+            when(productsPublicRestClient.findProductById(productId)).thenReturn(java.util.Optional.empty());
+
+            // when / then
+            assertThrows(NoSuchElementException.class, () -> controller.product(productId));
+        }
+    }
+
+    @Nested
+    @DisplayName("updateProduct")
+    class UpdateProductTests {
+
+        @Test
+        @DisplayName("при успешном обновлении делает редирект на страницу товара")
+        void updateProduct_WhenValid_ShouldRedirectToProductPage() {
+            // given
+            UUID productId = UUID.randomUUID();
+            Product product = product(productId);
+            var payload = new UpdateProductPayload("title", "desc", 5, BigDecimal.TEN);
+            var image = new MockMultipartFile("image", "image.png", "image/png", "123".getBytes());
+            var model = new ConcurrentModel();
+
+            // when
+            String result = controller.updateProduct(product, image, payload, model);
+
+            // then
+            assertEquals("redirect:/catalogue/products/" + productId, result);
+            verify(productsPublicRestClient).updateProduct(
+                    productId, "title", "desc", 5, BigDecimal.TEN, image
+            );
+        }
+
+        @Test
+        @DisplayName("при ошибке валидации возвращает страницу редактирования с ошибками")
+        void updateProduct_WhenBadRequest_ShouldReturnEditPageWithErrors() {
+            // given
+            UUID productId = UUID.randomUUID();
+            Product product = product(productId);
+            var payload = new UpdateProductPayload("", null, -1, BigDecimal.ZERO);
+            var image = new MockMultipartFile("image", "image.png", "image/png", "123".getBytes());
+            var model = new ConcurrentModel();
+
+            doThrow(new BadRequestException(List.of("error1")))
+                    .when(productsPublicRestClient)
+                    .updateProduct(productId, "", null, -1, BigDecimal.ZERO, image);
+
+            // when
+            String result = controller.updateProduct(product, image, payload, model);
+
+            // then
+            assertEquals("catalogue/products/edit", result);
+            assertEquals(payload, model.getAttribute("payload"));
+            assertEquals(List.of("error1"), model.getAttribute("errors"));
+        }
     }
 }

@@ -1,9 +1,7 @@
 package io.cvvexxx.orders.controller;
 
-import io.cvvexxx.orders.domain.OrderStatus;
 import io.cvvexxx.orders.dto.NewOrderDto;
 import io.cvvexxx.orders.dto.OrderDto;
-import io.cvvexxx.orders.dto.OrderStatusDto;
 import io.cvvexxx.orders.service.OrderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

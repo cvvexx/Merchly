@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class DefaultOrderEventPublisher implements  OrderEventPublisher {
+public class DefaultOrderEventPublisher implements OrderEventPublisher {
 
     private final KafkaTemplate<String, OrderCreatedEvent> kafkaTemplate;
     private final KafkaTemplate<String, OrderCancelledEvent> orderCancelledKafkaTemplate;

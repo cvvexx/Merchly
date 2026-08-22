@@ -24,9 +24,7 @@ import java.util.Locale;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,33 +37,6 @@ class GlobalExceptionHandlerTest {
 
     @InjectMocks
     private GlobalExceptionHandler handler;
-
-    @Nested
-    @DisplayName("handleBindException")
-    class HandleBindExceptionTests {
-
-        @Test
-        @DisplayName("собирает локализованные сообщения по всем ошибкам валидации в errors")
-        void handleBindException_ShouldReturn400WithLocalizedFieldErrors() {
-            // given
-            Object target = new Object();
-            var bindingResult = new BeanPropertyBindingResult(target, "newOrderDto");
-            bindingResult.addError(new FieldError("newOrderDto", "deliveryAddress", "must not be blank"));
-            BindException exception = new BindException(bindingResult);
-            when(messageSource.getMessage(eq("errors.400.title"), any(), anyString(), eq(LOCALE)))
-                    .thenReturn("Некорректный запрос");
-            when(messageSource.getMessage(any(FieldError.class), eq(LOCALE)))
-                    .thenReturn("Адрес доставки обязателен");
-
-            // when
-            ResponseEntity<ProblemDetail> response = handler.handleBindException(exception, LOCALE);
-
-            // then
-            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-            assertEquals("Некорректный запрос", response.getBody().getDetail());
-            assertEquals(List.of("Адрес доставки обязателен"), response.getBody().getProperties().get("errors"));
-        }
-    }
 
     @Test
     @DisplayName("handleOrderNotFoundException: возвращает 404 с локализованным сообщением и args из исключения")
@@ -133,5 +104,32 @@ class GlobalExceptionHandlerTest {
         // then
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertEquals("Заказ нельзя подтвердить", response.getBody().getDetail());
+    }
+
+    @Nested
+    @DisplayName("handleBindException")
+    class HandleBindExceptionTests {
+
+        @Test
+        @DisplayName("собирает локализованные сообщения по всем ошибкам валидации в errors")
+        void handleBindException_ShouldReturn400WithLocalizedFieldErrors() {
+            // given
+            Object target = new Object();
+            var bindingResult = new BeanPropertyBindingResult(target, "newOrderDto");
+            bindingResult.addError(new FieldError("newOrderDto", "deliveryAddress", "must not be blank"));
+            BindException exception = new BindException(bindingResult);
+            when(messageSource.getMessage(eq("errors.400.title"), any(), anyString(), eq(LOCALE)))
+                    .thenReturn("Некорректный запрос");
+            when(messageSource.getMessage(any(FieldError.class), eq(LOCALE)))
+                    .thenReturn("Адрес доставки обязателен");
+
+            // when
+            ResponseEntity<ProblemDetail> response = handler.handleBindException(exception, LOCALE);
+
+            // then
+            assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+            assertEquals("Некорректный запрос", response.getBody().getDetail());
+            assertEquals(List.of("Адрес доставки обязателен"), response.getBody().getProperties().get("errors"));
+        }
     }
 }

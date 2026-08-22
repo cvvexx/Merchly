@@ -10,4 +10,5 @@ public record OrderItemDetailsDto(
         String imageFileName,
         BigDecimal price,
         Integer quantity
-) {}
+) {
+}

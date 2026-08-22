@@ -2,8 +2,6 @@ package io.cvvexxx.orders.exception;
 
 import lombok.Getter;
 
-import java.util.UUID;
-
 @Getter
 public class OrderNotFoundException extends RuntimeException implements LocalizedException {
     private static final String DEFAULT_CODE = "order.errors.order_not_found";

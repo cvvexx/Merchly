@@ -69,17 +69,35 @@ import static org.junit.jupiter.api.Assertions.*;
 @Testcontainers
 class ProductServiceIT {
 
+    private static final String ADMIN_TOKEN = "admin-token";
+    private static final String USER_TOKEN = "plain-user-token";
     @Container
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
-
     @Container
     static ConfluentKafkaContainer kafka = new ConfluentKafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"));
-
     @Container
     static RedisContainer redis = new RedisContainer(DockerImageName.parse("redis:7-alpine"));
-
     @Container
     static MinIOContainer minio = new MinIOContainer(DockerImageName.parse("minio/minio:latest"));
+    @LocalServerPort
+    private int port;
+    @Autowired
+    private ProductRepository productRepository;
+    @Autowired
+    private ProcessedOrderEventRepository processedOrderEventRepository;
+    @Autowired
+    private MinioClient minioClient;
+    @Autowired
+    private KafkaTemplate<String, Object> kafkaTemplate;
+    @Value("${minio.bucket.products}")
+    private String bucket;
+    @Value("${app.kafka.topics.order-created}")
+    private String orderCreatedTopic;
+    @Value("${app.kafka.topics.order-failed}")
+    private String orderFailedTopic;
+    @Value("${app.kafka.topics.order-cancelled}")
+    private String orderCancelledTopic;
+    private Consumer<String, OrderFailedEvent> orderFailedConsumer;
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
@@ -118,31 +136,6 @@ class ProductServiceIT {
         registry.add("minio.access.secret", minio::getPassword);
     }
 
-    private static final String ADMIN_TOKEN = "admin-token";
-    private static final String USER_TOKEN = "plain-user-token";
-
-    @LocalServerPort
-    private int port;
-    @Autowired
-    private ProductRepository productRepository;
-    @Autowired
-    private ProcessedOrderEventRepository processedOrderEventRepository;
-    @Autowired
-    private MinioClient minioClient;
-    @Autowired
-    private KafkaTemplate<String, Object> kafkaTemplate;
-
-    @Value("${minio.bucket.products}")
-    private String bucket;
-    @Value("${app.kafka.topics.order-created}")
-    private String orderCreatedTopic;
-    @Value("${app.kafka.topics.order-failed}")
-    private String orderFailedTopic;
-    @Value("${app.kafka.topics.order-cancelled}")
-    private String orderCancelledTopic;
-
-    private Consumer<String, OrderFailedEvent> orderFailedConsumer;
-
     @BeforeAll
     static void logContainers() {
         assertTrue(postgres.isRunning());
@@ -154,24 +147,6 @@ class ProductServiceIT {
         if (orderFailedConsumer != null) {
             orderFailedConsumer.close();
             orderFailedConsumer = null;
-        }
-    }
-
-    @TestConfiguration
-    static class JwtTestConfig {
-
-        @Bean
-        JwtDecoder jwtDecoder() {
-            return token -> {
-                boolean isAdmin = ADMIN_TOKEN.equals(token);
-                return Jwt.withTokenValue(token)
-                        .header("alg", "none")
-                        .subject(UUID.randomUUID().toString())
-                        .claim("realm_access", Map.of("roles", isAdmin ? List.of("ADMIN") : List.of()))
-                        .issuedAt(Instant.now())
-                        .expiresAt(Instant.now().plusSeconds(3600))
-                        .build();
-            };
         }
     }
 
@@ -245,7 +220,8 @@ class ProductServiceIT {
                 .get()
                 .uri("/api/products")
                 .retrieve()
-                .body(new org.springframework.core.ParameterizedTypeReference<List<ProductDto>>() { });
+                .body(new org.springframework.core.ParameterizedTypeReference<List<ProductDto>>() {
+                });
 
         // then: второе чтение - настоящий cache hit по списку (Stream.toList() - final класс,
         // тот самый случай, что раньше валился с SerializationException)
@@ -253,7 +229,8 @@ class ProductServiceIT {
                 .get()
                 .uri("/api/products")
                 .retrieve()
-                .body(new org.springframework.core.ParameterizedTypeReference<List<ProductDto>>() { });
+                .body(new org.springframework.core.ParameterizedTypeReference<List<ProductDto>>() {
+                });
 
         assertEquals(firstRead.size(), secondRead.size());
     }
@@ -321,7 +298,8 @@ class ProductServiceIT {
                 .uri("/api/products/{id}", created.id())
                 .headers(bearerAuth(ADMIN_TOKEN))
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, res) -> { })
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
                 .toBodilessEntity();
 
         // then
@@ -331,7 +309,8 @@ class ProductServiceIT {
                 .uri("/api/products/{id}", created.id())
                 .headers(bearerAuth(ADMIN_TOKEN))
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, res) -> { })
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
                 .toEntity(String.class);
         assertEquals(HttpStatus.NOT_FOUND, getResponse.getStatusCode());
     }
@@ -470,7 +449,8 @@ class ProductServiceIT {
                 .headers(bearerAuth(bearerToken))
                 .body(body)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, res) -> { })
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
                 .toEntity(ProductDto.class);
     }
 
@@ -483,7 +463,8 @@ class ProductServiceIT {
                 .headers(bearerAuth(bearerToken))
                 .body(body)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, res) -> { })
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
                 .toBodilessEntity();
     }
 
@@ -505,6 +486,24 @@ class ProductServiceIT {
             body.add("image", new HttpEntity<>(imageResource, imageHeaders));
         }
         return body;
+    }
+
+    @TestConfiguration
+    static class JwtTestConfig {
+
+        @Bean
+        JwtDecoder jwtDecoder() {
+            return token -> {
+                boolean isAdmin = ADMIN_TOKEN.equals(token);
+                return Jwt.withTokenValue(token)
+                        .header("alg", "none")
+                        .subject(UUID.randomUUID().toString())
+                        .claim("realm_access", Map.of("roles", isAdmin ? List.of("ADMIN") : List.of()))
+                        .issuedAt(Instant.now())
+                        .expiresAt(Instant.now().plusSeconds(3600))
+                        .build();
+            };
+        }
     }
 
 }

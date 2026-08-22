@@ -1,8 +1,8 @@
 package io.cvvexxx.products.service.product;
 
 import io.cvvexxx.products.dto.ProductDto;
-import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.entity.ProcessedOrderEvent;
+import io.cvvexxx.products.entity.Product;
 import io.cvvexxx.products.event.OrderItemPayload;
 import io.cvvexxx.products.exception.InsufficientStockException;
 import io.cvvexxx.products.repository.ProcessedOrderEventRepository;

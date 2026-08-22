@@ -2,11 +2,7 @@ package io.cvvexxx.frontend.client.order;
 
 import io.cvvexxx.frontend.dto.order.NewOrderDto;
 import io.cvvexxx.frontend.dto.order.NewOrderItemDto;
-import io.cvvexxx.frontend.exception.BadRequestException;
-import io.cvvexxx.frontend.exception.BaseClientException;
-import io.cvvexxx.frontend.exception.OrderAccessDeniedException;
-import io.cvvexxx.frontend.exception.OrderCannotChangeStatusException;
-import io.cvvexxx.frontend.exception.OrderNotFoundException;
+import io.cvvexxx.frontend.exception.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -20,11 +16,11 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.springframework.http.HttpMethod.POST;
+import static org.springframework.http.HttpStatus.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
-import static org.springframework.http.HttpMethod.POST;
-import static org.springframework.http.HttpStatus.*;
 
 class RestClientOrdersRestClientTest {
 

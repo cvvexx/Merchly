@@ -36,7 +36,7 @@ public class Order {
     @Column(name = "total_amount", nullable = false)
     private BigDecimal totalAmount;
 
-    @Column(name = "delivery_address",  nullable = false)
+    @Column(name = "delivery_address", nullable = false)
     private String deliveryAddress;
 
     @Column(name = "comment")

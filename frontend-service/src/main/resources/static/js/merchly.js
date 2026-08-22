@@ -146,7 +146,11 @@
 
         const animation = clone.animate([
             {transform: 'translate(0, 0) scale(1)', opacity: 1},
-            {transform: 'translate(' + dx * 0.5 + 'px, ' + (dy * 0.5 - lift) + 'px) scale(0.6)', opacity: 0.95, offset: 0.55},
+            {
+                transform: 'translate(' + dx * 0.5 + 'px, ' + (dy * 0.5 - lift) + 'px) scale(0.6)',
+                opacity: 0.95,
+                offset: 0.55
+            },
             {transform: 'translate(' + dx + 'px, ' + dy + 'px) scale(0.08)', opacity: 0.2}
         ], {
             duration: 720,

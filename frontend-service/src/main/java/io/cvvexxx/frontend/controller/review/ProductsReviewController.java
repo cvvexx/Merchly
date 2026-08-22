@@ -2,7 +2,6 @@ package io.cvvexxx.frontend.controller.review;
 
 import io.cvvexxx.frontend.client.review.ReviewsRestClient;
 import io.cvvexxx.frontend.dto.review.NewReviewDto;
-import io.cvvexxx.frontend.dto.review.ReviewDto;
 import io.cvvexxx.frontend.dto.review.UpdateReviewDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;

@@ -10,11 +10,7 @@ import io.cvvexxx.frontend.dto.user.NewUserDto;
 import io.cvvexxx.frontend.exception.BadRequestException;
 import io.cvvexxx.frontend.exception.FieldAlreadyExistsException;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -29,19 +25,17 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthenticationControllerTest {
 
+    private final ObjectMapper objectMapper = new ObjectMapper();
     @Mock
     private RestClientUserPublicRestClient userRestClient;
-
     @Mock
     private KeycloakRestClient keycloakClient;
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
-
     private AuthenticationController controller;
 
     @BeforeEach
@@ -80,6 +74,18 @@ class AuthenticationControllerTest {
         // then
         assertEquals("security/registration", result);
         assertEquals("/orders", model.getAttribute("target"));
+    }
+
+    private NewUserDto newUserDto() {
+        return new NewUserDto("John", "Doe", "johndoe", "password", "john@mail.com", "MALE", LocalDate.of(1990, 1, 1));
+    }
+
+    private String dummyJwt(UUID userId, List<String> roles) {
+        String rolesJson = roles.stream().map(r -> "\"" + r + "\"").reduce((a, b) -> a + "," + b).orElse("");
+        String payloadJson = "{\"sub\":\"" + userId + "\",\"realm_access\":{\"roles\":[" + rolesJson + "]}}";
+        String header = Base64.getUrlEncoder().withoutPadding().encodeToString("{\"alg\":\"none\"}".getBytes());
+        String payload = Base64.getUrlEncoder().withoutPadding().encodeToString(payloadJson.getBytes());
+        return header + "." + payload + ".signature";
     }
 
     @Nested
@@ -223,17 +229,5 @@ class AuthenticationControllerTest {
             assertEquals("redirect:/login?error=true&target=%2Forders%3Fx%3Dy", result);
             assertNull(SecurityContextHolder.getContext().getAuthentication());
         }
-    }
-
-    private NewUserDto newUserDto() {
-        return new NewUserDto("John", "Doe", "johndoe", "password", "john@mail.com", "MALE", LocalDate.of(1990, 1, 1));
-    }
-
-    private String dummyJwt(UUID userId, List<String> roles) {
-        String rolesJson = roles.stream().map(r -> "\"" + r + "\"").reduce((a, b) -> a + "," + b).orElse("");
-        String payloadJson = "{\"sub\":\"" + userId + "\",\"realm_access\":{\"roles\":[" + rolesJson + "]}}";
-        String header = Base64.getUrlEncoder().withoutPadding().encodeToString("{\"alg\":\"none\"}".getBytes());
-        String payload = Base64.getUrlEncoder().withoutPadding().encodeToString(payloadJson.getBytes());
-        return header + "." + payload + ".signature";
     }
 }

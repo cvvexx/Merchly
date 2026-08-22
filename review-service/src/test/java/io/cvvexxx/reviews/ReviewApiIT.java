@@ -13,11 +13,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.ProblemDetail;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.ActiveProfiles;
@@ -52,6 +48,10 @@ class ReviewApiIT {
 
     @Container
     static RedisContainer redis = new RedisContainer("redis:7-alpine");
+    @LocalServerPort
+    private int port;
+    @Autowired
+    private ReviewRepository reviewRepository;
 
     @DynamicPropertySource
     static void registerProperties(DynamicPropertyRegistry registry) {
@@ -68,12 +68,6 @@ class ReviewApiIT {
         registry.add("spring.data.redis.password", () -> "");
         registry.add("spring.cache.type", () -> "redis");
     }
-
-    @LocalServerPort
-    private int port;
-
-    @Autowired
-    private ReviewRepository reviewRepository;
 
     private RestClient restClient() {
         return RestClient.builder().baseUrl("http://localhost:" + port).build();
@@ -196,7 +190,8 @@ class ReviewApiIT {
                 .headers(headers -> headers.addAll(authHeaders()))
                 .body(invalidReviewDto)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, (req, res) -> { })
+                .onStatus(HttpStatusCode::isError, (req, res) -> {
+                })
                 .toEntity(ProblemDetail.class);
 
         // then

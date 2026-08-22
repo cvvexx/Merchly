@@ -1,11 +1,7 @@
 package io.cvvexxx.users.controller;
 
 import io.cvvexxx.users.domain.Gender;
-import io.cvvexxx.users.dto.NewUserDto;
-import io.cvvexxx.users.dto.UpdateUserDto;
-import io.cvvexxx.users.dto.UserCreatedDto;
-import io.cvvexxx.users.dto.UserInfoDto;
-import io.cvvexxx.users.dto.UserProfilePublicDto;
+import io.cvvexxx.users.dto.*;
 import io.cvvexxx.users.service.user.DefaultUserService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,9 +24,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class UsersControllerTest {

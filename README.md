@@ -87,32 +87,32 @@ flowchart LR
     Browser -->|"страница входа"| KC
 ```
 
-| Сервис             | Порт | Зона ответственности                                                                                 |
-|--------------------|------|-------------------------------------------------------------------------------------------------------|
-| `frontend-service` | 8080 | BFF: Thymeleaf-страницы, сессия в Redis, обновление токенов, агрегация ответов остальных сервисов       |
+| Сервис             | Порт | Зона ответственности                                                                                     |
+|--------------------|------|----------------------------------------------------------------------------------------------------------|
+| `frontend-service` | 8080 | BFF: Thymeleaf-страницы, сессия в Redis, обновление токенов, агрегация ответов остальных сервисов        |
 | `product-service`  | 8081 | Каталог, поиск по названию, CRUD товаров (ADMIN), картинки в MinIO, списание и возврат остатков по Kafka |
-| `user-service`     | 8082 | Регистрация в Keycloak + локальный профиль с тем же UUID, аватары в MinIO, корзина                      |
+| `user-service`     | 8082 | Регистрация в Keycloak + локальный профиль с тем же UUID, аватары в MinIO, корзина                       |
 | `review-service`   | 8083 | Отзывы с пагинацией, один отзыв на товар от пользователя, агрегированная статистика оценок               |
-| `order-service`    | 8084 | Заказы, статусы, история, интеграция с Kafka, OpenAPI-схема                                             |
+| `order-service`    | 8084 | Заказы, статусы, история, интеграция с Kafka, OpenAPI-схема                                              |
 
 Наружу пробрасывает порт только `frontend-service` и инфраструктура — бэкенд-сервисы
 доступны лишь внутри сети Compose.
 
 ## 🛠 Технологический стек
 
-| Категория            | Что используется                                                                     |
-|----------------------|--------------------------------------------------------------------------------------|
-| **Core**             | Java 17, Spring Boot 3.4.1, Maven (мультимодуль, 5 модулей)                            |
-| **Архитектура**      | Микросервисы, BFF (Backend for Frontend)                                              |
-| **Базы данных**      | PostgreSQL 16 — отдельный инстанс на каждый сервис, миграции Flyway                    |
-| **Кеш и сессии**     | Redis 7 — Spring Cache в четырёх сервисах + Spring Session для сессий BFF              |
-| **Асинхронность**    | Apache Kafka (KRaft) — три топика между `order-service` и `product-service`            |
-| **Безопасность**     | Spring Security, Keycloak 24 (OIDC), JWT, resource server в каждом бэкенд-сервисе      |
-| **Хранилище файлов** | MinIO (S3-совместимое), клиент `io.minio:minio`                                        |
-| **Инфраструктура**   | Docker, Docker Compose (multi-stage сборка внутри контейнеров)                         |
-| **Frontend**         | Thymeleaf, Bootstrap 5.3 (CDN), собственный CSS, ванильный JS с Fetch API              |
-| **Тестирование**     | JUnit 5, Mockito, MockMvc, Testcontainers (Postgres, Redis, Kafka, MinIO), WireMock     |
-| **Документация API** | springdoc-openapi в `order-service` (`/swagger-ui.html`)                               |
+| Категория            | Что используется                                                                    |
+|----------------------|-------------------------------------------------------------------------------------|
+| **Core**             | Java 17, Spring Boot 3.4.1, Maven (мультимодуль, 5 модулей)                         |
+| **Архитектура**      | Микросервисы, BFF (Backend for Frontend)                                            |
+| **Базы данных**      | PostgreSQL 16 — отдельный инстанс на каждый сервис, миграции Flyway                 |
+| **Кеш и сессии**     | Redis 7 — Spring Cache в четырёх сервисах + Spring Session для сессий BFF           |
+| **Асинхронность**    | Apache Kafka (KRaft) — три топика между `order-service` и `product-service`         |
+| **Безопасность**     | Spring Security, Keycloak 24 (OIDC), JWT, resource server в каждом бэкенд-сервисе   |
+| **Хранилище файлов** | MinIO (S3-совместимое), клиент `io.minio:minio`                                     |
+| **Инфраструктура**   | Docker, Docker Compose (multi-stage сборка внутри контейнеров)                      |
+| **Frontend**         | Thymeleaf, Bootstrap 5.3 (CDN), собственный CSS, ванильный JS с Fetch API           |
+| **Тестирование**     | JUnit 5, Mockito, MockMvc, Testcontainers (Postgres, Redis, Kafka, MinIO), WireMock |
+| **Документация API** | springdoc-openapi в `order-service` (`/swagger-ui.html`)                            |
 
 ## 🔐 Авторизация
 
@@ -200,7 +200,7 @@ Redis выступает и кешем (`spring.cache.type=redis`, JSON-сери
 в таблице `cart_item` user-service, Redis только ускоряет чтение.
 Полная раскладка кешей — в [docs/Running.md](docs/Running.md#кеши).
 
-Ещё пара решений, которые видно из кода:
+Дополнительные решения, особенности:
 
 * при регистрации пользователь сначала создаётся в Keycloak, затем сохраняется
   локально с тем же UUID; если локальное сохранение упало — пользователь в Keycloak
@@ -233,25 +233,22 @@ mvn verify      # + интеграционные тесты (*IT.java, нуже�
 REST-клиенты (WireMock) и Kafka-компоненты. Интеграционные тесты поднимают реальную
 инфраструктуру через Testcontainers:
 
-| Тест                       | Что поднимает                    | Что проверяет                                    |
-|----------------------------|----------------------------------|--------------------------------------------------|
-| `ProductServiceIT`         | Postgres, Kafka, MinIO, Redis    | сценарии каталога и обработку событий заказа      |
-| `OrderApiIT`               | Postgres, Kafka, WireMock        | создание заказа и отмену по `order-failed`        |
-| `OrderServiceRedisCacheIT` | Postgres, Redis                  | что `@Cacheable`/`@CacheEvict` действительно работают |
-| `UserApiIT`                | Postgres, Redis, MinIO           | регистрацию, профиль, загрузку аватара            |
-| `CartServiceRedisCacheIT`  | Postgres, Redis                  | кеш корзины и его инвалидацию                     |
-| `ReviewApiIT`              | Postgres, Redis                  | отзывы и агрегированную статистику                |
-| `ProductsListFlowIT`       | Redis, WireMock                  | сквозной рендер списка товаров на BFF             |
-
-Версия Testcontainers поднята до 1.21.4: управляемая Spring Boot 3.4.1 версия 1.20.4
-не работает с Docker Engine 29+ (проба соединения использует API 1.32).
+| Тест                       | Что поднимает                 | Что проверяет                                         |
+|----------------------------|-------------------------------|-------------------------------------------------------|
+| `ProductServiceIT`         | Postgres, Kafka, MinIO, Redis | сценарии каталога и обработку событий заказа          |
+| `OrderApiIT`               | Postgres, Kafka, WireMock     | создание заказа и отмену по `order-failed`            |
+| `OrderServiceRedisCacheIT` | Postgres, Redis               | что `@Cacheable`/`@CacheEvict` действительно работают |
+| `UserApiIT`                | Postgres, Redis, MinIO        | регистрацию, профиль, загрузку аватара                |
+| `CartServiceRedisCacheIT`  | Postgres, Redis               | кеш корзины и его инвалидацию                         |
+| `ReviewApiIT`              | Postgres, Redis               | отзывы и агрегированную статистику                    |
+| `ProductsListFlowIT`       | Redis, WireMock               | сквозной рендер списка товаров на BFF                 |
 
 ### CI
 
 `.github/workflows/ci.yml` запускается на каждый push и pull request:
 
-| Джоба            | Что делает                                                                    |
-|------------------|-------------------------------------------------------------------------------|
+| Джоба            | Что делает                                                                                                                                             |
+|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `Сборка и тесты` | JDK 17 (Temurin) + кеш Maven, `mvn compile`, затем `mvn verify` — юнит-тесты и Testcontainers-тесты; отчёты surefire/failsafe сохраняются как артефакт |
-| `Сборка образов` | делает `.env.prod` и `.env.dev` из `.env.example`, валидирует оба compose-файла и собирает образы всех пяти сервисов |
+| `Сборка образов` | делает `.env.prod` и `.env.dev` из `.env.example`, валидирует оба compose-файла и собирает образы всех пяти сервисов                                   |
 

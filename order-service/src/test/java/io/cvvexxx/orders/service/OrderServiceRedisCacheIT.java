@@ -40,13 +40,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Exercises {@link DefaultOrderService} against a real Redis (Testcontainers) instead of mocking
@@ -70,36 +66,8 @@ class OrderServiceRedisCacheIT {
 
     @Container
     static RedisContainer redis = new RedisContainer("redis:7-alpine");
-
-    @DynamicPropertySource
-    static void properties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
-        registry.add("spring.flyway.enabled", () -> "true");
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
-        registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
-
-        registry.add("spring.data.redis.host", redis::getRedisHost);
-        registry.add("spring.data.redis.port", redis::getRedisPort);
-        registry.add("spring.cache.type", () -> "redis");
-    }
-
-    @TestConfiguration
-    static class ITConfig {
-
-        @Bean
-        JwtDecoder jwtDecoder() {
-            return token -> Jwt.withTokenValue(token)
-                    .header("alg", "none")
-                    .subject(UUID.randomUUID().toString())
-                    .issuedAt(Instant.now())
-                    .expiresAt(Instant.now().plusSeconds(3600))
-                    .build();
-        }
-    }
-
+    private final UUID userId = UUID.randomUUID();
+    private final UUID productId = UUID.randomUUID();
     @Autowired
     private OrderService orderService;
 
@@ -118,8 +86,20 @@ class OrderServiceRedisCacheIT {
     @MockitoBean
     private OrderEventPublisher orderEventPublisher;
 
-    private final UUID userId = UUID.randomUUID();
-    private final UUID productId = UUID.randomUUID();
+    @DynamicPropertySource
+    static void properties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
+        registry.add("spring.flyway.enabled", () -> "true");
+        registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
+        registry.add("spring.jpa.database-platform", () -> "org.hibernate.dialect.PostgreSQLDialect");
+
+        registry.add("spring.data.redis.host", redis::getRedisHost);
+        registry.add("spring.data.redis.port", redis::getRedisPort);
+        registry.add("spring.cache.type", () -> "redis");
+    }
 
     @AfterEach
     void cleanUp() {
@@ -146,6 +126,20 @@ class OrderServiceRedisCacheIT {
                 .quantity(1)
                 .build());
         return orderRepository.saveAndFlush(order);
+    }
+
+    @TestConfiguration
+    static class ITConfig {
+
+        @Bean
+        JwtDecoder jwtDecoder() {
+            return token -> Jwt.withTokenValue(token)
+                    .header("alg", "none")
+                    .subject(UUID.randomUUID().toString())
+                    .issuedAt(Instant.now())
+                    .expiresAt(Instant.now().plusSeconds(3600))
+                    .build();
+        }
     }
 
     @Nested

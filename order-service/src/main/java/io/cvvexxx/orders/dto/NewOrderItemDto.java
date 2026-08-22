@@ -12,4 +12,5 @@ public record NewOrderItemDto(
         @NotNull(message = "{orders.create.item.quantity.is_null}")
         @Min(value = 1, message = "{orders.create.item.quantity.invalid}")
         Integer quantity
-) {}
+) {
+}

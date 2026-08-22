@@ -1,6 +1,7 @@
 package io.cvvexxx.frontend.integration;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import com.redis.testcontainers.RedisContainer;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
@@ -30,19 +31,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import com.github.tomakehurst.wiremock.client.WireMock;
-
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 /**
  * Real end-to-end test: a live embedded servlet context, the actual Spring Security
@@ -79,11 +74,6 @@ class ProductsListFlowIT {
         wireMock.stop();
     }
 
-    @AfterEach
-    void resetStubs() {
-        wireMock.resetAll();
-    }
-
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.data.redis.host", redis::getHost);
@@ -92,6 +82,11 @@ class ProductsListFlowIT {
         registry.add("spring.restclient.uri.user_service", wireMock::baseUrl);
         registry.add("spring.restclient.uri.reviews_service", wireMock::baseUrl);
         registry.add("spring.security.oauth2.client.provider.keycloak.token-uri", () -> wireMock.baseUrl() + "/token");
+    }
+
+    @AfterEach
+    void resetStubs() {
+        wireMock.resetAll();
     }
 
     @Test

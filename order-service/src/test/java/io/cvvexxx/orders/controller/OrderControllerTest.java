@@ -27,9 +27,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class OrderControllerTest {
@@ -39,6 +37,59 @@ class OrderControllerTest {
 
     @InjectMocks
     private OrderController controller;
+
+    @Test
+    @DisplayName("createOrder: при ошибках валидации выбрасывает BindException и не создаёт заказ")
+    void createOrder_WhenBindingResultHasErrors_ShouldThrowBindException() {
+        // given
+        NewOrderDto dto = new NewOrderDto(List.of(new NewOrderItemDto(UUID.randomUUID(), 1)), "", "");
+        var bindingResult = new BeanPropertyBindingResult(dto, "newOrderDto");
+        bindingResult.reject("deliveryAddress", "must not be blank");
+        Jwt jwt = jwtWithRoles(UUID.randomUUID(), List.of());
+
+        // when / then
+        assertThrows(BindException.class, () ->
+                controller.createOrder(dto, bindingResult, jwt, UriComponentsBuilder.newInstance())
+        );
+
+        verifyNoInteractions(orderService);
+    }
+
+    @Test
+    @DisplayName("createOrder: при валидном запросе создаёт заказ для пользователя из sub-claim и возвращает Location")
+    void createOrder_WhenValid_ShouldCreateOrderForCurrentUserAndReturnLocation() throws BindException {
+        // given
+        UUID userId = UUID.randomUUID();
+        UUID orderId = UUID.randomUUID();
+        NewOrderDto dto = new NewOrderDto(List.of(new NewOrderItemDto(UUID.randomUUID(), 1)), "address", "comment");
+        var bindingResult = new BeanPropertyBindingResult(dto, "newOrderDto");
+        Jwt jwt = jwtWithRoles(userId, List.of());
+        when(orderService.createOrder(dto, userId)).thenReturn(order(orderId, userId));
+
+        // when
+        ResponseEntity<OrderDto> response = controller.createOrder(
+                dto, bindingResult, jwt, UriComponentsBuilder.fromUriString("http://localhost")
+        );
+
+        // then
+        assertEquals(orderId, response.getBody().id());
+        verify(orderService).createOrder(eq(dto), eq(userId));
+    }
+
+    private Jwt jwtWithRoles(UUID userId, List<String> roles) {
+        return Jwt.withTokenValue("token")
+                .header("alg", "none")
+                .claim("sub", userId.toString())
+                .claim("realm_access", Map.of("roles", roles))
+                .build();
+    }
+
+    private OrderDto order(UUID orderId, UUID userId) {
+        return new OrderDto(
+                orderId, userId, OrderStatus.CONFIRMED, new BigDecimal("100.00"),
+                "address", "comment", null, List.of(), Instant.now(), Instant.now()
+        );
+    }
 
     @Nested
     @DisplayName("определение роли ADMIN из JWT")
@@ -110,58 +161,5 @@ class OrderControllerTest {
             // then
             verify(orderService).confirmOrder(orderId, userId, false);
         }
-    }
-
-    @Test
-    @DisplayName("createOrder: при ошибках валидации выбрасывает BindException и не создаёт заказ")
-    void createOrder_WhenBindingResultHasErrors_ShouldThrowBindException() {
-        // given
-        NewOrderDto dto = new NewOrderDto(List.of(new NewOrderItemDto(UUID.randomUUID(), 1)), "", "");
-        var bindingResult = new BeanPropertyBindingResult(dto, "newOrderDto");
-        bindingResult.reject("deliveryAddress", "must not be blank");
-        Jwt jwt = jwtWithRoles(UUID.randomUUID(), List.of());
-
-        // when / then
-        assertThrows(BindException.class, () ->
-                controller.createOrder(dto, bindingResult, jwt, UriComponentsBuilder.newInstance())
-        );
-
-        verifyNoInteractions(orderService);
-    }
-
-    @Test
-    @DisplayName("createOrder: при валидном запросе создаёт заказ для пользователя из sub-claim и возвращает Location")
-    void createOrder_WhenValid_ShouldCreateOrderForCurrentUserAndReturnLocation() throws BindException {
-        // given
-        UUID userId = UUID.randomUUID();
-        UUID orderId = UUID.randomUUID();
-        NewOrderDto dto = new NewOrderDto(List.of(new NewOrderItemDto(UUID.randomUUID(), 1)), "address", "comment");
-        var bindingResult = new BeanPropertyBindingResult(dto, "newOrderDto");
-        Jwt jwt = jwtWithRoles(userId, List.of());
-        when(orderService.createOrder(dto, userId)).thenReturn(order(orderId, userId));
-
-        // when
-        ResponseEntity<OrderDto> response = controller.createOrder(
-                dto, bindingResult, jwt, UriComponentsBuilder.fromUriString("http://localhost")
-        );
-
-        // then
-        assertEquals(orderId, response.getBody().id());
-        verify(orderService).createOrder(eq(dto), eq(userId));
-    }
-
-    private Jwt jwtWithRoles(UUID userId, List<String> roles) {
-        return Jwt.withTokenValue("token")
-                .header("alg", "none")
-                .claim("sub", userId.toString())
-                .claim("realm_access", Map.of("roles", roles))
-                .build();
-    }
-
-    private OrderDto order(UUID orderId, UUID userId) {
-        return new OrderDto(
-                orderId, userId, OrderStatus.CONFIRMED, new BigDecimal("100.00"),
-                "address", "comment", null, List.of(), Instant.now(), Instant.now()
-        );
     }
 }

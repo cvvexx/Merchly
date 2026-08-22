@@ -8,4 +8,5 @@ public record OrderItemDto(
         UUID productId,
         BigDecimal price,
         Integer quantity
-) {}
+) {
+}

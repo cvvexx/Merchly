@@ -26,11 +26,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -60,6 +56,28 @@ class DefaultOrderServiceTest {
 
     @InjectMocks
     private DefaultOrderService orderService;
+
+    private ProductDto product(UUID productId, BigDecimal price) {
+        return new ProductDto(productId, 1, price);
+    }
+
+    private Order order(OrderStatus status, UUID userId) {
+        Order order = Order.builder()
+                .id(ORDER_ID)
+                .userId(userId)
+                .status(status)
+                .totalAmount(new BigDecimal("100.00"))
+                .createdAt(Instant.parse("2026-08-12T10:00:00Z"))
+                .updatedAt(Instant.parse("2026-08-12T10:00:00Z"))
+                .build();
+        order.addItem(OrderItem.builder()
+                .id(UUID.randomUUID())
+                .productId(PRODUCT_ID)
+                .price(new BigDecimal("100.00"))
+                .quantity(1)
+                .build());
+        return order;
+    }
 
     @Nested
     @DisplayName("createOrder")
@@ -376,27 +394,5 @@ class DefaultOrderServiceTest {
             // then
             assertEquals(OrderStatus.CONFIRMED, result.status());
         }
-    }
-
-    private ProductDto product(UUID productId, BigDecimal price) {
-        return new ProductDto(productId, 1, price);
-    }
-
-    private Order order(OrderStatus status, UUID userId) {
-        Order order = Order.builder()
-                .id(ORDER_ID)
-                .userId(userId)
-                .status(status)
-                .totalAmount(new BigDecimal("100.00"))
-                .createdAt(Instant.parse("2026-08-12T10:00:00Z"))
-                .updatedAt(Instant.parse("2026-08-12T10:00:00Z"))
-                .build();
-        order.addItem(OrderItem.builder()
-                .id(UUID.randomUUID())
-                .productId(PRODUCT_ID)
-                .price(new BigDecimal("100.00"))
-                .quantity(1)
-                .build());
-        return order;
     }
 }

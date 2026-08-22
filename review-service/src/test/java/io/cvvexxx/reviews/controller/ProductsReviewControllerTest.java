@@ -21,9 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProductsReviewControllerTest {
@@ -36,6 +34,33 @@ class ProductsReviewControllerTest {
 
     @InjectMocks
     private ProductsReviewController controller;
+
+    @Test
+    @DisplayName("createReview: при ошибках валидации выбрасывает BindException и не создаёт отзыв")
+    void createReview_WhenBindingResultHasErrors_ShouldThrowBindException() {
+        // given
+        NewReviewDto dto = new NewReviewDto(UUID.randomUUID(), 6, "invalid rating");
+        var bindingResult = new BeanPropertyBindingResult(dto, "newReviewDto");
+        bindingResult.reject("rating", "must be <= 5");
+        Jwt jwt = jwtWithRoles(UUID.randomUUID(), List.of());
+
+        // when / then
+        assertThrows(BindException.class, () -> controller.createReview(jwt, dto, bindingResult));
+
+        verifyNoInteractions(defaultReviewService);
+    }
+
+    private Jwt jwtWithRoles(UUID userId, List<String> roles) {
+        return Jwt.withTokenValue("token")
+                .header("alg", "none")
+                .claim("sub", userId.toString())
+                .claim("realm_access", Map.of("roles", roles))
+                .build();
+    }
+
+    private ReviewDto review(UUID reviewId, UUID userId) {
+        return new ReviewDto(reviewId, UUID.randomUUID(), userId, 5, "great");
+    }
 
     @Nested
     @DisplayName("определение роли ADMIN из JWT")
@@ -89,32 +114,5 @@ class ProductsReviewControllerTest {
             // then
             verify(defaultReviewService).deleteReview(reviewId, userId, true);
         }
-    }
-
-    @Test
-    @DisplayName("createReview: при ошибках валидации выбрасывает BindException и не создаёт отзыв")
-    void createReview_WhenBindingResultHasErrors_ShouldThrowBindException() {
-        // given
-        NewReviewDto dto = new NewReviewDto(UUID.randomUUID(), 6, "invalid rating");
-        var bindingResult = new BeanPropertyBindingResult(dto, "newReviewDto");
-        bindingResult.reject("rating", "must be <= 5");
-        Jwt jwt = jwtWithRoles(UUID.randomUUID(), List.of());
-
-        // when / then
-        assertThrows(BindException.class, () -> controller.createReview(jwt, dto, bindingResult));
-
-        verifyNoInteractions(defaultReviewService);
-    }
-
-    private Jwt jwtWithRoles(UUID userId, List<String> roles) {
-        return Jwt.withTokenValue("token")
-                .header("alg", "none")
-                .claim("sub", userId.toString())
-                .claim("realm_access", Map.of("roles", roles))
-                .build();
-    }
-
-    private ReviewDto review(UUID reviewId, UUID userId) {
-        return new ReviewDto(reviewId, UUID.randomUUID(), userId, 5, "great");
     }
 }
