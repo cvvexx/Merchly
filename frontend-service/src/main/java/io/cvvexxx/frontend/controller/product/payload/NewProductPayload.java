@@ -6,6 +6,7 @@ import java.util.UUID;
 public record NewProductPayload(
         String title,
         String description,
+        Integer quantity,
         BigDecimal price,
         UUID createdBy
 ) {

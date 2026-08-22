@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public record UpdateProductPayload(
         String title,
         String description,
+        Integer quantity,
         BigDecimal price
 ) {
 }

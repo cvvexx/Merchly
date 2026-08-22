@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Мои заказы')}"></head>
+<body>
+
+<nav th:replace="~{fragments/layout :: topbar('orders')}"></nav>
+
+<main class="container my-4 my-lg-5">
+
+    <div class="page-head">
+        <div>
+            <p class="eyebrow mb-0">История покупок</p>
+            <h1 class="page-title">Мои заказы</h1>
+        </div>
+
+        <a class="back-link" th:href="@{/catalogue/products/list}">
+            <span aria-hidden="true" class="back-link__arrow">&larr;</span> В каталог
+        </a>
+    </div>
+
+    <!-- Заказов ещё нет -->
+    <div class="empty-state reveal" th:if="${orders == null or orders.isEmpty()}">
+        <span class="empty-state__icon"><i aria-hidden="true" class="bi bi-receipt"></i></span>
+        <h2 class="empty-state__title">Заказов пока нет</h2>
+        <p class="empty-state__text">Здесь появятся ваши покупки со статусом и составом заказа.</p>
+        <a class="btn btn-primary btn-lg px-4" th:href="@{/catalogue/products/list}">Выбрать первый товар</a>
+    </div>
+
+    <!-- Список заказов -->
+    <div class="row row-cols-1 g-3" th:if="${orders != null and !orders.isEmpty()}">
+        <div class="col reveal" data-reveal-group="orders" th:each="order : ${orders}">
+
+            <a class="card shadow-sm border-0 h-100 hover-shadow text-decoration-none"
+               th:href="@{/orders/{id}(id=${order.id})}">
+                <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+
+                    <div>
+                        <p class="eyebrow mb-1">Заказ</p>
+                        <!-- Короткий код: полный UUID нечитаем и не нужен в списке -->
+                        <h2 class="h5 mb-2 fw-bold text-dark order-id"
+                            th:text="'#' + ${#strings.toUpperCase(#strings.substring(order.id, 0, 8))}">#3A7F21C4</h2>
+
+                        <p class="text-muted mb-2 small" th:if="${order.createdAt != null}">
+                            <i aria-hidden="true" class="bi bi-calendar3 me-1"></i>
+                            Оформлен
+                            <span class="mono"
+                                  th:text="${#temporals.format(order.createdAt, 'dd.MM.yyyy HH:mm')}">01.01.2026 15:00</span>
+                        </p>
+
+                        <div>
+                            <span class="text-muted me-1">Итого:</span>
+                            <strong class="price fs-5 text-dark"
+                                    th:text="${order.totalAmount != null ? order.totalAmount + ' ₽' : '0 ₽'}">2500
+                                ₽</strong>
+                        </div>
+                    </div>
+
+                    <div class="d-flex flex-column align-items-md-end gap-3">
+                        <!-- Штамп статуса -->
+                        <span class="stamp"
+                              th:classappend="${#strings.toString(order.status) == 'CONFIRMED' ? 'stamp--confirmed' :
+                                               (#strings.toString(order.status) == 'PENDING' ? 'stamp--pending' : 'stamp--cancelled')}"
+                              th:text="${#strings.toString(order.status) == 'CONFIRMED' ? 'Подтверждён' :
+                                        (#strings.toString(order.status) == 'PENDING' ? 'В обработке' : 'Отменён')}">
+                            В обработке
+                        </span>
+
+                        <span class="back-link back-link--forward text-primary">
+                            Подробнее <i aria-hidden="true" class="bi bi-chevron-right"></i>
+                        </span>
+                    </div>
+
+                </div>
+            </a>
+        </div>
+    </div>
+
+</main>
+
+<nav th:replace="~{fragments/layout :: dock('orders')}"></nav>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</body>
+</html>

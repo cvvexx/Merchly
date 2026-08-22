@@ -58,11 +58,11 @@ public class RestClientProductsPublicRestClient implements ProductsPublicRestCli
 
     @Override
     public Product createProduct(
-            String title, String description, BigDecimal price,
-            MultipartFile image, UUID createdBy
+            String title, String description, Integer quantity,
+            BigDecimal price, MultipartFile image, UUID createdBy
     ) {
         var builder = builderUtils.multipartBodyBuilder(
-                new NewProductPayload(title, description, price, createdBy), image
+                new NewProductPayload(title, description, quantity, price, createdBy), image
         );
         try {
             return restClient
@@ -92,9 +92,11 @@ public class RestClientProductsPublicRestClient implements ProductsPublicRestCli
     }
 
     @Override
-    public void updateProduct(UUID productId, String title, String description, BigDecimal price, MultipartFile image) {
+    public void updateProduct(
+            UUID productId, String title, String description,
+            Integer quantity, BigDecimal price, MultipartFile image) {
         var builder = builderUtils.multipartBodyBuilder(
-                new UpdateProductPayload(title, description, price), image
+                new UpdateProductPayload(title, description, quantity, price), image
         );
 
         try {

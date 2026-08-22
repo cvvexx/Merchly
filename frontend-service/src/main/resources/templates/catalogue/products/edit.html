@@ -1,114 +1,119 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Редактирование &laquo;[[${product.title}]]&raquo;</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+<head th:replace="~{fragments/layout :: head('Редактирование: ' + ${product.title})}"></head>
+<body>
 
-<nav class="navbar navbar-dark bg-dark shadow-sm mb-4">
-    <div class="container">
-        <a class="navbar-brand fw-bold text-primary" th:href="@{/}">Merchly</a>
-        <div class="d-flex align-items-center gap-2">
-            <a class="btn btn-outline-light btn-sm" th:href="@{/cart}">
-                <i class="bi bi-cart3 me-1"></i> Корзина
-            </a>
-            <a class="btn btn-outline-info btn-sm" th:href="@{/profile}">В профиль</a>
-        </div>
-    </div>
-</nav>
+<nav th:replace="~{fragments/layout :: topbar('catalogue')}"></nav>
 
-<div class="container mt-5">
+<main class="container my-4 my-lg-5">
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-lg-7 col-xl-6">
+
             <div class="mb-3">
-                <a class="text-decoration-none text-secondary"
-                   th:href="@{/catalogue/products/{productId}(productId=${product.id})}">&larr; Вернуться к товару</a>
+                <a class="back-link" th:href="@{/catalogue/products/{productId}(productId=${product.id})}">
+                    <span aria-hidden="true" class="back-link__arrow">&larr;</span> Вернуться к товару
+                </a>
             </div>
 
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-warning text-dark py-3">
-                    <h3 class="card-title h5 mb-0 text-center fw-bold">Редактирование товара</h3>
+            <div class="card shadow border-0 reveal">
+                <div class="card-header bg-warning text-dark py-3 text-center">
+                    <h1 class="h5 mb-0 fw-bold">Редактирование товара</h1>
                 </div>
+
                 <div class="card-body p-4">
 
                     <div class="alert alert-danger" role="alert" th:if="${errors}">
-                        <h5 class="alert-heading small fw-bold">Ошибки формы:</h5>
-                        <ul class="mb-0 px-3 small">
+                        <h2 class="alert-heading h6">Проверьте поля</h2>
+                        <ul class="mb-0 ps-3 small">
                             <li th:each="error: ${errors}" th:text="${error}"></li>
                         </ul>
                     </div>
 
                     <form enctype="multipart/form-data" method="post"
                           th:action="@{/catalogue/products/{productId}/edit(productId=${product.id})}">
+
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Название товара</label>
-                            <input class="form-control" name="title"
+                            <label class="form-label eyebrow" for="title">Название товара</label>
+                            <input class="form-control" id="title" name="title"
                                    th:value="${payload != null ? payload.title : product.title}" type="text">
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Цена</label>
-                            <div class="input-group">
-                                <span class="input-group-text">₽</span>
-                                <input class="form-control" min="0.01"
-                                       name="price" placeholder="0.00" required step="0.01"
-                                       th:value="${payload != null ? payload.price : product.price()}"
-                                       type="number">
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label eyebrow" for="price">Цена</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₽</span>
+                                    <input class="form-control" id="price" min="0.01" name="price" placeholder="0.00"
+                                           required step="0.01"
+                                           th:value="${payload != null ? payload.price : product.price()}"
+                                           type="number">
+                                </div>
+                                <div class="form-text">Больше нуля.</div>
                             </div>
-                            <div class="form-text">Цена должна быть больше нуля.</div>
+
+                            <div class="col-sm-6">
+                                <label class="form-label eyebrow" for="quantity">Размер тиража</label>
+                                <input class="form-control" id="quantity" min="0" name="quantity" required step="1"
+                                       th:value="${payload != null ? payload.quantity : product.quantity}"
+                                       type="number">
+                                <div class="form-text">Сколько штук доступно.</div>
+                            </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Описание</label>
-                            <textarea class="form-control"
-                                      name="description" rows="4"
+                            <label class="form-label eyebrow" for="description">Описание</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"
                                       th:text="${payload != null ? payload.description : product.description}"></textarea>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold" for="image">Новое изображение товара</label>
-                            <input accept="image/png, image/jpeg, image/webp"
-                                   class="form-control"
-                                   id="image"
-                                   name="image"
-                                   onchange="validateFileSize(this)"
-                                   type="file">
+                        <div class="mb-4">
+                            <label class="form-label eyebrow" for="image">Новое изображение</label>
+                            <input accept="image/png, image/jpeg, image/webp" class="form-control" id="image"
+                                   name="image" onchange="validateFileSize(this)" type="file">
+                            <div class="form-text">Оставьте поле пустым, чтобы сохранить текущее изображение.</div>
                             <div class="text-danger small mt-1 d-none" id="fileSizeError">
-                                Размер файла не должен превышать 10 МБ.
+                                Файл больше 10 МБ. Выберите изображение поменьше.
                             </div>
                         </div>
 
-                        <div class="d-grid gap-2 mt-4">
-                            <button class="btn btn-warning fw-bold" type="submit">Сохранить изменения</button>
+                        <div class="d-flex flex-wrap justify-content-between gap-2">
+                            <a class="btn btn-outline-secondary"
+                               th:href="@{/catalogue/products/{productId}(productId=${product.id})}">Отмена</a>
+                            <button class="btn btn-warning px-4" type="submit">Сохранить изменения</button>
                         </div>
                     </form>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</main>
 
-</body>
+<nav th:replace="~{fragments/layout :: dock('catalogue')}"></nav>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 
 <script>
     function validateFileSize(input) {
-        const maxSizeBytes = 10 * 1024 * 1024; // 10 MB
+        const maxSizeBytes = 10 * 1024 * 1024; // 10 МБ
         const errorDiv = document.getElementById('fileSizeError');
-        const submitBtn = input.form.querySelector('button[type="submit"]');
+        const form = input.form || input.closest('form');
+        const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
 
-        if (input.files && input.files[0]) {
-            if (input.files[0].size > maxSizeBytes) {
-                errorDiv.classList.remove('d-none');
-                input.value = '';
-                submitBtn.disabled = true;
-            } else {
-                errorDiv.classList.add('d-none');
-                submitBtn.disabled = false;
-            }
+        if (!input.files || !input.files[0]) {
+            return;
         }
+
+        if (input.files[0].size > maxSizeBytes) {
+            errorDiv.classList.remove('d-none');
+            input.value = '';
+            if (submitBtn) submitBtn.disabled = true;
+            Merchly.notify('Файл больше 10 МБ. Выберите изображение поменьше.', 'error');
+            return;
+        }
+
+        errorDiv.classList.add('d-none');
+        if (submitBtn) submitBtn.disabled = false;
     }
 </script>
 
+</body>
 </html>

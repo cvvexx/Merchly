@@ -2,6 +2,7 @@ package io.cvvexxx.frontend.controller.cart;
 
 import io.cvvexxx.frontend.client.user.publIc.UserPublicRestClient;
 import io.cvvexxx.frontend.dto.product.AddToCartDto;
+import io.cvvexxx.frontend.dto.product.CartItemDto;
 import io.cvvexxx.frontend.service.cart.DefaultCartService;
 import io.cvvexxx.frontend.view.CartItemView;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
@@ -33,6 +35,20 @@ public class CartController {
         model.addAttribute("items", viewItems);
         model.addAttribute("totalPrice", totalCartPrice);
         return "cart/cart";
+    }
+
+    /**
+     * Число товаров в корзине для счётчика в панели навигации.
+     * Отдельный лёгкий метод: карточки товаров здесь не нужны.
+     */
+    @GetMapping("/count")
+    @ResponseBody
+    public ResponseEntity<Map<String, Integer>> getCartItemsCount() {
+        int count = userPublicRestClient.getCartItems().stream()
+                .mapToInt(CartItemDto::quantity)
+                .sum();
+
+        return ResponseEntity.ok(Map.of("count", count));
     }
 
     @PostMapping("/add")

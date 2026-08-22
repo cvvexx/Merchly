@@ -17,6 +17,7 @@ public interface ProductsPublicRestClient {
     Product createProduct(
             String title,
             String description,
+            Integer quantity,
             BigDecimal price,
             MultipartFile image,
             UUID createdBy
@@ -24,6 +25,7 @@ public interface ProductsPublicRestClient {
 
     void deleteProduct(UUID productId);
 
-    void updateProduct(UUID productId, String title, String description, BigDecimal price, MultipartFile image);
+    void updateProduct(UUID productId, String title, String description, Integer quantity,
+                       BigDecimal price, MultipartFile image);
 
 }

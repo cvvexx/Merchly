@@ -500,6 +500,167 @@
       ],
       "notBefore": 0,
       "groups": []
+    },
+    {
+      "id": "c1000000-0000-0000-0000-000000000002",
+      "username": "service-account-merchly_orders_client",
+      "emailVerified": false,
+      "enabled": true,
+      "totp": false,
+      "serviceAccountClientId": "merchly_orders_client",
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-merchly",
+        "INTERNAL_SERVICE"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000001",
+      "username": "ink_studio",
+      "email": "ink.studio@merchly.dev",
+      "firstName": "Алиса",
+      "lastName": "Ким",
+      "enabled": true,
+      "emailVerified": true,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo1234",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-merchly",
+        "ROLE_ADMIN"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000002",
+      "username": "tirazh_lab",
+      "email": "tirazh.lab@merchly.dev",
+      "firstName": "Пётр",
+      "lastName": "Долгов",
+      "enabled": true,
+      "emailVerified": true,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo1234",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-merchly"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000003",
+      "username": "okhta_press",
+      "email": "okhta.press@merchly.dev",
+      "firstName": "Илья",
+      "lastName": "Савельев",
+      "enabled": true,
+      "emailVerified": true,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo1234",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-merchly"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000004",
+      "username": "kate_v",
+      "email": "kate.v@merchly.dev",
+      "firstName": "Катя",
+      "lastName": "Волкова",
+      "enabled": true,
+      "emailVerified": true,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo1234",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-merchly"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000005",
+      "username": "roman_d",
+      "email": "roman.d@merchly.dev",
+      "firstName": "Роман",
+      "lastName": "Дьяков",
+      "enabled": true,
+      "emailVerified": true,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo1234",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-merchly"
+      ],
+      "notBefore": 0,
+      "groups": []
+    },
+    {
+      "id": "a0000000-0000-0000-0000-000000000006",
+      "username": "nastya_m",
+      "email": "nastya.m@merchly.dev",
+      "firstName": "Настя",
+      "lastName": "Морозова",
+      "enabled": true,
+      "emailVerified": true,
+      "totp": false,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "demo1234",
+          "temporary": false
+        }
+      ],
+      "disableableCredentialTypes": [],
+      "requiredActions": [],
+      "realmRoles": [
+        "default-roles-merchly"
+      ],
+      "notBefore": 0,
+      "groups": []
     }
   ],
   "scopeMappings": [
@@ -784,6 +945,51 @@
           }
         }
       ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
+    },
+    {
+      "id": "c1000000-0000-0000-0000-000000000001",
+      "clientId": "merchly_orders_client",
+      "name": "Merchly Order Service",
+      "description": "Сервисный клиент order-service для внутренних вызовов product-service",
+      "surrogateAuthRequired": false,
+      "enabled": true,
+      "alwaysDisplayInConsole": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "GSfdP1PMu0kNMmJi2rxxRJtYVLOIyRSG",
+      "redirectUris": [],
+      "webOrigins": [],
+      "notBefore": 0,
+      "bearerOnly": false,
+      "consentRequired": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "publicClient": false,
+      "frontchannelLogout": true,
+      "protocol": "openid-connect",
+      "attributes": {
+        "oidc.ciba.grant.enabled": "false",
+        "backchannel.logout.session.required": "true",
+        "oauth2.device.authorization.grant.enabled": "false",
+        "backchannel.logout.revoke.offline.tokens": "false"
+      },
+      "authenticationFlowBindingOverrides": {},
+      "fullScopeAllowed": true,
+      "nodeReRegistrationTimeout": -1,
       "defaultClientScopes": [
         "web-origins",
         "acr",

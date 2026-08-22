@@ -15,6 +15,7 @@ class ImageUrlFormatterTest {
 
     @BeforeEach
     void setUp() {
+        // given
         imageUrlFormatter = new ImageUrlFormatter();
         ReflectionTestUtils.setField(imageUrlFormatter, "MINIO_URL", MINIO_URL);
     }
@@ -26,21 +27,30 @@ class ImageUrlFormatterTest {
         @Test
         @DisplayName("Если имя файла null, возвращает дефолтное изображение товара")
         void getProductImageUrl_NullFileName_ReturnsDefault() {
+            // when
             String result = imageUrlFormatter.getProductImageUrl(null);
+
+            // then
             assertEquals("/images/default-product-image.png", result);
         }
 
         @Test
         @DisplayName("Если имя файла пустое или состоит из пробелов, возвращает дефолтное изображение")
         void getProductImageUrl_BlankFileName_ReturnsDefault() {
+            // when
             String result = imageUrlFormatter.getProductImageUrl("   ");
+
+            // then
             assertEquals("/images/default-product-image.png", result);
         }
 
         @Test
         @DisplayName("Если передано корректное имя файла, возвращает полный MinIO URL")
         void getProductImageUrl_ValidFileName_ReturnsFormattedUrl() {
+            // when
             String result = imageUrlFormatter.getProductImageUrl("item123.jpg");
+
+            // then
             assertEquals("http://localhost:9000/merchly-products/item123.jpg", result);
         }
     }
@@ -52,21 +62,30 @@ class ImageUrlFormatterTest {
         @Test
         @DisplayName("Если имя файла null, возвращает дефолтный аватар пользователя")
         void getUserAvatarUrl_NullFileName_ReturnsDefault() {
+            // when
             String result = imageUrlFormatter.getUserAvatarUrl(null);
+
+            // then
             assertEquals("/images/default-user-avatar.png", result);
         }
 
         @Test
         @DisplayName("Если имя файла пустое, возвращает дефолтный аватар")
         void getUserAvatarUrl_BlankFileName_ReturnsDefault() {
+            // when
             String result = imageUrlFormatter.getUserAvatarUrl("");
+
+            // then
             assertEquals("/images/default-user-avatar.png", result);
         }
 
         @Test
         @DisplayName("Если передано корректное имя файла, возвращает полный MinIO URL аватара")
         void getUserAvatarUrl_ValidFileName_ReturnsFormattedUrl() {
+            // when
             String result = imageUrlFormatter.getUserAvatarUrl("avatar.png");
+
+            // then
             assertEquals("http://localhost:9000/merchly-users/avatar.png", result);
         }
     }

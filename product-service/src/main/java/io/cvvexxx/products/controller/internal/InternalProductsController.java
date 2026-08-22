@@ -28,7 +28,7 @@ public class InternalProductsController {
     public ResponseEntity<List<ProductDto>> findAllProducts(
             @RequestParam(required = false, name = "ids") List<UUID> ids
     ) {
-        if (ids.isEmpty() || ids == null) {
+        if (ids == null || ids.isEmpty()) {
             return ResponseEntity.ok(List.of());
         }
 

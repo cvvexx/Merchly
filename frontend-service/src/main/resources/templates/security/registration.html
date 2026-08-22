@@ -1,116 +1,124 @@
 <!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title>Регистрация – Merchly</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
+<head th:replace="~{fragments/layout :: head('Регистрация')}"></head>
+<body>
 
-<div class="container my-5 d-flex justify-content-center align-items-center">
-    <div class="col-md-5">
+<main class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-sm-10 col-md-7 col-lg-6 col-xl-5">
 
-        <div class="text-center mb-4">
-            <a class="text-decoration-none h2 fw-bold text-primary" th:href="@{/}">Merchly</a>
-        </div>
+            <div class="text-center mb-4">
+                <a class="rail-brand text-dark" th:href="@{/}">
+                    <span aria-hidden="true" class="rail-brand__dot"></span>
+                    Merchly
+                </a>
+            </div>
 
-        <div class="card shadow-sm border-0">
-            <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4 fw-bold">Регистрация</h3>
+            <div class="card shadow border-0 reveal">
+                <div class="card-body p-4">
+                    <h1 class="h4 text-center mb-2 fw-bold">Создать аккаунт</h1>
+                    <p class="text-muted small text-center mb-4">Займёт минуту. Аватар можно добавить позже.</p>
 
-                <!-- Блок отображения ошибок валидации -->
-                <div class="alert alert-danger mb-4" th:if="${errors != null}">
-                    <ul class="mb-0 ps-3">
-                        <li th:each="err : ${errors}" th:text="${err}">Ошибка валидации</li>
-                    </ul>
-                </div>
-
-                <form enctype="multipart/form-data" id="registrationForm" method="post" th:action="@{/do-register}">
-                    <input th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" type="hidden"/>
-                    <input name="target" th:value="${target}" type="hidden"/>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Имя</label>
-                        <input class="form-control form-control-lg fs-6" name="firstName" placeholder="Иван" required
-                               th:value="${payload != null ? payload.firstName : ''}"
-                               type="text"/>
+                    <div class="alert alert-danger mb-4" th:if="${errors != null}">
+                        <ul class="mb-0 ps-3">
+                            <li th:each="err : ${errors}" th:text="${err}">Ошибка валидации</li>
+                        </ul>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Фамилия</label>
-                        <input class="form-control form-control-lg fs-6" name="lastName" placeholder="Иванов" required
-                               th:value="${payload != null ? payload.lastName : ''}"
-                               type="text"/>
-                    </div>
+                    <form enctype="multipart/form-data" id="registrationForm" method="post" th:action="@{/do-register}">
+                        <input th:if="${_csrf}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"
+                               type="hidden"/>
+                        <input name="target" th:value="${target}" type="hidden"/>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Имя пользователя
-                            (логин)</label>
-                        <input class="form-control form-control-lg fs-6" name="username" placeholder="ivan_merch"
-                               required th:value="${payload != null ? payload.username : ''}"
-                               type="text"/>
-                    </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label eyebrow" for="firstName">Имя</label>
+                                <input class="form-control form-control-lg fs-6" id="firstName" name="firstName"
+                                       placeholder="Иван" required
+                                       th:value="${payload != null ? payload.firstName : ''}" type="text"/>
+                            </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Email</label>
-                        <input class="form-control form-control-lg fs-6" name="email" placeholder="example@mail.com"
-                               required th:value="${payload != null ? payload.email : ''}"
-                               type="email"/>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Загрузить аватар</label>
-                        <input accept="image/*" class="form-control form-control-lg fs-6" name="userAvatar"
-                               type="file"/>
-                    </div>
-
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Пол</label>
-                            <select class="form-select form-select-lg fs-6" name="gender" required>
-                                <option th:selected="${payload != null and payload.gender == 'M'}" value="M">Мужчина
-                                </option>
-                                <option th:selected="${payload != null and payload.gender == 'F'}" value="F">Женщина
-                                </option>
-                            </select>
+                            <div class="col-sm-6">
+                                <label class="form-label eyebrow" for="lastName">Фамилия</label>
+                                <input class="form-control form-control-lg fs-6" id="lastName" name="lastName"
+                                       placeholder="Иванов" required
+                                       th:value="${payload != null ? payload.lastName : ''}" type="text"/>
+                            </div>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label small fw-bold text-muted text-uppercase">Дата рождения</label>
-                            <input class="form-control form-control-lg fs-6" name="birthDate" required th:value="${payload != null ? payload.birthDate : ''}"
-                                   type="date"/>
+
+                        <div class="mb-3">
+                            <label class="form-label eyebrow" for="username">Имя пользователя (логин)</label>
+                            <input autocomplete="username" class="form-control form-control-lg fs-6" id="username"
+                                   name="username" placeholder="ivan_merch" required
+                                   th:value="${payload != null ? payload.username : ''}" type="text"/>
                         </div>
-                    </div>
 
-                    <div class="mb-3">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Придумайте пароль</label>
-                        <input class="form-control form-control-lg fs-6" id="password" name="password"
-                               placeholder="Минимум 8 символов" required type="password"/>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label eyebrow" for="email">Email</label>
+                            <input autocomplete="email" class="form-control form-control-lg fs-6" id="email"
+                                   name="email" placeholder="example@mail.com" required
+                                   th:value="${payload != null ? payload.email : ''}" type="email"/>
+                        </div>
 
-                    <div class="mb-4">
-                        <label class="form-label small fw-bold text-muted text-uppercase">Повторите пароль</label>
-                        <input class="form-control form-control-lg fs-6" id="confirmPassword"
-                               placeholder="Повторите придуманный пароль" required type="password"/>
-                        <div class="invalid-feedback" id="passwordMismatch">Пароли не совпадают!</div>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label eyebrow" for="userAvatar">Аватар</label>
+                            <input accept="image/*" class="form-control form-control-lg fs-6" id="userAvatar"
+                                   name="userAvatar" type="file"/>
+                        </div>
 
-                    <button class="btn btn-success btn-lg w-100 shadow-sm mb-3" type="submit">Зарегистрироваться
-                    </button>
-                </form>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label eyebrow" for="gender">Пол</label>
+                                <select class="form-select form-select-lg fs-6" id="gender" name="gender" required>
+                                    <option th:selected="${payload != null and payload.gender == 'M'}" value="M">
+                                        Мужчина
+                                    </option>
+                                    <option th:selected="${payload != null and payload.gender == 'F'}" value="F">
+                                        Женщина
+                                    </option>
+                                </select>
+                            </div>
 
-                <div class="text-center mt-3">
-                    <span class="text-muted small">Уже есть аккаунт?</span>
-                    <a class="text-decoration-none small fw-bold text-success" th:href="@{/login(target=${target})}">Войти
-                        в систему</a>
+                            <div class="col-sm-6">
+                                <label class="form-label eyebrow" for="birthDate">Дата рождения</label>
+                                <input class="form-control form-control-lg fs-6" id="birthDate" name="birthDate"
+                                       required th:value="${payload != null ? payload.birthDate : ''}" type="date"/>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label eyebrow" for="password">Пароль</label>
+                            <input autocomplete="new-password" class="form-control form-control-lg fs-6" id="password"
+                                   name="password" placeholder="Минимум 8 символов" required type="password"/>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label eyebrow" for="confirmPassword">Повторите пароль</label>
+                            <input autocomplete="new-password" class="form-control form-control-lg fs-6"
+                                   id="confirmPassword" placeholder="Ещё раз тот же пароль" required type="password"/>
+                            <div class="invalid-feedback" id="passwordMismatch">Пароли не совпадают.</div>
+                        </div>
+
+                        <button class="btn btn-success btn-lg w-100 mb-3" type="submit">Зарегистрироваться</button>
+                    </form>
+
+                    <p class="text-center text-muted small mb-0">
+                        Уже есть аккаунт?
+                        <a class="text-decoration-none fw-bold" th:href="@{/login(target=${target})}">Войти</a>
+                    </p>
                 </div>
             </div>
-        </div>
 
-        <div class="text-center mt-4">
-            <a class="text-muted small text-decoration-none" th:href="@{/}">&larr; На главную</a>
+            <p class="text-center mt-4 mb-0">
+                <a class="back-link" th:href="@{/}">
+                    <span aria-hidden="true" class="back-link__arrow">&larr;</span> На главную
+                </a>
+            </p>
         </div>
     </div>
-</div>
+</main>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -118,23 +126,21 @@
         const confirmPassword = document.getElementById('confirmPassword');
         const form = document.getElementById('registrationForm');
 
-        function validatePassword() {
-            if (password.value !== confirmPassword.value) {
-                confirmPassword.classList.add('is-invalid');
-                return false;
-            } else {
-                confirmPassword.classList.remove('is-invalid');
-                return true;
-            }
+        function passwordsMatch() {
+            const match = password.value === confirmPassword.value;
+            confirmPassword.classList.toggle('is-invalid', !match);
+            return match;
         }
 
-        password.addEventListener('change', validatePassword);
-        confirmPassword.addEventListener('keyup', validatePassword);
+        password.addEventListener('change', passwordsMatch);
+        confirmPassword.addEventListener('keyup', passwordsMatch);
 
         form.addEventListener('submit', function (event) {
-            if (!validatePassword()) {
+            if (!passwordsMatch()) {
                 event.preventDefault();
                 event.stopPropagation();
+                confirmPassword.focus();
+                Merchly.notify('Пароли не совпадают.', 'error');
             }
         });
     });

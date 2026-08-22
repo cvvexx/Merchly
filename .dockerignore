@@ -1,6 +1,7 @@
 # VCS
 .git
 .gitignore
+.http
 
 # IDE / Editors
 .idea
@@ -24,7 +25,8 @@
 
 # Docker & Compose artifacts
 docker-compose*.yml
-.env
+.env.prod
+.env.dev
 
 # Local Databases / Volume mappings
 **/pgdata/
@@ -35,3 +37,5 @@ docker-compose*.yml
 # OS generated files
 .DS_Store
 Thumbs.db
+# Seed assets: подключаются как volume, в образ не нужны
+.seed

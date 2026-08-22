@@ -35,6 +35,9 @@ public record NewUserDto(
 
         @NotNull(message = "{user.create.birthdate.required}")
         @Past(message = "{user.create.birthdate.past}")
-        LocalDate birthDate
+        LocalDate birthDate,
+
+        @NotNull(message = "{user.create.is_admin.required}")
+        boolean isAdmin
 ) {
 }

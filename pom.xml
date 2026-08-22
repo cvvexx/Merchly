@@ -23,6 +23,7 @@
         <module>frontend-service</module>
         <module>user-service</module>
         <module>review-service</module>
+        <module>order-service</module>
     </modules>
 
     <properties>
@@ -52,6 +53,12 @@
     </dependencies>
 
     <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+            </plugin>
+        </plugins>
         <pluginManagement>
             <plugins>
                 <plugin>

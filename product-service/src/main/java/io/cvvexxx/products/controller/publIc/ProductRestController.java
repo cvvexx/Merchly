@@ -47,7 +47,8 @@ public class ProductRestController {
             throw new BindException(bindingResult);
         }
         log.info("Updating product with id {}", productId);
-        productService.updateProduct(productId, payload.title(), payload.description(), payload.price(), image);
+        productService.updateProduct(productId, payload.title(), payload.description(), payload.quantity(),
+                payload.price(), image);
         return ResponseEntity.noContent().build();
     }
 

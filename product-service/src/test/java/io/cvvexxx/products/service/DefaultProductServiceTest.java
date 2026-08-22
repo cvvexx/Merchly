@@ -1,7 +1,11 @@
 package io.cvvexxx.products.service;
 
 import io.cvvexxx.products.dto.ProductDto;
+import io.cvvexxx.products.entity.ProcessedOrderEvent;
 import io.cvvexxx.products.entity.Product;
+import io.cvvexxx.products.event.OrderItemPayload;
+import io.cvvexxx.products.exception.InsufficientStockException;
+import io.cvvexxx.products.repository.ProcessedOrderEventRepository;
 import io.cvvexxx.products.repository.ProductRepository;
 import io.cvvexxx.products.service.minio.DefaultMinioService;
 import io.cvvexxx.products.service.product.DefaultProductService;
@@ -37,6 +41,9 @@ class DefaultProductServiceTest {
 
     @Mock
     private DefaultMinioService defaultMinioService;
+
+    @Mock
+    private ProcessedOrderEventRepository processedOrderEventRepository;
 
     @InjectMocks
     private DefaultProductService productService;
@@ -79,8 +86,8 @@ class DefaultProductServiceTest {
         var id1 = UUID.randomUUID();
         var id2 = UUID.randomUUID();
         when(productRepository.findAllByTitleContainingIgnoreCase(filter)).thenReturn(List.of(
-                new ProductDto(id1, "asdf", "1234", BigDecimal.ONE, "image.png", id1),
-                new ProductDto(id2, "asdf", "1234", BigDecimal.ONE, "image.png", id2)
+                new ProductDto(id1, "asdf", "1234", 1, BigDecimal.ONE, "image.png", id1),
+                new ProductDto(id2, "asdf", "1234", 1, BigDecimal.ONE, "image.png", id2)
         ));
 
         //when
@@ -98,6 +105,7 @@ class DefaultProductServiceTest {
         // given
         String title = "Футболка Merchly";
         String description = "Классный мерч";
+        Integer quantity = 1;
         BigDecimal price = new BigDecimal("1500.00");
         UUID createdBy = UUID.randomUUID();
         MockMultipartFile image = new MockMultipartFile(
@@ -113,7 +121,7 @@ class DefaultProductServiceTest {
                 invocation.getArgument(0));
 
         // when
-        ProductDto result = productService.createProduct(title, description, price, createdBy, image);
+        ProductDto result = productService.createProduct(title, description, quantity, price, createdBy, image);
 
         // then
         assertNotNull(result);
@@ -137,6 +145,7 @@ class DefaultProductServiceTest {
         // given
         String title = "Кружка";
         String description = "Керамическая";
+        Integer quantity = 1;
         BigDecimal price = new BigDecimal("500.00");
         UUID createdBy = UUID.randomUUID();
         MultipartFile image = null;
@@ -145,7 +154,7 @@ class DefaultProductServiceTest {
                 invocation.getArgument(0));
 
         // when
-        ProductDto result = productService.createProduct(title, description, price, createdBy, image);
+        ProductDto result = productService.createProduct(title, description, quantity, price, createdBy, image);
 
         // then
         assertNotNull(result);
@@ -170,7 +179,7 @@ class DefaultProductServiceTest {
 
         // when & then
         assertThrows(RuntimeException.class, () ->
-                productService.createProduct("Title", "Desc", BigDecimal.TEN, UUID.randomUUID(), image)
+                productService.createProduct("Title", "Desc", 1, BigDecimal.TEN, UUID.randomUUID(), image)
         );
 
         verify(defaultMinioService, times(1)).upload(image);
@@ -284,6 +293,7 @@ class DefaultProductServiceTest {
                 productId,
                 "Новое название",
                 "Новое описание",
+                1,
                 new BigDecimal("200.00"),
                 newImageFile
         );
@@ -321,6 +331,7 @@ class DefaultProductServiceTest {
                 productId,
                 "Обновленное",
                 "Обновленное",
+                1,
                 BigDecimal.ONE,
                 null // Картинка не передана
         );
@@ -352,7 +363,7 @@ class DefaultProductServiceTest {
         when(defaultMinioService.upload(newImageFile)).thenReturn(newImageName);
 
         // when
-        productService.updateProduct(productId, "Title", "Desc", BigDecimal.TEN, newImageFile);
+        productService.updateProduct(productId, "Title", "Desc", 1, BigDecimal.TEN, newImageFile);
 
         // then
         assertEquals(newImageName, existingProduct.getImageFileName());
@@ -370,7 +381,7 @@ class DefaultProductServiceTest {
         // when & then
         NoSuchElementException exception = assertThrows(
                 NoSuchElementException.class,
-                () -> productService.updateProduct(productId, "T", "D", BigDecimal.ONE, null)
+                () -> productService.updateProduct(productId, "T", "D", 1, BigDecimal.ONE, null)
         );
 
         assertEquals("catalogue.errors.product.not_found", exception.getMessage());
@@ -399,9 +410,103 @@ class DefaultProductServiceTest {
 
         // when & then — проверяем, что вызов метода не падает
         assertDoesNotThrow(() -> productService.updateProduct(
-                productId, "Title", "Desc", BigDecimal.TEN, newImageFile
+                productId, "Title", "Desc", 1, BigDecimal.TEN, newImageFile
         ));
 
         verify(defaultMinioService, times(1)).removeObject(oldImage);
+    }
+
+    @Test
+    @DisplayName("deductStock: списывает товар и помечает заказ обработанным")
+    void deductStock_WithSufficientStock_ShouldDeductAndMarkProcessed() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        Product product = Product.builder().id(productId).quantity(5).build();
+
+        when(processedOrderEventRepository.existsById(orderId)).thenReturn(false);
+        when(productRepository.findByIdForUpdate(productId)).thenReturn(Optional.of(product));
+
+        // when
+        productService.deductStock(orderId, List.of(new OrderItemPayload(productId, 3)));
+
+        // then
+        assertEquals(2, product.getQuantity());
+        ArgumentCaptor<ProcessedOrderEvent> eventCaptor = ArgumentCaptor.forClass(ProcessedOrderEvent.class);
+        verify(processedOrderEventRepository, times(1)).save(eventCaptor.capture());
+        assertEquals(orderId, eventCaptor.getValue().getOrderId());
+    }
+
+    @Test
+    @DisplayName("deductStock: если товара не хватает, выбрасывает исключение и не помечает заказ обработанным")
+    void deductStock_WithInsufficientStock_ShouldThrowAndNotMarkProcessed() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        Product product = Product.builder().id(productId).quantity(1).build();
+
+        when(processedOrderEventRepository.existsById(orderId)).thenReturn(false);
+        when(productRepository.findByIdForUpdate(productId)).thenReturn(Optional.of(product));
+
+        // when & then
+        assertThrows(InsufficientStockException.class, () ->
+                productService.deductStock(orderId, List.of(new OrderItemPayload(productId, 3)))
+        );
+
+        assertEquals(1, product.getQuantity());
+        verify(processedOrderEventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("deductStock: если заказ уже был обработан ранее (повтор из Kafka), товар повторно не списывается")
+    void deductStock_WhenOrderAlreadyProcessed_ShouldSkipSilently() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+
+        when(processedOrderEventRepository.existsById(orderId)).thenReturn(true);
+
+        // when
+        productService.deductStock(orderId, List.of(new OrderItemPayload(productId, 3)));
+
+        // then
+        verify(productRepository, never()).findByIdForUpdate(any());
+        verify(processedOrderEventRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("restoreStock: если заказ был обработан (сток списан), возвращает товар на склад и снимает пометку обработанности")
+    void restoreStock_WhenOrderWasProcessed_ShouldRestoreQuantityAndUnmarkProcessed() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+        Product product = Product.builder().id(productId).quantity(2).build();
+
+        when(processedOrderEventRepository.existsById(orderId)).thenReturn(true);
+        when(productRepository.findByIdForUpdate(productId)).thenReturn(Optional.of(product));
+
+        // when
+        productService.restoreStock(orderId, List.of(new OrderItemPayload(productId, 3)));
+
+        // then
+        assertEquals(5, product.getQuantity());
+        verify(processedOrderEventRepository, times(1)).deleteById(orderId);
+    }
+
+    @Test
+    @DisplayName("restoreStock: если заказ не был обработан (сток никогда не списывался), ничего не меняет")
+    void restoreStock_WhenOrderWasNotProcessed_ShouldDoNothing() {
+        // given
+        UUID orderId = UUID.randomUUID();
+        UUID productId = UUID.randomUUID();
+
+        when(processedOrderEventRepository.existsById(orderId)).thenReturn(false);
+
+        // when
+        productService.restoreStock(orderId, List.of(new OrderItemPayload(productId, 3)));
+
+        // then
+        verify(productRepository, never()).findByIdForUpdate(any());
+        verify(processedOrderEventRepository, never()).deleteById(any());
     }
 }

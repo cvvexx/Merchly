@@ -1,6 +1,7 @@
 package io.cvvexxx.frontend.config;
 
 import io.cvvexxx.frontend.client.keycloak.KeycloakRestClient;
+import io.cvvexxx.frontend.client.order.RestClientOrdersRestClient;
 import io.cvvexxx.frontend.client.product.internal.RestClientProductsInternalRestClient;
 import io.cvvexxx.frontend.client.product.publIc.RestClientProductsPublicRestClient;
 import io.cvvexxx.frontend.client.review.RestClientReviewsRestClient;
@@ -180,6 +181,20 @@ public class RestClientBeans {
                         .requestInterceptor((request, body, execution) ->
                                 getClientHttpRequestInterceptor(request, body, execution, authorizedClientManager)
                         )
+                        .build()
+        );
+    }
+
+    @Bean
+    public RestClientOrdersRestClient restClientOrdersRestClient(
+            @Value("${spring.restclient.uri.orders_service}") String restClientUri,
+            OAuth2AuthorizedClientManager authorizedClientManager
+    ) {
+        return new RestClientOrdersRestClient(
+                RestClient.builder()
+                        .baseUrl(restClientUri)
+                        .requestInterceptor((request, body, execution) ->
+                                getClientHttpRequestInterceptor(request, body, execution, authorizedClientManager))
                         .build()
         );
     }

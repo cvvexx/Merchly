@@ -76,6 +76,7 @@ public class ProductController {
                     product.id(),
                     payload.title(),
                     payload.description(),
+                    payload.quantity(),
                     payload.price(),
                     image
             );

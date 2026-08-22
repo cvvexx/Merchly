@@ -36,7 +36,6 @@ public class ProductsController {
         List<ProductOwnerViewModel> viewModels =
                 defaultProductService.getProductsList(filter).viewModels();
 
-        log.info("viewModels: {}", viewModels);
         model.addAttribute("products", viewModels);
         model.addAttribute("filter", filter);
 
@@ -62,6 +61,7 @@ public class ProductsController {
             Product createdProduct = productsPublicRestClient.createProduct(
                     payload.title(),
                     payload.description(),
+                    payload.quantity(),
                     payload.price(),
                     image,
                     userId

@@ -8,7 +8,7 @@ public class ImageUrlFormatter {
 
     private final static String PRODUCT_DEFAULT_IMAGE = "/images/default-product-image.png";
     private final static String USER_DEFAULT_AVATAR = "/images/default-user-avatar.png";
-    @Value("${minio.public-url}")
+    @Value("${minio.url}")
     public String MINIO_URL;
 
     public String getProductImageUrl(String imageFileName) {

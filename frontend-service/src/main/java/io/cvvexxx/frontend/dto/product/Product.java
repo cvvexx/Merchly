@@ -7,6 +7,7 @@ public record Product(
         UUID id,
         String title,
         String description,
+        Integer quantity,
         BigDecimal price,
         String imageFileName,
         UUID createdBy

@@ -6,6 +6,8 @@ import io.cvvexxx.users.entity.CartItem;
 import io.cvvexxx.users.repository.CartItemRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +21,13 @@ import java.util.UUID;
 @Slf4j
 public class DefaultCartService implements CartService {
 
+    private static final String DEFAULT_USER_CART_NAME = "userCart";
+
     private final CartItemRepository cartItemRepository;
 
     @Override
     @Transactional
+    @CacheEvict(value = DEFAULT_USER_CART_NAME, key = "#currentUserId")
     public void addItemToCart(AddToCartDto addToCartDto, UUID currentUserId) {
 
         Optional<CartItem> byUserIdAndProductId =
@@ -30,22 +35,21 @@ public class DefaultCartService implements CartService {
         byUserIdAndProductId
                 .ifPresentOrElse(
                         cartItem -> {
-                            cartItem.setQuantity(cartItem.getQuantity() + 1);
+                            cartItem.setQuantity(cartItem.getQuantity() + addToCartDto.quantity());
                         },
-                        () -> {
-                            var saved = cartItemRepository.save(
-                                    CartItem.builder()
-                                            .id(UUID.randomUUID())
-                                            .userId(currentUserId)
-                                            .productId(addToCartDto.productId())
-                                            .quantity(addToCartDto.quantity())
-                                            .build());
-                        }
+                        () -> cartItemRepository.save(
+                                CartItem.builder()
+                                        .id(UUID.randomUUID())
+                                        .userId(currentUserId)
+                                        .productId(addToCartDto.productId())
+                                        .quantity(addToCartDto.quantity())
+                                        .build())
                 );
     }
 
     @Override
     @Transactional
+    @Cacheable(value = DEFAULT_USER_CART_NAME, key = "#currentUserId")
     public List<CartItemDto> getCartItems(UUID currentUserId) {
         return cartItemRepository.findAllByUserId(currentUserId)
                 .stream()
@@ -58,10 +62,18 @@ public class DefaultCartService implements CartService {
 
     @Override
     @Transactional
-    public void deleterItemFromCart(UUID productId, UUID currentUserId) {
+    @CacheEvict(value = DEFAULT_USER_CART_NAME, key = "#currentUserId")
+    public void deleteritemfromcart(UUID productId, UUID currentUserId) {
         CartItem cartItem = cartItemRepository.findByUserIdAndProductId(currentUserId, productId)
                 .orElseThrow(() -> new NoSuchElementException("errors.404.header"));
 
         cartItemRepository.delete(cartItem);
+    }
+
+    @Override
+    @Transactional
+    @CacheEvict(value = DEFAULT_USER_CART_NAME, key = "#currentUserId")
+    public void clearCart(UUID currentUserId) {
+        cartItemRepository.deleteByUserId(currentUserId);
     }
 }

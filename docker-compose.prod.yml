@@ -51,6 +51,23 @@ services:
       timeout: 5s
       retries: 5
 
+  orders_db:
+    image: postgres:16
+    container_name: merchly_orders_db
+    environment:
+      POSTGRES_USER: ${ORDERS_DB_USER:-orders_admin}
+      POSTGRES_PASSWORD: ${ORDERS_DB_PASSWORD:-12341234}
+      POSTGRES_DB: ${ORDERS_DB_NAME:-merchly_orders}
+    ports:
+      - "5436:5432"
+    volumes:
+      - pgdata_orders:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${ORDERS_DB_USER:-orders_admin}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   keycloak_db:
     image: postgres:16
     container_name: merchly_keycloak_db
@@ -78,7 +95,7 @@ services:
     volumes:
       - redisdata:/data
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-12345678} ping | grep PONG"]
+      test: [ "CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-12345678} ping | grep PONG" ]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -129,12 +146,42 @@ services:
       timeout: 5s
       retries: 5
 
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: merchly_kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
+      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
+      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9092'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
+      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   minio-init:
     image: minio/mc
     container_name: merchly_minio_init
     depends_on:
       minio:
         condition: service_healthy
+    volumes:
+      # Демо-изображения товаров и аватаров для стартового наполнения
+      - ./.seed/minio:/seed:ro
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin};
@@ -142,6 +189,8 @@ services:
       /usr/bin/mc mb myminio/merchly-users --ignore-existing;
       /usr/bin/mc anonymous set download myminio/merchly-products;
       /usr/bin/mc anonymous set download myminio/merchly-users;
+      /usr/bin/mc mirror --overwrite /seed/products myminio/merchly-products;
+      /usr/bin/mc mirror --overwrite /seed/users myminio/merchly-users;
       exit 0;
       "
 
@@ -152,15 +201,17 @@ services:
       dockerfile: user-service/Dockerfile
     container_name: merchly_users_service
     env_file:
-      - .env
+      - .env.prod
     environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
       SPRING_DATASOURCE_URL: jdbc:postgresql://users_db:5432/${USERS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
       KEYCLOAK_SERVER_URL: http://keycloak:8090
       MINIO_URL: http://minio:9000
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep UP || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep UP || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -178,16 +229,19 @@ services:
       dockerfile: product-service/Dockerfile
     container_name: merchly_products_service
     env_file:
-      - .env
+      - .env.prod
     environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
       SPRING_DATASOURCE_URL: jdbc:postgresql://products_db:5432/${PRODUCTS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       MINIO_URL: http://minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
       MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep UP || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep UP || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -200,6 +254,43 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
+    container_name: merchly_order_service
+    env_file:
+      - .env.prod
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://orders_db:5432/${ORDERS_DB_NAME}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
+      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/merchly/protocol/openid-connect/token
+      SPRING_RESTCLIENT_URI_PRODUCT_SERVICE: http://products-service:8081
+      SPRING_RESTCLIENT_URI_USER_SERVICE: http://users-service:8082
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep UP || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      orders_db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      products-service:
+        condition: service_healthy
+      users-service:
+        condition: service_healthy
 
   reviews-service:
     build:
@@ -207,13 +298,15 @@ services:
       dockerfile: review-service/Dockerfile
     container_name: merchly_reviews_service
     env_file:
-      - .env
+      - .env.prod
     environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
       SPRING_DATASOURCE_URL: jdbc:postgresql://reviews_db:5432/${REVIEWS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health | grep UP || exit 1"]
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health | grep UP || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -233,13 +326,15 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      - .env
+      - .env.prod
     environment:
+      SPRING_PROFILES_ACTIVE: prod
       SPRING_RESTCLIENT_URI_USER_SERVICE: http://users-service:8082
       SPRING_RESTCLIENT_URI_PRODUCT_SERVICE: http://products-service:8081
       SPRING_RESTCLIENT_URI_REVIEWS_SERVICE: http://reviews-service:8083
+      SPRING_RESTCLIENT_URI_ORDERS_SERVICE: http://order-service:8084
       SPRING_DATA_REDIS_HOST: redis
-      MINIO_URL: http://minio:9000
+      MINIO_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_USER_NAME_ATTRIBUTE: preferred_username
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_AUTHORIZATION_URI: http://localhost:8090/realms/merchly/protocol/openid-connect/auth
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/merchly/protocol/openid-connect/token
@@ -254,6 +349,8 @@ services:
         condition: service_healthy
       reviews-service:
         condition: service_healthy
+      order-service:
+        condition: service_healthy
       keycloak:
         condition: service_healthy
 
@@ -261,6 +358,7 @@ volumes:
   pgdata_users:
   pgdata_products:
   pgdata_reviews:
+  pgdata_orders:
   redisdata:
   pgdata_keycloak:
   minio_data:
