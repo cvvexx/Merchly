@@ -63,6 +63,7 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml down -v
 | `user-service`     | 8082 — только внутри сети Compose                                   |
 | `review-service`   | 8083 — только внутри сети Compose                                   |
 | `order-service`    | 8084 — только внутри сети Compose                                   |
+| `config-server`    | 8888 — Spring Cloud Config, проброшен наружу для диагностики        |
 | Keycloak           | 8090                                                                |
 | Redis              | 6379                                                                |
 | Kafka              | 9092                                                                |
@@ -88,6 +89,19 @@ docker compose --env-file .env.dev -f docker-compose.dev.yml up -d
   вручную из `.keycloak/realm-export.json` через консоль администратора;
 * бакеты MinIO не создаются и демо-данные не заливаются — контейнера `minio-init` в
   dev-конфигурации нет, а `SPRING_FLYWAY_LOCATIONS` не включает `classpath:db/seed`.
+
+Вместе с инфраструктурой поднимается и `config-server` — `user-service`, запущенный
+из IDE, берёт конфигурацию с `http://localhost:8888` (адрес переопределяется
+переменной `CONFIG_SERVER_URL`). Локальных `application-dev.properties` у
+`user-service` больше нет, так что без config-server он стартует с неполной
+конфигурацией; чтобы падать сразу и с внятной ошибкой, поставьте
+`CONFIG_FAIL_FAST=true`.
+
+Проверить, что сервер отдаёт нужный набор свойств:
+
+```bash
+curl -s http://localhost:8888/user-service/dev | jq '.propertySources[].name'
+```
 
 ## Демо-данные
 

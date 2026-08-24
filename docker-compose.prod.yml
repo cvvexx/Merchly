@@ -194,6 +194,27 @@ services:
       exit 0;
       "
 
+  # --- CONFIG SERVER ---
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: merchly_config_server
+    env_file:
+      - .env.prod
+    environment:
+      CONFIG_SERVER_PROFILE: git
+      CONFIG_REPO_URI: ${CONFIG_REPO_URI:-https://github.com/cvvexx/merchly-server-config}
+      CONFIG_REPO_BRANCH: ${CONFIG_REPO_BRANCH:-master}
+    ports:
+      - "8888:8888"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health | grep UP || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   # --- MICROSERVICES ---
   users-service:
     build:
@@ -205,10 +226,17 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
-      SPRING_DATASOURCE_URL: jdbc:postgresql://users_db:5432/${USERS_DB_NAME}
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
+      # Конфигурация приезжает из config-server; здесь остаются только
+      # адреса соседей по сети compose и секреты из .env.prod.
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_FAIL_FAST: "true"
+      USERS_DB_HOST: users_db
+      USERS_DB_PORT: 5432
+      REDIS_HOST: redis
+      KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/merchly
       KEYCLOAK_SERVER_URL: http://keycloak:8090
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       MINIO_URL: http://minio:9000
     healthcheck:
       test: [ "CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep UP || exit 1" ]
@@ -216,6 +244,8 @@ services:
       timeout: 5s
       retries: 10
     depends_on:
+      config-server:
+        condition: service_healthy
       users_db:
         condition: service_healthy
       redis:

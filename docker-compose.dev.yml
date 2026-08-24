@@ -148,6 +148,23 @@ services:
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
 
+  # Config-server поднимается вместе с инфраструктурой: сервисы, запущенные
+  # из IDE, берут конфигурацию с http://localhost:8888.
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: merchly_config_server
+    restart: always
+    env_file:
+      - .env.dev
+    environment:
+      CONFIG_SERVER_PROFILE: git
+      CONFIG_REPO_URI: ${CONFIG_REPO_URI:-https://github.com/cvvexx/merchly-server-config}
+      CONFIG_REPO_BRANCH: ${CONFIG_REPO_BRANCH:-master}
+    ports:
+      - "8888:8888"
+
 volumes:
   pgdata_users:
   pgdata_products:

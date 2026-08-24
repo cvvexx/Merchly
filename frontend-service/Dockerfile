@@ -5,6 +5,7 @@ WORKDIR /app
 # правку исходников. Блок одинаков во всех пяти Dockerfile, поэтому при сборке всего
 # стека Maven-репозиторий скачивается один раз и переиспользуется остальными образами.
 COPY pom.xml .
+COPY config-server/pom.xml config-server/
 COPY frontend-service/pom.xml frontend-service/
 COPY order-service/pom.xml order-service/
 COPY product-service/pom.xml product-service/
