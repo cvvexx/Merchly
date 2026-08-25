@@ -27,8 +27,6 @@ public class CartController {
     public ResponseEntity<List<CartItemDto>> getCartItems(
             @AuthenticationPrincipal Jwt jwt
     ) {
-        log.info("Request received to render cart page");
-        log.info("jwt {}", jwt);
         UUID currentUserId = UUID.fromString(jwt.getClaimAsString("sub"));
         log.info("getting cart items from user {}", currentUserId);
         List<CartItemDto> items = cartService.getCartItems(currentUserId);

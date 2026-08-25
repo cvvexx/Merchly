@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   users_db:
     image: postgres:16
@@ -147,6 +145,21 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
+
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: merchly_config_server
+    restart: always
+    env_file:
+      - .env.dev
+    environment:
+      CONFIG_SERVER_PROFILE: git
+      CONFIG_REPO_URI: ${CONFIG_REPO_URI:-https://github.com/cvvexx/merchly-server-config}
+      CONFIG_REPO_BRANCH: ${CONFIG_REPO_BRANCH:-master}
+    ports:
+      - "8888:8888"
 
 volumes:
   pgdata_users:

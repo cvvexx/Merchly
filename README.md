@@ -76,6 +76,9 @@ flowchart LR
 
         US -->|"admin-cli"| KC
 
+        CS["config-server :8888"]
+        US -->|"конфигурация при старте"| CS
+
         US --- USDB[("users_db")]
         PS --- PSDB[("products_db")]
         OS --- OSDB[("orders_db")]
@@ -94,6 +97,7 @@ flowchart LR
 | `user-service`     | 8082 | Регистрация в Keycloak + локальный профиль с тем же UUID, аватары в MinIO, корзина                       |
 | `review-service`   | 8083 | Отзывы с пагинацией, один отзыв на товар от пользователя, агрегированная статистика оценок               |
 | `order-service`    | 8084 | Заказы, статусы, история, интеграция с Kafka, OpenAPI-схема                                              |
+| `config-server`    | 8888 | Spring Cloud Config Server: раздаёт конфигурацию сервисам из git-репозитория `merchly-server-config`     |
 
 Наружу пробрасывает порт только `frontend-service` и инфраструктура — бэкенд-сервисы
 доступны лишь внутри сети Compose.
@@ -109,6 +113,7 @@ flowchart LR
 | **Асинхронность**    | Apache Kafka (KRaft) — три топика между `order-service` и `product-service`         |
 | **Безопасность**     | Spring Security, Keycloak 24 (OIDC), JWT, resource server в каждом бэкенд-сервисе   |
 | **Хранилище файлов** | MinIO (S3-совместимое), клиент `io.minio:minio`                                     |
+| **Конфигурация**     | Spring Cloud Config 2024.0.0 — `config-server` + git-репозиторий конфигов, клиент в `user-service`   |
 | **Инфраструктура**   | Docker, Docker Compose (multi-stage сборка внутри контейнеров)                      |
 | **Frontend**         | Thymeleaf, Bootstrap 5.3 (CDN), собственный CSS, ванильный JS с Fetch API           |
 | **Тестирование**     | JUnit 5, Mockito, MockMvc, Testcontainers (Postgres, Redis, Kafka, MinIO), WireMock |
@@ -190,6 +195,55 @@ sequenceDiagram
   ручное действие пользователя или админа, отдельного события «заказ подтверждён» нет.
   Страница заказа опрашивает `/orders/{id}/status`, поэтому асинхронная отмена
   из-за нехватки товара появляется на экране без перезагрузки.
+
+## ⚙️ Конфигурация через Spring Cloud Config
+
+Конфигурация вынесена из образов в отдельный git-репозиторий
+[`merchly-server-config`](https://github.com/cvvexx/merchly-server-config); раздаёт её
+`config-server` (Spring Cloud Config Server, порт 8888). Первым клиентом подключён
+**`user-service`** — у него не осталось локальных `application-{dev,prod}.properties`,
+всё приезжает с сервера при старте.
+
+```mermaid
+flowchart LR
+    GIT["git: merchly-server-config<br/>user-service.properties<br/>user-service-{dev,prod}.properties<br/>application*.properties"]
+    CS["config-server :8888"]
+    US["user-service :8082"]
+    ENV[".env / environment<br/>секреты и адреса"]
+
+    GIT -->|"clone-on-start, JGit"| CS
+    CS -->|"GET /user-service/{profile}"| US
+    ENV -->|"подстановка ${...}"| US
+```
+
+Как это устроено:
+
+* в `user-service` остался единственный локальный файл `application.properties` —
+  в нём только `spring.application.name` (он нужен ДО обращения к серверу) и
+  настройки самого клиента;
+* имя приложения = имя файла в config-репозитории, активный профиль (`dev` / `prod`)
+  = суффикс файла, поэтому `user-service` с профилем `prod` получает склейку
+  `application.properties` + `application-prod.properties` + `user-service.properties`
+  + `user-service-prod.properties`;
+* **секретов в config-репозитории нет** — там лежат плейсхолдеры `${USERS_DB_PASSWORD}`,
+  `${MINIO_SECRET_KEY}`, `${KEYCLOAK_ADMIN_PASSWORD}`, а значения подставляет окружение
+  самого сервиса из `.env`;
+* импорт помечен `optional:`, а строгость включается переменной `CONFIG_FAIL_FAST`.
+  В compose стоит `CONFIG_FAIL_FAST=true` и `depends_on: config-server: service_healthy`,
+  поэтому в прод-сборке недоступный config-server — это падение на старте
+  (`ConfigClientFailFastException`), а не молчаливый запуск с половиной настроек.
+  Локально и в тестах значение по умолчанию `false`, профиль `test` отключает клиент
+  целиком (`spring.cloud.config.enabled=false`).
+
+Посмотреть, что именно сервер отдаёт сервису:
+
+```bash
+curl -s http://localhost:8888/user-service/prod | jq
+```
+
+Остальные четыре сервиса пока читают конфигурацию из своих локальных
+`application-{profile}.properties`; файлы для них в config-репозитории уже
+подготовлены, подключение — по той же схеме.
 
 ## ⚡ Кеш, сессии и файлы
 

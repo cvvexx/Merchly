@@ -1,5 +1,4 @@
 services:
-  # --- DATABASES ---
   users_db:
     image: postgres:16
     container_name: merchly_users_db
@@ -85,7 +84,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- INFRASTRUCTURE ---
   redis:
     image: redis:7-alpine
     container_name: merchly_redis
@@ -138,7 +136,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     command: server /data --console-address ":9001"
     volumes:
-      # ИСПРАВЛЕНИЕ: Добавлен волюм для сохранения файлов
       - minio_data:/data
     healthcheck:
       test: [ "CMD", "mc", "ready", "local" ]
@@ -180,7 +177,6 @@ services:
       minio:
         condition: service_healthy
     volumes:
-      # Демо-изображения товаров и аватаров для стартового наполнения
       - ./.seed/minio:/seed:ro
     entrypoint: >
       /bin/sh -c "
@@ -194,7 +190,26 @@ services:
       exit 0;
       "
 
-  # --- MICROSERVICES ---
+  config-server:
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    container_name: merchly_config_server
+    env_file:
+      - .env.prod
+    environment:
+      CONFIG_SERVER_PROFILE: git
+      CONFIG_REPO_URI: ${CONFIG_REPO_URI:-https://github.com/cvvexx/merchly-server-config}
+      CONFIG_REPO_BRANCH: ${CONFIG_REPO_BRANCH:-master}
+    ports:
+      - "8888:8888"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8888/actuator/health | grep UP || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
   users-service:
     build:
       context: .
@@ -205,10 +220,15 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
-      SPRING_DATASOURCE_URL: jdbc:postgresql://users_db:5432/${USERS_DB_NAME}
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_FAIL_FAST: "true"
+      USERS_DB_HOST: users_db
+      USERS_DB_PORT: 5432
+      REDIS_HOST: redis
+      KEYCLOAK_ISSUER_URI: http://keycloak:8090/realms/merchly
       KEYCLOAK_SERVER_URL: http://keycloak:8090
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
       MINIO_URL: http://minio:9000
     healthcheck:
       test: [ "CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep UP || exit 1" ]
@@ -216,6 +236,8 @@ services:
       timeout: 5s
       retries: 10
     depends_on:
+      config-server:
+        condition: service_healthy
       users_db:
         condition: service_healthy
       redis:
@@ -235,6 +257,8 @@ services:
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
       SPRING_DATASOURCE_URL: jdbc:postgresql://products_db:5432/${PRODUCTS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_FAIL_FAST: "true"
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       MINIO_URL: http://minio:9000
@@ -246,6 +270,8 @@ services:
       timeout: 5s
       retries: 10
     depends_on:
+      config-server:
+        condition: service_healthy
       products_db:
         condition: service_healthy
       redis:
@@ -268,6 +294,8 @@ services:
       SPRING_PROFILES_ACTIVE: prod
       SPRING_DATASOURCE_URL: jdbc:postgresql://orders_db:5432/${ORDERS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_FAIL_FAST: "true"
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8090/realms/merchly
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/merchly/protocol/openid-connect/token
       SPRING_RESTCLIENT_URI_PRODUCT_SERVICE: http://products-service:8081
@@ -279,6 +307,8 @@ services:
       timeout: 5s
       retries: 10
     depends_on:
+      config-server:
+        condition: service_healthy
       orders_db:
         condition: service_healthy
       redis:
@@ -301,6 +331,8 @@ services:
       - .env.prod
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_FAIL_FAST: "true"
       SPRING_FLYWAY_LOCATIONS: classpath:db/migration,classpath:db/seed
       SPRING_DATASOURCE_URL: jdbc:postgresql://reviews_db:5432/${REVIEWS_DB_NAME}
       SPRING_DATA_REDIS_HOST: redis
@@ -311,6 +343,8 @@ services:
       timeout: 5s
       retries: 10
     depends_on:
+      config-server:
+        condition: service_healthy
       reviews_db:
         condition: service_healthy
       redis:
@@ -329,6 +363,8 @@ services:
       - .env.prod
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_FAIL_FAST: "true"
       SPRING_RESTCLIENT_URI_USER_SERVICE: http://users-service:8082
       SPRING_RESTCLIENT_URI_PRODUCT_SERVICE: http://products-service:8081
       SPRING_RESTCLIENT_URI_REVIEWS_SERVICE: http://reviews-service:8083
@@ -342,7 +378,8 @@ services:
       SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/merchly/protocol/openid-connect/certs
       FRONTEND_SERVICE_CLIENT_SECRET: ${FRONTEND_SERVICE_CLIENT_SECRET}
     depends_on:
-      # Фронтенд стартует только когда ВСЕ сервисы зеленые (healthy)
+      config-server:
+        condition: service_healthy
       users-service:
         condition: service_healthy
       products-service:
