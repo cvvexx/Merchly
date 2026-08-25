@@ -20,15 +20,10 @@
     </properties>
 
     <dependencies>
-        <!-- Spring Cloud Config: конфигурация сервиса приезжает из config-server
-             (spring.config.import=configserver:...), а не из локальных
-             application-{profile}.properties. -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
             <artifactId>spring-cloud-starter-config</artifactId>
         </dependency>
-        <!-- spring-retry + aop нужны, чтобы работали spring.cloud.config.retry.*:
-             сервис переживает ситуацию, когда config-server ещё поднимается. -->
         <dependency>
             <groupId>org.springframework.retry</groupId>
             <artifactId>spring-retry</artifactId>
