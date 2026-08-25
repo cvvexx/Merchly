@@ -1,5 +1,4 @@
 services:
-  # --- DATABASES ---
   users_db:
     image: postgres:16
     container_name: merchly_users_db
@@ -85,7 +84,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # --- INFRASTRUCTURE ---
   redis:
     image: redis:7-alpine
     container_name: merchly_redis
@@ -138,7 +136,6 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
     command: server /data --console-address ":9001"
     volumes:
-      # ИСПРАВЛЕНИЕ: Добавлен волюм для сохранения файлов
       - minio_data:/data
     healthcheck:
       test: [ "CMD", "mc", "ready", "local" ]
