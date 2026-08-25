@@ -245,8 +245,9 @@ flowchart LR
   `CONFIG_FAIL_FAST=true` и `depends_on: config-server: service_healthy`,
   поэтому в прод-сборке недоступный config-server — это падение на старте
   (`ConfigClientFailFastException`), а не молчаливый запуск с половиной настроек.
-  Локально значение по умолчанию `false`, а профиль `test` отключает клиент
-  целиком (`spring.cloud.config.enabled=false` во всех пяти сервисах).
+  Локально значение по умолчанию `false`, а в тестах клиент отключён системным
+  свойством `spring.cloud.config.enabled=false` — оно задано в surefire и failsafe
+  в корневом `pom.xml`.
 
 ## ⚡ Кеш, сессии и файлы
 
@@ -289,9 +290,14 @@ mvn verify      # + интеграционные тесты (*IT.java, нуже�
 Юнит-тесты покрывают сервисный слой (Mockito), контроллеры (MockMvc + `spring-security-test`),
 REST-клиенты (WireMock) и Kafka-компоненты.
 
-Клиент config-server в тестах отключён целиком — во всех пяти сервисах
-`application-test.properties` содержит `spring.cloud.config.enabled=false`,
+Клиент config-server в тестах отключён: корневой `pom.xml` передаёт
+`spring.cloud.config.enabled=false` системным свойством в surefire и failsafe,
 поэтому прогон не зависит от того, поднят ли у разработчика стек на `localhost:8888`.
+
+> Тот же ключ в `application-test.properties` **не работает**: `spring.config.import`
+> объявлен в базовом `application.properties` и резолвится на фазе ConfigData раньше,
+> чем читаются профильные файлы. Отключать клиента нужно системным свойством —
+> тогда `Binder` видит флаг вовремя.
 
 Интеграционные тесты поднимают реальную
 инфраструктуру через Testcontainers:
