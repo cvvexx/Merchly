@@ -77,7 +77,11 @@ flowchart LR
         US -->|"admin-cli"| KC
 
         CS["config-server :8888"]
+        FE -->|"конфигурация при старте"| CS
         US -->|"конфигурация при старте"| CS
+        PS -->|"конфигурация при старте"| CS
+        OS -->|"конфигурация при старте"| CS
+        RS -->|"конфигурация при старте"| CS
 
         US --- USDB[("users_db")]
         PS --- PSDB[("products_db")]
@@ -106,14 +110,14 @@ flowchart LR
 
 | Категория            | Что используется                                                                    |
 |----------------------|-------------------------------------------------------------------------------------|
-| **Core**             | Java 17, Spring Boot 3.4.1, Maven (мультимодуль, 5 модулей)                         |
+| **Core**             | Java 17, Spring Boot 3.4.1, Maven (мультимодуль, 6 модулей)                         |
 | **Архитектура**      | Микросервисы, BFF (Backend for Frontend)                                            |
 | **Базы данных**      | PostgreSQL 16 — отдельный инстанс на каждый сервис, миграции Flyway                 |
 | **Кеш и сессии**     | Redis 7 — Spring Cache в четырёх сервисах + Spring Session для сессий BFF           |
 | **Асинхронность**    | Apache Kafka (KRaft) — три топика между `order-service` и `product-service`         |
 | **Безопасность**     | Spring Security, Keycloak 24 (OIDC), JWT, resource server в каждом бэкенд-сервисе   |
 | **Хранилище файлов** | MinIO (S3-совместимое), клиент `io.minio:minio`                                     |
-| **Конфигурация**     | Spring Cloud Config 2024.0.0 — `config-server` + git-репозиторий конфигов, клиент в `user-service`   |
+| **Конфигурация**     | Spring Cloud Config 2024.0.0 — `config-server` + git-репозиторий конфигов, клиентами подключены все пять сервисов |
 | **Инфраструктура**   | Docker, Docker Compose (multi-stage сборка внутри контейнеров)                      |
 | **Frontend**         | Thymeleaf, Bootstrap 5.3 (CDN), собственный CSS, ванильный JS с Fetch API           |
 | **Тестирование**     | JUnit 5, Mockito, MockMvc, Testcontainers (Postgres, Redis, Kafka, MinIO), WireMock |
@@ -200,25 +204,33 @@ sequenceDiagram
 
 Конфигурация вынесена из образов в отдельный git-репозиторий
 [`merchly-server-config`](https://github.com/cvvexx/merchly-server-config); раздаёт её
-`config-server` (Spring Cloud Config Server, порт 8888). Первым клиентом подключён
-**`user-service`** — у него не осталось локальных `application-{dev,prod}.properties`,
-всё приезжает с сервера при старте.
+`config-server` (Spring Cloud Config Server, порт 8888). Клиентами подключены
+**все пять сервисов** — ни у одного не осталось локальных
+`application-{dev,prod}.properties`, всё приезжает с сервера при старте.
 
 ```mermaid
 flowchart LR
-    GIT["git: merchly-server-config<br/>user-service.properties<br/>user-service-{dev,prod}.properties<br/>application*.properties"]
+    GIT["git: merchly-server-config<br/>application*.properties<br/>{service}.properties<br/>{service}-{dev,prod}.properties"]
     CS["config-server :8888"]
-    US["user-service :8082"]
+
+    subgraph CLIENTS["Клиенты"]
+        FE["frontend-service :8080"]
+        US["user-service :8082"]
+        PS["product-service :8081"]
+        RS["review-service :8083"]
+        OS["order-service :8084"]
+    end
+
     ENV[".env / environment<br/>секреты и адреса"]
 
     GIT -->|"clone-on-start, JGit"| CS
-    CS -->|"GET /user-service/{profile}"| US
-    ENV -->|"подстановка ${...}"| US
+    CS -->|"GET /{service}/{profile}"| CLIENTS
+    ENV -->|"подстановка ${...}"| CLIENTS
 ```
 
 Как это устроено:
 
-* в `user-service` остался единственный локальный файл `application.properties` —
+* в каждом сервисе остался единственный локальный `application.properties` —
   в нём только `spring.application.name` (он нужен ДО обращения к серверу) и
   настройки самого клиента;
 * имя приложения = имя файла в config-репозитории, активный профиль (`dev` / `prod`)
@@ -229,21 +241,12 @@ flowchart LR
   `${MINIO_SECRET_KEY}`, `${KEYCLOAK_ADMIN_PASSWORD}`, а значения подставляет окружение
   самого сервиса из `.env`;
 * импорт помечен `optional:`, а строгость включается переменной `CONFIG_FAIL_FAST`.
-  В compose стоит `CONFIG_FAIL_FAST=true` и `depends_on: config-server: service_healthy`,
+  В `docker-compose.prod.yml` у всех пяти сервисов стоят `CONFIG_SERVER_URL`,
+  `CONFIG_FAIL_FAST=true` и `depends_on: config-server: service_healthy`,
   поэтому в прод-сборке недоступный config-server — это падение на старте
   (`ConfigClientFailFastException`), а не молчаливый запуск с половиной настроек.
-  Локально и в тестах значение по умолчанию `false`, профиль `test` отключает клиент
-  целиком (`spring.cloud.config.enabled=false`).
-
-Посмотреть, что именно сервер отдаёт сервису:
-
-```bash
-curl -s http://localhost:8888/user-service/prod | jq
-```
-
-Остальные четыре сервиса пока читают конфигурацию из своих локальных
-`application-{profile}.properties`; файлы для них в config-репозитории уже
-подготовлены, подключение — по той же схеме.
+  Локально значение по умолчанию `false`, а профиль `test` отключает клиент
+  целиком (`spring.cloud.config.enabled=false` во всех пяти сервисах).
 
 ## ⚡ Кеш, сессии и файлы
 
@@ -284,7 +287,13 @@ mvn verify      # + интеграционные тесты (*IT.java, нуже�
 ```
 
 Юнит-тесты покрывают сервисный слой (Mockito), контроллеры (MockMvc + `spring-security-test`),
-REST-клиенты (WireMock) и Kafka-компоненты. Интеграционные тесты поднимают реальную
+REST-клиенты (WireMock) и Kafka-компоненты.
+
+Клиент config-server в тестах отключён целиком — во всех пяти сервисах
+`application-test.properties` содержит `spring.cloud.config.enabled=false`,
+поэтому прогон не зависит от того, поднят ли у разработчика стек на `localhost:8888`.
+
+Интеграционные тесты поднимают реальную
 инфраструктуру через Testcontainers:
 
 | Тест                       | Что поднимает                 | Что проверяет                                         |
@@ -304,5 +313,5 @@ REST-клиенты (WireMock) и Kafka-компоненты. Интеграци
 | Джоба            | Что делает                                                                                                                                             |
 |------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `Сборка и тесты` | JDK 17 (Temurin) + кеш Maven, `mvn compile`, затем `mvn verify` — юнит-тесты и Testcontainers-тесты; отчёты surefire/failsafe сохраняются как артефакт |
-| `Сборка образов` | делает `.env.prod` и `.env.dev` из `.env.example`, валидирует оба compose-файла и собирает образы всех пяти сервисов                                   |
+| `Сборка образов` | делает `.env.prod` и `.env.dev` из `.env.example`, валидирует оба compose-файла и собирает образы всех шести сервисов                                   |
 
