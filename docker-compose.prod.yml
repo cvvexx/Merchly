@@ -352,6 +352,27 @@ services:
       keycloak:
         condition: service_healthy
 
+  gateway-service:
+    build:
+      context: .
+      dockerfile: gateway-service/Dockerfile
+    container_name: merchly_gateway_service
+    env_file:
+      - .env.prod
+    environment:
+      GATEWAY_PORT: 8086
+      PRODUCT_SERVICE_URI: http://products-service:8081
+    ports:
+      - "8086:8086"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8086/actuator/health | grep UP || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      products-service:
+        condition: service_healthy
+
   frontend-service:
     build:
       context: .

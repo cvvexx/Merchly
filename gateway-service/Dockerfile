@@ -12,12 +12,10 @@ COPY gateway-service/pom.xml gateway-service/
 RUN mvn -B -ntp dependency:go-offline -Dmaven.test.skip=true
 
 COPY . .
-RUN mvn -B -ntp package -pl config-server -am -Dmaven.test.skip=true
+RUN mvn -B -ntp package -pl gateway-service -am -Dmaven.test.skip=true
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-ENV CONFIG_SERVER_PROFILE=git
-
-COPY --from=builder /app/config-server/target/*.jar app.jar
+COPY --from=builder /app/gateway-service/target/*.jar app.jar
 ENTRYPOINT ["java", "-jar", "app.jar"]

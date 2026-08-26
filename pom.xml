@@ -25,6 +25,7 @@
         <module>review-service</module>
         <module>order-service</module>
         <module>config-server</module>
+        <module>gateway-service</module>
     </modules>
 
     <properties>

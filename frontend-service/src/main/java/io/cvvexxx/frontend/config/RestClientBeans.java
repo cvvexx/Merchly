@@ -39,7 +39,7 @@ public class RestClientBeans {
         var authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder.builder()
                 .authorizationCode()
                 .refreshToken()
-                .clientCredentials() // Включаем поддержку client_credentials
+                .clientCredentials()
                 .build();
 
         var authorizedClientManager = new DefaultOAuth2AuthorizedClientManager(
@@ -75,7 +75,6 @@ public class RestClientBeans {
     ) throws IOException {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        // 1. Вариант, если аутентификация через OAuth2 (SSO/Redirect)
         if (authentication instanceof OAuth2AuthenticationToken oauth2Token) {
             OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
                     .withClientRegistrationId(oauth2Token.getAuthorizedClientRegistrationId())
