@@ -78,6 +78,9 @@ class ProductsListFlowIT {
     static void dynamicProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.data.redis.host", redis::getHost);
         registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
+        // api_gateway задан в application-test.properties реальным адресом шлюза (8086),
+        // поэтому его обязательно перекрывать - иначе тест уйдёт в живой шлюз.
+        registry.add("spring.restclient.uri.api_gateway", wireMock::baseUrl);
         registry.add("spring.restclient.uri.product_service", wireMock::baseUrl);
         registry.add("spring.restclient.uri.user_service", wireMock::baseUrl);
         registry.add("spring.restclient.uri.reviews_service", wireMock::baseUrl);

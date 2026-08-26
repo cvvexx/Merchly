@@ -362,6 +362,9 @@ services:
     environment:
       GATEWAY_PORT: 8086
       PRODUCT_SERVICE_URI: http://products-service:8081
+      USER_SERVICE_URI: http://users-service:8082
+      ORDER_SERVICE_URI: http://order-service:8084
+      REVIEW_SERVICE_URI: http://reviews-service:8083
     ports:
       - "8086:8086"
     healthcheck:
@@ -371,6 +374,12 @@ services:
       retries: 10
     depends_on:
       products-service:
+        condition: service_healthy
+      users-service:
+        condition: service_healthy
+      order-service:
+        condition: service_healthy
+      reviews-service:
         condition: service_healthy
 
   frontend-service:

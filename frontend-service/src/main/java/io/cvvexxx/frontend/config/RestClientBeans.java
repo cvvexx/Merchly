@@ -138,7 +138,7 @@ public class RestClientBeans {
 
     @Bean
     public RestClientUserPublicRestClient userPublicRestClient(
-            @Value("${spring.restclient.uri.user_service:http://localhost:8082}") String restClientUri,
+            @Value("${spring.restclient.uri.api_gateway:${spring.restclient.uri.user_service:http://localhost:8082}}") String restClientUri,
             OAuth2AuthorizedClientManager authorizedClientManager
     ) {
         return new RestClientUserPublicRestClient(
@@ -172,7 +172,7 @@ public class RestClientBeans {
 
     @Bean
     public RestClientReviewsRestClient restClientReviewsRestClient(
-            @Value("${spring.restclient.uri.reviews_service}") String restClientUri,
+            @Value("${spring.restclient.uri.api_gateway:${spring.restclient.uri.reviews_service}}") String restClientUri,
             OAuth2AuthorizedClientManager authorizedClientManager
     ) {
         return new RestClientReviewsRestClient(
@@ -187,7 +187,7 @@ public class RestClientBeans {
 
     @Bean
     public RestClientOrdersRestClient restClientOrdersRestClient(
-            @Value("${spring.restclient.uri.orders_service}") String restClientUri,
+            @Value("${spring.restclient.uri.api_gateway:${spring.restclient.uri.orders_service}}") String restClientUri,
             OAuth2AuthorizedClientManager authorizedClientManager
     ) {
         return new RestClientOrdersRestClient(

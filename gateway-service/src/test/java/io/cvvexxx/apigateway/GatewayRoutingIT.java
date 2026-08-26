@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GatewayRoutingIT {
 
     static WireMockServer productService =
-            new WireMockServer(WireMockConfiguration.options().dynamicPort());
+            new WireMockServer(WireMockConfiguration.options().dynamicPort().http2PlainDisabled(true));
 
     @LocalServerPort
     int gatewayPort;
