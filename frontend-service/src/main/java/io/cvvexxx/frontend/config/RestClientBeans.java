@@ -103,7 +103,8 @@ public class RestClientBeans {
 
     @Bean
     public RestClientProductsPublicRestClient productsPublicRestClient(
-            @Value("${spring.restclient.uri.product_service:http://localhost:8081}") String restClientUri,
+            @Value("${spring.restclient.uri.api_gateway:${spring.restclient.uri.product_service:http://localhost:8081}}")
+            String restClientUri,
             OAuth2AuthorizedClientManager authorizedClientManager
     ) {
         return new RestClientProductsPublicRestClient(
