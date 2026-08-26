@@ -19,10 +19,6 @@ public class CacheBeans {
     @Bean
     public RedisCacheConfiguration cacheConfiguration(ObjectMapper objectMapper) {
         ObjectMapper cacheObjectMapper = objectMapper.copy();
-        // NON_FINAL skips writing a type id for final root values (records, and the immutable
-        // List returned by Stream.toList()) - GenericJackson2JsonRedisSerializer always reads
-        // the cached value back as Object though, so it always requires one. That mismatch made
-        // every cache hit fail with a SerializationException; EVERYTHING closes the gap.
         cacheObjectMapper.activateDefaultTyping(
                 LaissezFaireSubTypeValidator.instance,
                 ObjectMapper.DefaultTyping.EVERYTHING,
