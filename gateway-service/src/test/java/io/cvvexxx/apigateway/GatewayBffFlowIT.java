@@ -233,6 +233,88 @@ class GatewayBffFlowIT extends RedisBackedGatewayIT {
                 .withHeader("Authorization", equalTo("Bearer " + accessToken)));
     }
 
+    @Test
+    @DisplayName("проксируемая multipart-форма доезжает до фронта")
+    void proxiedMultipartPost_IsAccepted() throws Exception {
+        String accessToken = TestTokens.user();
+        when(keycloakRestClient.login("johndoe", "password"))
+                .thenReturn(new KeycloakTokenResponse(accessToken, "refresh-token", 3600, 7200));
+        frontend.stubFor(post(urlPathEqualTo("/profile/edit"))
+                .willReturn(aResponse().withStatus(302).withHeader("Location", "/profile")));
+
+        HttpClient client = HttpClient.newBuilder()
+                .cookieHandler(new CookieManager())
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
+        String csrf = csrfTokenFromLoginPage(client);
+        client.send(HttpRequest.newBuilder(uri("/do-login"))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .POST(HttpRequest.BodyPublishers.ofString(form(
+                                "login", "johndoe", "password", "password", "_csrf", csrf)))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        String boundary = "----MerchlyTestBoundary";
+        String body = "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"firstname\"\r\n\r\n"
+                + "Ivan\r\n"
+                + "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"userAvatar\"; filename=\"a.png\"\r\n"
+                + "Content-Type: image/png\r\n\r\n"
+                + "fake-png\r\n"
+                + "--" + boundary + "--\r\n";
+
+        HttpResponse<String> response = client.send(
+                HttpRequest.newBuilder(uri("/profile/edit?_csrf=" + csrf))
+                        .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode())
+                .as("шлюз не должен отклонять multipart-форму, ответ: %s", response.body())
+                .isEqualTo(302);
+        frontend.verify(postRequestedFor(urlPathEqualTo("/profile/edit"))
+                .withRequestBody(containing("firstname")));
+    }
+
+    @Test
+    @DisplayName("в multipart CSRF-токен из тела не читается — он обязан быть в query")
+    void multipartWithCsrfInBody_IsRejected() throws Exception {
+        String accessToken = TestTokens.user();
+        when(keycloakRestClient.login("johndoe", "password"))
+                .thenReturn(new KeycloakTokenResponse(accessToken, "refresh-token", 3600, 7200));
+
+        HttpClient client = HttpClient.newBuilder()
+                .cookieHandler(new CookieManager())
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
+        String csrf = csrfTokenFromLoginPage(client);
+        client.send(HttpRequest.newBuilder(uri("/do-login"))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .POST(HttpRequest.BodyPublishers.ofString(form(
+                                "login", "johndoe", "password", "password", "_csrf", csrf)))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        String boundary = "----MerchlyTestBoundary";
+        String body = "--" + boundary + "\r\n"
+                + "Content-Disposition: form-data; name=\"_csrf\"\r\n\r\n"
+                + csrf + "\r\n"
+                + "--" + boundary + "--\r\n";
+
+        HttpResponse<String> response = client.send(
+                HttpRequest.newBuilder(uri("/profile/edit"))
+                        .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                        .POST(HttpRequest.BodyPublishers.ofString(body))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        assertThat(response.statusCode()).isEqualTo(302);
+        assertThat(response.headers().firstValue("Location").orElseThrow()).contains("/error-403");
+        frontend.verify(0, postRequestedFor(urlPathEqualTo("/profile/edit")));
+    }
+
     private String csrfTokenFromLoginPage(HttpClient client) throws IOException, InterruptedException {
         HttpResponse<String> loginPage = client.send(
                 HttpRequest.newBuilder(uri("/login")).GET().build(),

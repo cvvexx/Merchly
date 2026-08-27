@@ -196,6 +196,17 @@
             if (method !== 'post') {
                 return;
             }
+
+            if ((form.getAttribute('enctype') || '').toLowerCase() === 'multipart/form-data') {
+                const action = form.getAttribute('action') || window.location.pathname;
+                if (!/[?&]_csrf=/.test(action)) {
+                    form.setAttribute('action',
+                        action + (action.indexOf('?') === -1 ? '?' : '&')
+                        + CSRF_PARAM + '=' + encodeURIComponent(token));
+                }
+                return;
+            }
+
             let field = form.querySelector('input[name="' + CSRF_PARAM + '"]');
             if (!field) {
                 field = document.createElement('input');
