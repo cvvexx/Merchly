@@ -90,7 +90,7 @@ services:
     image: quay.io/keycloak/keycloak:24.0
     container_name: merchly_keycloak
     restart: always
-    command: start-dev
+    command: start-dev --import-realm
     env_file:
       - .env.dev
     environment:

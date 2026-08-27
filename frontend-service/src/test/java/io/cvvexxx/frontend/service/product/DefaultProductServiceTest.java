@@ -62,7 +62,6 @@ class DefaultProductServiceTest {
                 username,
                 UUID.randomUUID(),
                 "access-token",
-                "refresh-token",
                 roles.stream()
                         .map(SimpleGrantedAuthority::new)
                         .map(GrantedAuthority.class::cast)

@@ -70,7 +70,6 @@ class ProductsControllerTest {
                 creatorId.toString(),
                 creatorId,
                 "1234",
-                "123",
                 Stream.of("ROLE_USER")
                         .map(SimpleGrantedAuthority::new)
                         .map(GrantedAuthority.class::cast)
@@ -119,7 +118,6 @@ class ProductsControllerTest {
                 creatorId.toString(),
                 creatorId,
                 "1234",
-                "123",
                 Stream.of("ROLE_USER")
                         .map(SimpleGrantedAuthority::new)
                         .map(GrantedAuthority.class::cast)

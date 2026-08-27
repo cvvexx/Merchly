@@ -1,8 +1,10 @@
 package io.cvvexxx.apigateway;
 
+import io.cvvexxx.apigateway.support.RedisBackedGatewayIT;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +18,8 @@ import java.net.ServerSocket;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GatewayFallbackIT {
+@ActiveProfiles("test")
+class GatewayFallbackIT extends RedisBackedGatewayIT {
 
     @LocalServerPort
     int gatewayPort;

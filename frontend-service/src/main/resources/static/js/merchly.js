@@ -166,15 +166,45 @@
        Добавление товара в корзину (каталог и карточка товара)
        ------------------------------------------------------------------- */
 
+    const CSRF_COOKIE = 'XSRF-TOKEN';
+    const CSRF_HEADER = 'X-XSRF-TOKEN';
+    const CSRF_PARAM = '_csrf';
+
+    function csrfToken() {
+        const match = document.cookie.match(new RegExp('(^|; )' + CSRF_COOKIE + '=([^;]*)'));
+        return match ? decodeURIComponent(match[2]) : null;
+    }
+
     function csrfHeaders(base) {
         const headers = base || {};
-        const token = document.querySelector('meta[name="_csrf"]');
-        const header = document.querySelector('meta[name="_csrf_header"]');
+        const token = csrfToken();
 
-        if (token && header && token.content && header.content) {
-            headers[header.content] = token.content;
+        if (token) {
+            headers[CSRF_HEADER] = token;
         }
         return headers;
+    }
+
+    function injectCsrfIntoForms(root) {
+        const token = csrfToken();
+        if (!token) {
+            return;
+        }
+
+        (root || document).querySelectorAll('form').forEach(function (form) {
+            const method = (form.getAttribute('method') || 'get').toLowerCase();
+            if (method !== 'post') {
+                return;
+            }
+            let field = form.querySelector('input[name="' + CSRF_PARAM + '"]');
+            if (!field) {
+                field = document.createElement('input');
+                field.type = 'hidden';
+                field.name = CSRF_PARAM;
+                form.appendChild(field);
+            }
+            field.value = token;
+        });
     }
 
     async function addToCart(button) {
@@ -291,6 +321,7 @@
     function init() {
         initRail();
         initReveal();
+        injectCsrfIntoForms();
         refreshCartCount();
 
         document.addEventListener('click', function (event) {
@@ -314,6 +345,8 @@
         readCartCount: readCartCount,
         writeCartCount: writeCartCount,
         csrfHeaders: csrfHeaders,
+        csrfToken: csrfToken,
+        injectCsrfIntoForms: injectCsrfIntoForms,
         flyToCart: flyToCart
     };
 })();

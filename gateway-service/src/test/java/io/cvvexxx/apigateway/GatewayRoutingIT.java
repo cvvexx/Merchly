@@ -1,5 +1,6 @@
 package io.cvvexxx.apigateway;
 
+import io.cvvexxx.apigateway.support.RedisBackedGatewayIT;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import org.junit.jupiter.api.AfterAll;
@@ -7,7 +8,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import io.cvvexxx.apigateway.support.StubJwtDecoderConfiguration;
+import io.cvvexxx.apigateway.support.TestTokens;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpStatusCode;
@@ -23,7 +28,9 @@ import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GatewayRoutingIT {
+@Import(StubJwtDecoderConfiguration.class)
+@ActiveProfiles("test")
+class GatewayRoutingIT extends RedisBackedGatewayIT {
 
     static WireMockServer productService =
             new WireMockServer(WireMockConfiguration.options().dynamicPort().http2PlainDisabled(true));
@@ -54,6 +61,7 @@ class GatewayRoutingIT {
     private RestClient gateway() {
         return RestClient.builder()
                 .baseUrl("http://localhost:" + gatewayPort)
+                .defaultHeader("Authorization", "Bearer " + TestTokens.admin())
                 .defaultStatusHandler(HttpStatusCode::isError, (req, res) -> {
                 })
                 .build();
@@ -93,15 +101,16 @@ class GatewayRoutingIT {
     void authorizationHeader_IsForwarded() {
         productService.stubFor(delete(urlPathMatching("/api/products/.*"))
                 .willReturn(aResponse().withStatus(204)));
+        String adminToken = TestTokens.admin();
 
         gateway().delete()
                 .uri("/api/products/{id}", "b0000000-0000-0000-0000-000000000001")
-                .header("Authorization", "Bearer test-token")
+                .header("Authorization", "Bearer " + adminToken)
                 .retrieve()
                 .toBodilessEntity();
 
         productService.verify(deleteRequestedFor(urlPathMatching("/api/products/.*"))
-                .withHeader("Authorization", equalTo("Bearer test-token")));
+                .withHeader("Authorization", equalTo("Bearer " + adminToken)));
     }
 
     @Test

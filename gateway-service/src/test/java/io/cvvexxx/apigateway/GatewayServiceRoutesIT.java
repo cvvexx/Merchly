@@ -1,5 +1,6 @@
 package io.cvvexxx.apigateway;
 
+import io.cvvexxx.apigateway.support.RedisBackedGatewayIT;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import org.junit.jupiter.api.AfterAll;
@@ -7,7 +8,11 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import io.cvvexxx.apigateway.support.StubJwtDecoderConfiguration;
+import io.cvvexxx.apigateway.support.TestTokens;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -19,15 +24,10 @@ import org.springframework.web.client.RestClient;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Проверяет, что каждый маршрут ведёт в СВОЙ сервис.
- *
- * <p>Четыре независимых WireMock на разных портах: если в конфиге перепутана
- * переменная окружения (например, у reviews стоит USER_SERVICE_URI), запрос уйдёт
- * не туда и соответствующий тест это поймает. Именно такая опечатка тут уже была.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class GatewayServiceRoutesIT {
+@Import(StubJwtDecoderConfiguration.class)
+@ActiveProfiles("test")
+class GatewayServiceRoutesIT extends RedisBackedGatewayIT {
 
     static WireMockServer productService = new WireMockServer(WireMockConfiguration.options().dynamicPort().http2PlainDisabled(true));
     static WireMockServer userService = new WireMockServer(WireMockConfiguration.options().dynamicPort().http2PlainDisabled(true));
@@ -72,6 +72,7 @@ class GatewayServiceRoutesIT {
     private RestClient gateway() {
         return RestClient.builder()
                 .baseUrl("http://localhost:" + gatewayPort)
+                .defaultHeader("Authorization", "Bearer " + TestTokens.admin())
                 .defaultStatusHandler(HttpStatusCode::isError, (req, res) -> {
                 })
                 .build();
@@ -118,7 +119,6 @@ class GatewayServiceRoutesIT {
 
         assertThat(response.getStatusCode().value()).isEqualTo(200);
         reviewService.verify(postRequestedFor(urlPathEqualTo("/api/reviews/products/stats")));
-        // ловушка на опечатку USER_SERVICE_URI в маршруте reviews
         userService.verify(0, postRequestedFor(urlPathMatching("/api/reviews.*")));
     }
 
@@ -152,9 +152,6 @@ class GatewayServiceRoutesIT {
     @Test
     @DisplayName("медленный ответ downstream не рубится circuit breaker-ом ни на одном маршруте")
     void slowDownstream_IsNotCutOffByTimeLimiter() {
-        // Дефолтный timelimiter resilience4j - 1 секунда. Если у маршрута нет
-        // собственной настройки, ответ медленнее секунды подменяется 503 из fallback-а.
-        // Регистрация через Keycloak и создание заказа спокойно превышают секунду.
         int delayMs = 2000;
         productService.stubFor(get(urlPathEqualTo("/api/products"))
                 .willReturn(okJson("[]").withFixedDelay(delayMs)));

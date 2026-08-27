@@ -3,7 +3,6 @@ package io.cvvexxx.frontend.integration;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import com.redis.testcontainers.RedisContainer;
 import io.cvvexxx.frontend.client.product.internal.ProductsInternalRestClient;
 import io.cvvexxx.frontend.client.user.internal.UserInternalRestClient;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
@@ -22,9 +21,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -52,11 +48,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Testcontainers
 class GatewayTrafficRoutingIT {
 
-    @Container
-    static RedisContainer redis = new RedisContainer(DockerImageName.parse("redis:7-alpine"));
 
     /** Играет роль api-gateway. */
     static WireMockServer gateway = new WireMockServer(WireMockConfiguration.options().dynamicPort());
@@ -93,8 +86,6 @@ class GatewayTrafficRoutingIT {
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.redis.host", redis::getHost);
-        registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
         registry.add("spring.restclient.uri.api_gateway", gateway::baseUrl);
         registry.add("spring.restclient.uri.product_service", direct::baseUrl);
         registry.add("spring.restclient.uri.user_service", direct::baseUrl);
@@ -250,7 +241,7 @@ class GatewayTrafficRoutingIT {
         List<GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_USER"));
         String accessToken = fakeJwt(userId, Instant.now().plus(1, ChronoUnit.HOURS));
         return new KeycloakJwtAuthenticationToken(
-                userId.toString(), userId, accessToken, "refresh-token", authorities);
+                userId.toString(), userId, accessToken, authorities);
     }
 
     private static String fakeJwt(UUID subject, Instant expiresAt) {

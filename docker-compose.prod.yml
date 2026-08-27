@@ -360,11 +360,12 @@ services:
     env_file:
       - .env.prod
     environment:
+      SPRING_PROFILES_ACTIVE: prod
+      CONFIG_SERVER_URL: http://config-server:8888
+      CONFIG_FAIL_FAST: "true"
       GATEWAY_PORT: 8086
-      PRODUCT_SERVICE_URI: http://products-service:8081
-      USER_SERVICE_URI: http://users-service:8082
-      ORDER_SERVICE_URI: http://order-service:8084
-      REVIEW_SERVICE_URI: http://reviews-service:8083
+      FRONTEND_SERVICE_CLIENT_SECRET: ${FRONTEND_SERVICE_CLIENT_SECRET}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-12345678}
     ports:
       - "8086:8086"
     healthcheck:
@@ -373,6 +374,8 @@ services:
       timeout: 5s
       retries: 10
     depends_on:
+      config-server:
+        condition: service_healthy
       products-service:
         condition: service_healthy
       users-service:
@@ -381,14 +384,18 @@ services:
         condition: service_healthy
       reviews-service:
         condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   frontend-service:
     build:
       context: .
       dockerfile: frontend-service/Dockerfile
     container_name: merchly_frontend
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     env_file:
       - .env.prod
     environment:
@@ -402,11 +409,6 @@ services:
       SPRING_RESTCLIENT_URI_ORDERS_SERVICE: http://order-service:8084
       SPRING_DATA_REDIS_HOST: redis
       MINIO_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
-      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_USER_NAME_ATTRIBUTE: preferred_username
-      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_AUTHORIZATION_URI: http://localhost:8090/realms/merchly/protocol/openid-connect/auth
-      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_TOKEN_URI: http://keycloak:8090/realms/merchly/protocol/openid-connect/token
-      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_USER_INFO_URI: http://keycloak:8090/realms/merchly/protocol/openid-connect/userinfo
-      SPRING_SECURITY_OAUTH2_CLIENT_PROVIDER_KEYCLOAK_JWK_SET_URI: http://keycloak:8090/realms/merchly/protocol/openid-connect/certs
       FRONTEND_SERVICE_CLIENT_SECRET: ${FRONTEND_SERVICE_CLIENT_SECRET}
     depends_on:
       config-server:

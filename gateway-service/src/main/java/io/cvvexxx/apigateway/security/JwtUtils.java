@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.utils;
+package io.cvvexxx.apigateway.security;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,7 +8,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -48,20 +52,32 @@ public class JwtUtils {
         if (payloadNode == null) return Collections.emptyList();
 
         try {
-            JsonNode realmAccessNode = payloadNode.path("realm_access").path("roles");
             List<GrantedAuthority> authorities = new ArrayList<>();
 
-            if (realmAccessNode.isArray()) {
-                for (JsonNode roleNode : realmAccessNode) {
-                    String roleName = roleNode.asText();
-                    String authorityName = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
-                    authorities.add(new SimpleGrantedAuthority(authorityName));
-                }
-            }
+            collectRoles(payloadNode.path("realm_access").path("roles"), authorities);
+            collectRoles(payloadNode.path("groups"), authorities);
+
             return authorities;
         } catch (Exception e) {
             log.error("Failed to parse roles from JWT payload", e);
             return Collections.emptyList();
+        }
+    }
+
+    private void collectRoles(JsonNode rolesNode, List<GrantedAuthority> target) {
+        if (!rolesNode.isArray()) {
+            return;
+        }
+        for (JsonNode roleNode : rolesNode) {
+            String roleName = roleNode.asText();
+            if (roleName == null || roleName.isBlank()) {
+                continue;
+            }
+            String authorityName = roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(authorityName);
+            if (!target.contains(authority)) {
+                target.add(authority);
+            }
         }
     }
 
