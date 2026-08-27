@@ -34,12 +34,14 @@ import java.util.regex.Pattern;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.absent;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -146,7 +148,7 @@ class GatewayBffFlowIT extends RedisBackedGatewayIT {
     @DisplayName("после входа шлюз подставляет в запрос к фронту Bearer из своей сессии")
     void afterLogin_GatewayRelaysBearerToFrontend() throws Exception {
         String accessToken = TestTokens.user();
-        when(keycloakRestClient.login(anyString(), anyString()))
+        when(keycloakRestClient.login("johndoe", "password"))
                 .thenReturn(new KeycloakTokenResponse(accessToken, "refresh-token", 3600, 7200));
         frontend.stubFor(get(urlPathEqualTo("/catalogue/products/list"))
                 .willReturn(aResponse().withStatus(200).withBody("<html>каталог</html>")));
@@ -196,6 +198,39 @@ class GatewayBffFlowIT extends RedisBackedGatewayIT {
 
         frontend.verify(getRequestedFor(urlPathEqualTo("/css/style.css"))
                 .withHeader("Authorization", absent()));
+    }
+
+    @Test
+    @DisplayName("проксируемая form-POST доезжает до фронта с телом, а не пустой")
+    void proxiedFormPost_KeepsBody() throws Exception {
+        String accessToken = TestTokens.user();
+        when(keycloakRestClient.login("johndoe", "password"))
+                .thenReturn(new KeycloakTokenResponse(accessToken, "refresh-token", 3600, 7200));
+        frontend.stubFor(post(urlPathEqualTo("/profile/edit"))
+                .willReturn(aResponse().withStatus(302).withHeader("Location", "/profile")));
+
+        HttpClient client = HttpClient.newBuilder()
+                .cookieHandler(new CookieManager())
+                .followRedirects(HttpClient.Redirect.NEVER)
+                .build();
+        String csrf = csrfTokenFromLoginPage(client);
+        client.send(HttpRequest.newBuilder(uri("/do-login"))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .POST(HttpRequest.BodyPublishers.ofString(form(
+                                "login", "johndoe", "password", "password", "_csrf", csrf)))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        client.send(HttpRequest.newBuilder(uri("/profile/edit"))
+                        .header("Content-Type", "application/x-www-form-urlencoded")
+                        .POST(HttpRequest.BodyPublishers.ofString(form(
+                                "firstname", "Иван", "_csrf", csrf)))
+                        .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        frontend.verify(postRequestedFor(urlPathEqualTo("/profile/edit"))
+                .withRequestBody(containing("firstname"))
+                .withHeader("Authorization", equalTo("Bearer " + accessToken)));
     }
 
     private String csrfTokenFromLoginPage(HttpClient client) throws IOException, InterruptedException {

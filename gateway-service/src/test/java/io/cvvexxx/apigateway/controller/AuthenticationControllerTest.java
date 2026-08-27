@@ -3,6 +3,7 @@ package io.cvvexxx.apigateway.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.cvvexxx.apigateway.client.KeycloakRestClient;
 import io.cvvexxx.apigateway.dto.KeycloakTokenResponse;
+import io.cvvexxx.apigateway.dto.LoginUserDto;
 import io.cvvexxx.apigateway.security.JwtUtils;
 import io.cvvexxx.apigateway.security.KeycloakJwtAuthenticationToken;
 import org.junit.jupiter.api.AfterEach;
@@ -74,7 +75,7 @@ class AuthenticationControllerTest {
                 .thenReturn(new KeycloakTokenResponse(accessToken, "refresh-token", 3600, 7200));
         MockHttpServletRequest request = new MockHttpServletRequest();
 
-        String result = controller.loginUser("johndoe", "password", "/orders", request);
+        String result = controller.loginUser(new LoginUserDto("johndoe", "password"), "/orders", request);
 
         assertEquals("redirect:/orders", result);
         var authentication = (KeycloakJwtAuthenticationToken) SecurityContextHolder.getContext().getAuthentication();
@@ -99,7 +100,7 @@ class AuthenticationControllerTest {
         MockHttpServletRequest request = new MockHttpServletRequest();
         String preLoginSessionId = request.getSession(true).getId();
 
-        controller.loginUser("johndoe", "password", null, request);
+        controller.loginUser(new LoginUserDto("johndoe", "password"), null, request);
 
         assertNotNull(request.getSession(false));
         assertNotEquals(preLoginSessionId, request.getSession(false).getId());
@@ -113,7 +114,7 @@ class AuthenticationControllerTest {
                 .thenReturn(new KeycloakTokenResponse(accessToken, "refresh-token", 3600, 7200));
         MockHttpServletRequest request = new MockHttpServletRequest();
 
-        String result = controller.loginUser("johndoe", "password", null, request);
+        String result = controller.loginUser(new LoginUserDto("johndoe", "password"), null, request);
 
         assertEquals("redirect:/catalogue/products/list", result);
     }
@@ -125,7 +126,7 @@ class AuthenticationControllerTest {
                 .thenThrow(new RuntimeException("invalid_grant"));
         MockHttpServletRequest request = new MockHttpServletRequest();
 
-        String result = controller.loginUser("johndoe", "wrong-password", "/orders?x=y", request);
+        String result = controller.loginUser(new LoginUserDto("johndoe", "wrong-password"), "/orders?x=y", request);
 
         assertEquals("redirect:/login?error=true&target=%2Forders%3Fx%3Dy", result);
         assertNull(SecurityContextHolder.getContext().getAuthentication());

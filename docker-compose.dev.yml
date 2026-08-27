@@ -103,6 +103,8 @@ services:
       KC_HTTP_PORT: 8090
     ports:
       - "8090:8090"
+    volumes:
+      - ./.keycloak:/opt/keycloak/data/import:ro
     depends_on:
       - keycloak_db
 

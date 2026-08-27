@@ -3,6 +3,7 @@ package io.cvvexxx.apigateway.controller;
 import com.fasterxml.jackson.databind.JsonNode;
 import io.cvvexxx.apigateway.client.KeycloakRestClient;
 import io.cvvexxx.apigateway.dto.KeycloakTokenResponse;
+import io.cvvexxx.apigateway.dto.LoginUserDto;
 import io.cvvexxx.apigateway.security.JwtUtils;
 import io.cvvexxx.apigateway.security.KeycloakJwtAuthenticationToken;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,6 +17,7 @@ import org.springframework.security.web.context.HttpSessionSecurityContextReposi
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -43,12 +45,13 @@ public class AuthenticationController {
 
     @PostMapping("/do-login")
     public String loginUser(
-            @RequestParam("login") String login,
-            @RequestParam("password") String password,
+            @ModelAttribute LoginUserDto loginUserDto,
             @RequestParam(name = "target", required = false) String target,
             HttpServletRequest request
     ) {
         try {
+            String login = loginUserDto.login();
+            String password = loginUserDto.password();
             KeycloakTokenResponse tokenResponse = keycloakClient.login(login, password);
             authenticateInSession(login, tokenResponse, request);
 
@@ -56,7 +59,7 @@ public class AuthenticationController {
                     ? "redirect:" + target
                     : "redirect:/catalogue/products/list";
         } catch (Exception e) {
-            log.error("Ошибка при входе пользователя {}: {}", login, e.getMessage());
+            log.error("Ошибка при входе пользователя {}: {}", loginUserDto.login(), e.getMessage());
 
             String redirectUrl = "redirect:/login?error=true";
             if (target != null && !target.isBlank()) {
