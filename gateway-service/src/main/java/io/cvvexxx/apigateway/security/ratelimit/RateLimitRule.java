@@ -7,7 +7,6 @@ import org.springframework.web.util.pattern.PathPatternParser;
 
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.EnumSet;
 import java.util.Set;
 
 public record RateLimitRule(

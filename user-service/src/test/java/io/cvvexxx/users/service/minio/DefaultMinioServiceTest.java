@@ -40,10 +40,8 @@ class DefaultMinioServiceTest {
         @Test
         @DisplayName("upload: если файл пустой, выбрасывает IllegalArgumentException")
         void upload_WhenFileIsEmpty_ShouldThrowIllegalArgumentException() {
-            // given
             MultipartFile emptyFile = new MockMultipartFile("image", "avatar.png", "image/png", new byte[0]);
 
-            // when / then
             assertThrows(IllegalArgumentException.class, () -> minioService.upload(emptyFile));
             verifyNoInteractions(minioClient);
         }
@@ -51,12 +49,10 @@ class DefaultMinioServiceTest {
         @Test
         @DisplayName("upload: если оригинальное имя файла отсутствует, выбрасывает IllegalArgumentException")
         void upload_WhenOriginalFilenameIsNull_ShouldThrowIllegalArgumentException() {
-            // given
             MultipartFile fileWithoutName = org.mockito.Mockito.mock(MultipartFile.class);
             when(fileWithoutName.isEmpty()).thenReturn(false);
             when(fileWithoutName.getOriginalFilename()).thenReturn(null);
 
-            // when / then
             assertThrows(IllegalArgumentException.class, () -> minioService.upload(fileWithoutName));
             verifyNoInteractions(minioClient);
         }
@@ -64,14 +60,11 @@ class DefaultMinioServiceTest {
         @Test
         @DisplayName("upload: если бакет не существует, создает его перед загрузкой файла")
         void upload_WhenBucketDoesNotExist_ShouldCreateBucketAndUploadFile() throws Exception {
-            // given
             MultipartFile file = new MockMultipartFile("image", "avatar.png", "image/png", new byte[]{1, 2, 3});
             when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(false);
 
-            // when
             String fileName = minioService.upload(file);
 
-            // then
             assertTrue(fileName.endsWith(".avatar.png"));
             verify(minioClient).makeBucket(any(MakeBucketArgs.class));
             verify(minioClient).putObject(any(PutObjectArgs.class));
@@ -80,14 +73,11 @@ class DefaultMinioServiceTest {
         @Test
         @DisplayName("upload: если бакет уже существует, не создает его повторно")
         void upload_WhenBucketExists_ShouldNotCreateBucket() throws Exception {
-            // given
             MultipartFile file = new MockMultipartFile("image", "avatar.png", "image/png", new byte[]{1, 2, 3});
             when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(true);
 
-            // when
             minioService.upload(file);
 
-            // then
             verify(minioClient, never()).makeBucket(any(MakeBucketArgs.class));
             verify(minioClient, times(1)).putObject(any(PutObjectArgs.class));
         }
@@ -95,12 +85,10 @@ class DefaultMinioServiceTest {
         @Test
         @DisplayName("upload: если MinIO выбрасывает исключение, оборачивает его в RuntimeException")
         void upload_WhenMinioThrows_ShouldWrapInRuntimeException() throws Exception {
-            // given
             MultipartFile file = new MockMultipartFile("image", "avatar.png", "image/png", new byte[]{1, 2, 3});
             when(minioClient.bucketExists(any(BucketExistsArgs.class))).thenReturn(true);
             when(minioClient.putObject(any(PutObjectArgs.class))).thenThrow(new RuntimeException("MinIO down"));
 
-            // when / then
             assertThrows(RuntimeException.class, () -> minioService.upload(file));
         }
     }
@@ -112,44 +100,35 @@ class DefaultMinioServiceTest {
         @Test
         @DisplayName("removeObject: если имя файла null, ничего не делает")
         void removeObject_WhenFileNameIsNull_ShouldDoNothing() {
-            // given / when
             minioService.removeObject(null);
 
-            // then
             verifyNoInteractions(minioClient);
         }
 
         @Test
         @DisplayName("removeObject: если имя файла пустое, ничего не делает")
         void removeObject_WhenFileNameIsBlank_ShouldDoNothing() {
-            // given / when
             minioService.removeObject("   ");
 
-            // then
             verifyNoInteractions(minioClient);
         }
 
         @Test
         @DisplayName("removeObject: удаляет файл из MinIO по имени")
         void removeObject_WhenFileNameProvided_ShouldRemoveObject() throws Exception {
-            // given / when
             minioService.removeObject("avatar.png");
 
-            // then
             verify(minioClient).removeObject(any(RemoveObjectArgs.class));
         }
 
         @Test
         @DisplayName("removeObject: если MinIO выбрасывает исключение, оборачивает его в RuntimeException")
         void removeObject_WhenMinioThrows_ShouldWrapInRuntimeException() throws Exception {
-            // given
             org.mockito.Mockito.doThrow(new RuntimeException("MinIO down"))
                     .when(minioClient).removeObject(any(RemoveObjectArgs.class));
 
-            // when
             RuntimeException ex = assertThrows(RuntimeException.class, () -> minioService.removeObject("avatar.png"));
 
-            // then
             assertEquals("Cannot delete file from MinIO", ex.getMessage());
         }
     }

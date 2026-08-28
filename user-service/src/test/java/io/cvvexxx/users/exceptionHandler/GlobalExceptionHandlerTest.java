@@ -37,7 +37,6 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleBindException: возвращает 400 с локализованным заголовком и списком ошибок")
     void handleBindException_ShouldReturnBadRequestWithLocalizedErrors() {
-        // given
         var target = new Object();
         var bindingResult = new BeanPropertyBindingResult(target, "target");
         bindingResult.reject("field", "must not be blank");
@@ -45,10 +44,8 @@ class GlobalExceptionHandlerTest {
         when(messageSource.getMessage(eq("errors.400.title"), any(), eq("errors.400.title"), eq(Locale.ENGLISH)))
                 .thenReturn("Bad Request");
 
-        // when
         ResponseEntity<ProblemDetail> response = handler.handleBindException(exception, Locale.ENGLISH);
 
-        // then
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("Bad Request", response.getBody().getDetail());
         assertEquals(List.of("must not be blank"), response.getBody().getProperties().get("errors"));
@@ -57,13 +54,10 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleBadCredentialsException: возвращает 401 с сообщением об ошибке аутентификации")
     void handleBadCredentialsException_ShouldReturnUnauthorized() {
-        // given
         BadCredentialsException exception = new BadCredentialsException("invalid password");
 
-        // when
         ResponseEntity<?> response = handler.handleBadCredentialsException(exception);
 
-        // then
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
         assertTrue(response.getBody().toString().contains("invalid password"));
     }
@@ -71,14 +65,11 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleAuthenticationException: возвращает 401 с сообщением об отказе в доступе")
     void handleAuthenticationException_ShouldReturnUnauthorized() {
-        // given
         AuthenticationException exception = new AuthenticationException("token expired") {
         };
 
-        // when
         ResponseEntity<?> response = handler.handleAuthenticationException(exception);
 
-        // then
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
         assertTrue(response.getBody().toString().contains("token expired"));
     }
@@ -86,13 +77,10 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleFieldAlreadyExists: возвращает 409 с деталями конфликтующего поля")
     void handleFieldAlreadyExists_ShouldReturnConflictWithFieldDetails() {
-        // given
         FieldAlreadyExistsException exception = new FieldAlreadyExistsException("username", "username already exists");
 
-        // when
         ResponseEntity<ProblemDetail> response = handler.handleFieldAlreadyExists(exception);
 
-        // then
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertEquals("username already exists", response.getBody().getDetail());
         assertEquals("DUPLICATE_FIELD", response.getBody().getProperties().get("code"));
@@ -102,13 +90,10 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleGenericException: возвращает 500 с общим сообщением об ошибке")
     void handleGenericException_ShouldReturnInternalServerError() {
-        // given
         Exception exception = new RuntimeException("unexpected failure");
 
-        // when
         ResponseEntity<?> response = handler.handleGenericException(exception);
 
-        // then
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
         assertEquals("An unexpected internal server error occurred.", response.getBody());
     }

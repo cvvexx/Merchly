@@ -41,7 +41,6 @@ class OrderControllerTest {
     @Test
     @DisplayName("getUserOrders: получает заказы пользователя, обогащает их и наполняет модель")
     void getUserOrders_ShouldEnrichOrdersAndPopulateModel() {
-        // given
         OrderDto order = order(UUID.randomUUID());
         List<OrderDto> orders = List.of(order);
         List<OrderDetailsView> enrichedOrders = List.of(enrichedOrder(order.id()));
@@ -49,10 +48,8 @@ class OrderControllerTest {
         when(orderDetailsService.enrichOrders(orders)).thenReturn(enrichedOrders);
         var model = new ConcurrentModel();
 
-        // when
         String result = controller.getUserOrders(model);
 
-        // then
         assertEquals("order/user-orders", result);
         assertEquals(enrichedOrders, model.getAttribute("orders"));
     }
@@ -60,7 +57,6 @@ class OrderControllerTest {
     @Test
     @DisplayName("getOrderPage: получает заказ по id, обогащает его и наполняет модель")
     void getOrderPage_ShouldEnrichOrderAndPopulateModel() {
-        // given
         UUID orderId = UUID.randomUUID();
         OrderDto order = order(orderId);
         OrderDetailsView enrichedOrder = enrichedOrder(orderId);
@@ -68,10 +64,8 @@ class OrderControllerTest {
         when(orderDetailsService.enrichOrder(order)).thenReturn(enrichedOrder);
         var model = new ConcurrentModel();
 
-        // when
         String result = controller.getOrderPage(model, orderId);
 
-        // then
         assertEquals("order/order", result);
         assertEquals(enrichedOrder, model.getAttribute("order"));
     }
@@ -79,28 +73,22 @@ class OrderControllerTest {
     @Test
     @DisplayName("createOrder: создаёт заказ и делает редирект на страницу созданного заказа")
     void createOrder_ShouldCreateOrderAndRedirectToItsPage() {
-        // given
         UUID orderId = UUID.randomUUID();
         NewOrderDto newOrderDto = new NewOrderDto(List.of(new NewOrderItemDto(UUID.randomUUID(), 1)), "address", "comment");
         when(ordersRestClient.createOrder(newOrderDto)).thenReturn(order(orderId));
 
-        // when
         String result = controller.createOrder(newOrderDto);
 
-        // then
         assertEquals("redirect:/orders/" + orderId, result);
     }
 
     @Test
     @DisplayName("confirmOrder: подтверждает заказ и делает редирект на его страницу")
     void confirmOrder_ShouldConfirmAndRedirectToOrderPage() {
-        // given
         UUID orderId = UUID.randomUUID();
 
-        // when
         String result = controller.confirmOrder(orderId);
 
-        // then
         assertEquals("redirect:/orders/" + orderId, result);
         verify(ordersRestClient).confirmOrder(orderId);
     }
@@ -108,13 +96,10 @@ class OrderControllerTest {
     @Test
     @DisplayName("cancelOrder: отменяет заказ и делает редирект на его страницу")
     void cancelOrder_ShouldCancelAndRedirectToOrderPage() {
-        // given
         UUID orderId = UUID.randomUUID();
 
-        // when
         String result = controller.cancelOrder(orderId);
 
-        // then
         assertEquals("redirect:/orders/" + orderId, result);
         verify(ordersRestClient).cancelOrder(orderId);
     }
@@ -122,7 +107,6 @@ class OrderControllerTest {
     @Test
     @DisplayName("getOrderStatusJson: возвращает статус и причину отмены заказа")
     void getOrderStatusJson_WhenOrderCancelled_ShouldReturnStatusAndReason() {
-        // given
         UUID orderId = UUID.randomUUID();
         OrderDto order = new OrderDto(
                 orderId, UUID.randomUUID(), OrderStatus.CANCELLED, new BigDecimal("100.00"),
@@ -130,25 +114,20 @@ class OrderControllerTest {
         );
         when(ordersRestClient.getOrder(orderId)).thenReturn(order);
 
-        // when
         ResponseEntity<Map<String, String>> response = controller.getOrderStatusJson(orderId);
 
-        // then
         assertEquals(Map.of("status", "CANCELLED", "comment", "out of stock"), response.getBody());
     }
 
     @Test
     @DisplayName("getOrderStatusJson: если причины отмены нет, возвращает пустую строку в comment")
     void getOrderStatusJson_WhenNoCancellationReason_ShouldReturnEmptyComment() {
-        // given
         UUID orderId = UUID.randomUUID();
         OrderDto order = order(orderId);
         when(ordersRestClient.getOrder(orderId)).thenReturn(order);
 
-        // when
         ResponseEntity<Map<String, String>> response = controller.getOrderStatusJson(orderId);
 
-        // then
         assertEquals(Map.of("status", "PENDING", "comment", ""), response.getBody());
     }
 

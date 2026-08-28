@@ -38,13 +38,11 @@ class ProductsReviewControllerTest {
     @Test
     @DisplayName("createReview: при ошибках валидации выбрасывает BindException и не создаёт отзыв")
     void createReview_WhenBindingResultHasErrors_ShouldThrowBindException() {
-        // given
         NewReviewDto dto = new NewReviewDto(UUID.randomUUID(), 6, "invalid rating");
         var bindingResult = new BeanPropertyBindingResult(dto, "newReviewDto");
         bindingResult.reject("rating", "must be <= 5");
         Jwt jwt = jwtWithRoles(UUID.randomUUID(), List.of());
 
-        // when / then
         assertThrows(BindException.class, () -> controller.createReview(jwt, dto, bindingResult));
 
         verifyNoInteractions(defaultReviewService);
@@ -69,49 +67,40 @@ class ProductsReviewControllerTest {
         @Test
         @DisplayName("realm_access.roles содержит 'ADMIN' -> isAdmin=true")
         void updateReview_WhenRealmRolesContainAdmin_ShouldPassIsAdminTrue() throws BindException {
-            // given
             UUID userId = UUID.randomUUID();
             UpdateReviewDto dto = new UpdateReviewDto(UUID.randomUUID(), 5, "great");
             var bindingResult = new BeanPropertyBindingResult(dto, "updateReviewDto");
             Jwt jwt = jwtWithRoles(userId, List.of("ADMIN"));
             when(defaultReviewService.updateReview(dto, userId, true)).thenReturn(review(dto.reviewId(), userId));
 
-            // when
             controller.updateReview(dto, jwt, bindingResult);
 
-            // then
             verify(defaultReviewService).updateReview(dto, userId, true);
         }
 
         @Test
         @DisplayName("realm_access.roles без ADMIN -> isAdmin=false")
         void updateReview_WhenRealmRolesDoNotContainAdmin_ShouldPassIsAdminFalse() throws BindException {
-            // given
             UUID userId = UUID.randomUUID();
             UpdateReviewDto dto = new UpdateReviewDto(UUID.randomUUID(), 5, "great");
             var bindingResult = new BeanPropertyBindingResult(dto, "updateReviewDto");
             Jwt jwt = jwtWithRoles(userId, List.of("USER"));
             when(defaultReviewService.updateReview(dto, userId, false)).thenReturn(review(dto.reviewId(), userId));
 
-            // when
             controller.updateReview(dto, jwt, bindingResult);
 
-            // then
             verify(defaultReviewService).updateReview(dto, userId, false);
         }
 
         @Test
         @DisplayName("deleteReview: извлекает userId из sub-claim и isAdmin из ролей")
         void deleteReview_ShouldExtractUserIdAndAdminFlagFromJwt() {
-            // given
             UUID userId = UUID.randomUUID();
             UUID reviewId = UUID.randomUUID();
             Jwt jwt = jwtWithRoles(userId, List.of("ROLE_ADMIN"));
 
-            // when
             controller.deleteReview(reviewId, jwt);
 
-            // then
             verify(defaultReviewService).deleteReview(reviewId, userId, true);
         }
     }

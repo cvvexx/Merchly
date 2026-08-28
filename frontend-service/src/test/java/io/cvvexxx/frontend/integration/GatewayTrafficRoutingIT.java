@@ -34,27 +34,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Фиксирует разделение трафика после включения api-gateway.
- *
- * <p>Подняты два независимых WireMock. Первый играет роль шлюза, второй - роль
- * сервисов, доступных напрямую. Публичные вызовы (product, user, order, review)
- * обязаны уходить в шлюз; внутренние ручки {@code /api/internal/**} шлюз наружу не
- * публикует, поэтому такие вызовы обязаны идти мимо него.
- *
- * <p>Если кто-то переведёт внутренний клиент на шлюз (или забудет перевести публичный),
- * соответствующий тест упадёт.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class GatewayTrafficRoutingIT {
 
-
-    /** Играет роль api-gateway. */
     static WireMockServer gateway = new WireMockServer(WireMockConfiguration.options().dynamicPort());
 
-    /** Играет роль сервисов, к которым фронт ходит напрямую (внутренние ручки, Keycloak). */
     static WireMockServer direct = new WireMockServer(WireMockConfiguration.options().dynamicPort());
 
     @Autowired

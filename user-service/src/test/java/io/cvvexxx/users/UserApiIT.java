@@ -51,14 +51,6 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/**
- * End-to-end integration test: real Postgres (with real Flyway migrations), real Redis
- * (proves the {@code @Cacheable} wiring actually caches), real MinIO (avatar upload), and a
- * mocked Keycloak admin client (the only piece deliberately not "real" - see task scope).
- * Every infrastructure address is assigned by Testcontainers at a random port and injected via
- * {@link DynamicPropertySource} - nothing here assumes a fixed host:port, since production wires
- * these same properties to completely different addresses (see docker-compose.prod.yml).
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Testcontainers
@@ -111,7 +103,6 @@ class UserApiIT {
 
     @Test
     void registerUser_ThenFetchMe_PersistsInRealDbUploadsAvatarToRealMinioAndPopulatesRealRedisCache() {
-        // given
         UUID keycloakUserId = UUID.randomUUID();
         Response keycloakCreateResponse = Response.status(201)
                 .header("Location", "http://keycloak/admin/realms/test-realm/users/" + keycloakUserId)
@@ -140,7 +131,6 @@ class UserApiIT {
         multipartBody.add("payload", new HttpEntity<>(newUserDto, payloadPartHeaders));
         multipartBody.add("image", new HttpEntity<>(avatarResource, imagePartHeaders));
 
-        // when
         var registerResponse = restClient()
                 .post()
                 .uri("/api/users/register")
@@ -149,7 +139,6 @@ class UserApiIT {
                 .retrieve()
                 .toEntity(UserCreatedDto.class);
 
-        // then
         assertEquals(HttpStatus.OK, registerResponse.getStatusCode());
         assertEquals(keycloakUserId, registerResponse.getBody().id());
 
@@ -158,8 +147,6 @@ class UserApiIT {
         assertTrue(savedUser.getRoles().stream().anyMatch(role -> role.getRole().equals("USER")));
         assertNotNull(savedUser.getAvatarFileName());
 
-        // when: /me is fetched - this exercises the real @Cacheable path (Redis GET, method
-        // execution, Redis PUT), not just the DB read
         var meResponse = restClient()
                 .get()
                 .uri("/api/users/me")
@@ -167,7 +154,6 @@ class UserApiIT {
                 .retrieve()
                 .toEntity(UserInfoDto.class);
 
-        // then
         assertEquals(HttpStatus.OK, meResponse.getStatusCode());
         assertEquals("ivan_it_test", meResponse.getBody().username());
         assertEquals("USER", meResponse.getBody().roles().iterator().next());
@@ -175,14 +161,12 @@ class UserApiIT {
 
     @Test
     void cartFlow_AddThenGet_PersistsAndReadsFromRealPostgres() {
-        // given
         User user = userRepository.saveAndFlush(new User(
                 UUID.randomUUID(), "cart_it_user", "cart_it_user@example.com",
                 Gender.F, LocalDate.of(1995, 5, 5), java.util.Set.of(), null
         ));
         AddToCartDto addToCartDto = new AddToCartDto(UUID.randomUUID(), 2);
 
-        // when
         var addResponse = restClient()
                 .post()
                 .uri("/api/users/cart")
@@ -191,14 +175,12 @@ class UserApiIT {
                 .retrieve()
                 .toBodilessEntity();
 
-        // then
         assertEquals(HttpStatus.OK, addResponse.getStatusCode());
         var cartItemsInDb = cartItemRepository.findAllByUserId(user.getId());
         assertEquals(1, cartItemsInDb.size());
         assertEquals(2, cartItemsInDb.get(0).getQuantity());
         assertEquals(addToCartDto.productId(), cartItemsInDb.get(0).getProductId());
 
-        // when
         var getCartResponse = restClient()
                 .get()
                 .uri("/api/users/cart")
@@ -206,7 +188,6 @@ class UserApiIT {
                 .retrieve()
                 .toEntity(CartItemDto[].class);
 
-        // then
         assertEquals(HttpStatus.OK, getCartResponse.getStatusCode());
         assertEquals(1, getCartResponse.getBody().length);
         assertEquals(addToCartDto.productId(), getCartResponse.getBody()[0].productId());

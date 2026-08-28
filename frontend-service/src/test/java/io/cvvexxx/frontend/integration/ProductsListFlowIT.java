@@ -34,14 +34,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Real end-to-end test: a live embedded servlet context, the actual Spring Security
- * filter chain, a real Redis-backed HTTP session (Testcontainers), and real outbound
- * RestClient HTTP calls against WireMock standing in for product/user/reviews services.
- * No address (Redis host/port, downstream base URLs) is hardcoded - everything is
- * discovered at runtime via @DynamicPropertySource, exactly like production discovers
- * its own addresses through environment variables per docker-compose.prod.yml.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -64,8 +56,6 @@ class ProductsListFlowIT {
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
-        // api_gateway задан в application-test.properties реальным адресом шлюза (8086),
-        // поэтому его обязательно перекрывать - иначе тест уйдёт в живой шлюз.
         registry.add("spring.restclient.uri.api_gateway", wireMock::baseUrl);
         registry.add("spring.restclient.uri.product_service", wireMock::baseUrl);
         registry.add("spring.restclient.uri.user_service", wireMock::baseUrl);
@@ -80,7 +70,6 @@ class ProductsListFlowIT {
 
     @Test
     void getProductsList_WhenProductsExist_ShouldRenderListWithOwnerAndReviewStatsFromRealHttpCalls() throws Exception {
-        // given
         UUID productId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
         String productJson = """
@@ -103,12 +92,10 @@ class ProductsListFlowIT {
 
         var token = fakeUserToken();
 
-        // when
         var result = mockMvc.perform(get("/catalogue/products/list")
                 .param("filter", "mouse")
                 .with(authentication(token)));
 
-        // then
         result.andExpect(status().isOk())
                 .andExpect(view().name("catalogue/products/list"))
                 .andExpect(model().attributeExists("products"));
@@ -120,18 +107,15 @@ class ProductsListFlowIT {
 
     @Test
     void getProductsList_WhenNoProductsReturned_ShouldRenderEmptyListWithoutCallingOwnerOrReviewServices() throws Exception {
-        // given
         wireMock.stubFor(WireMock.get(urlPathEqualTo("/api/products"))
                 .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody("[]")));
 
         var token = fakeUserToken();
 
-        // when
         var result = mockMvc.perform(get("/catalogue/products/list")
                 .param("filter", "nonexistent")
                 .with(authentication(token)));
 
-        // then
         result.andExpect(status().isOk())
                 .andExpect(view().name("catalogue/products/list"));
 

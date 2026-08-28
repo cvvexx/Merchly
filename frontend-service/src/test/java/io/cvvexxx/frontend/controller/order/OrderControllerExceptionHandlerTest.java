@@ -17,16 +17,13 @@ class OrderControllerExceptionHandlerTest {
     @Test
     @DisplayName("если в запросе есть заголовок Referer, делает редирект на него и передаёт ошибки как flash-атрибут")
     void handleBaseClientException_WhenRefererPresent_ShouldRedirectToRefererWithFlashErrors() {
-        // given
         BaseClientException exception = new BaseClientException(List.of("error1", "error2"));
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("Referer", "/orders/create");
         RedirectAttributes redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
 
-        // when
         String result = handler.handleBaseClientException(exception, request, redirectAttributes);
 
-        // then
         assertEquals("redirect:/orders/create", result);
         assertEquals(List.of("error1", "error2"), redirectAttributes.getFlashAttributes().get("errors"));
     }
@@ -34,15 +31,12 @@ class OrderControllerExceptionHandlerTest {
     @Test
     @DisplayName("если заголовка Referer нет, делает редирект на /orders")
     void handleBaseClientException_WhenRefererMissing_ShouldRedirectToOrders() {
-        // given
         BaseClientException exception = new BaseClientException(List.of("error1"));
         MockHttpServletRequest request = new MockHttpServletRequest();
         RedirectAttributes redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
 
-        // when
         String result = handler.handleBaseClientException(exception, request, redirectAttributes);
 
-        // then
         assertEquals("redirect:/orders", result);
         assertEquals(List.of("error1"), redirectAttributes.getFlashAttributes().get("errors"));
     }

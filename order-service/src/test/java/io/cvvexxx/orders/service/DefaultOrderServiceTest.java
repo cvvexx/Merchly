@@ -86,7 +86,6 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("создаёт заказ, считает сумму и публикует событие в Kafka")
         void createOrder_WithValidItems_ShouldSaveOrderAndPublishEvent() {
-            // given
             UUID secondProductId = UUID.randomUUID();
             NewOrderDto request = new NewOrderDto(List.of(
                     new NewOrderItemDto(PRODUCT_ID, 2),
@@ -107,10 +106,8 @@ class DefaultOrderServiceTest {
                 return order;
             });
 
-            // when
             OrderDto result = orderService.createOrder(request, USER_ID);
 
-            // then
             assertEquals(ORDER_ID, result.id());
             assertEquals(USER_ID, result.userId());
             assertEquals(OrderStatus.PENDING, result.status());
@@ -140,11 +137,9 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("если у товара нет цены, не сохраняет заказ")
         void createOrder_WhenProductPriceIsMissing_ShouldThrowAndNotSave() {
-            // given
             when(productClient.findAllProductsByIds(List.of(PRODUCT_ID)))
                     .thenReturn(List.of(product(PRODUCT_ID, null)));
 
-            // when
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
                     () -> orderService.createOrder(
@@ -157,7 +152,6 @@ class DefaultOrderServiceTest {
                     )
             );
 
-            // then
             assertEquals("order.errors.product.price_missing", exception.getMessage());
             verify(orderRepository, never()).save(any());
             verify(applicationEventPublisher, never()).publishEvent(any());
@@ -171,7 +165,6 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("переводит CREATED заказ в PAID")
         void confirmOrder_WhenCreated_ShouldMarkPaid() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, USER_ID)));
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
                 Order order = invocation.getArgument(0);
@@ -180,33 +173,27 @@ class DefaultOrderServiceTest {
                 return order;
             });
 
-            // when
             OrderDto result = orderService.confirmOrder(ORDER_ID, USER_ID, false);
 
-            // then
             assertEquals(OrderStatus.CONFIRMED, result.status());
         }
 
         @Test
         @DisplayName("не подтверждает чужой заказ")
         void confirmOrder_WhenNotOwner_ShouldThrowAccessDenied() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, OTHER_USER_ID)));
 
-            // when
             AccessDeniedException exception = assertThrows(
                     AccessDeniedException.class,
                     () -> orderService.confirmOrder(ORDER_ID, USER_ID, false)
             );
 
-            // then
             assertEquals("order.errors.access_denied", exception.getMessage());
         }
 
         @Test
         @DisplayName("админ может подтвердить чужой заказ")
         void confirmOrder_WhenAdmin_ShouldConfirmForeignOrder() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, OTHER_USER_ID)));
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
                 Order order = invocation.getArgument(0);
@@ -215,26 +202,21 @@ class DefaultOrderServiceTest {
                 return order;
             });
 
-            // when
             OrderDto result = orderService.confirmOrder(ORDER_ID, USER_ID, true);
 
-            // then
             assertEquals(OrderStatus.CONFIRMED, result.status());
         }
 
         @Test
         @DisplayName("не подтверждает уже оплаченный или отменённый заказ")
         void confirmOrder_WhenNotCreated_ShouldThrowIllegalState() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CONFIRMED, USER_ID)));
 
-            // when
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
                     () -> orderService.confirmOrder(ORDER_ID, USER_ID, false)
             );
 
-            // then
             assertEquals("order.errors.cannot_confirm", exception.getMessage());
         }
     }
@@ -246,7 +228,6 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("переводит CREATED заказ в CANCELLED")
         void cancelOrder_WhenCreated_ShouldMarkCancelled() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, USER_ID)));
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
                 Order order = invocation.getArgument(0);
@@ -255,24 +236,19 @@ class DefaultOrderServiceTest {
                 return order;
             });
 
-            // when
             OrderDto result = orderService.cancelOrderByUser(ORDER_ID, USER_ID, false);
 
-            // then
             assertEquals(OrderStatus.CANCELLED, result.status());
         }
 
         @Test
         @DisplayName("публикует OrderCancelledEvent с товарами заказа, чтобы product-service вернул остаток на склад")
         void cancelOrder_WhenPending_ShouldPublishOrderCancelledEventWithOrderItems() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, USER_ID)));
             when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-            // when
             orderService.cancelOrderByUser(ORDER_ID, USER_ID, false);
 
-            // then
             ArgumentCaptor<OrderCancelledEvent> eventCaptor = ArgumentCaptor.forClass(OrderCancelledEvent.class);
             verify(applicationEventPublisher).publishEvent(eventCaptor.capture());
             OrderCancelledEvent published = eventCaptor.getValue();
@@ -284,32 +260,26 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("не отменяет оплаченный заказ")
         void cancelOrder_WhenPaid_ShouldThrowIllegalState() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CONFIRMED, USER_ID)));
 
-            // when
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class,
                     () -> orderService.cancelOrderByUser(ORDER_ID, USER_ID, false)
             );
 
-            // then
             assertEquals("order.errors.cannot_cancel", exception.getMessage());
         }
 
         @Test
         @DisplayName("если заказ не найден, выбрасывает NoSuchElementException")
         void cancelOrder_WhenMissing_ShouldThrowNotFound() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.empty());
 
-            // when
             OrderNotFoundException exception = assertThrows(
                     OrderNotFoundException.class,
                     () -> orderService.cancelOrderByUser(ORDER_ID, USER_ID, false)
             );
 
-            // then
             assertEquals("order.errors.order_not_found", exception.getMessage());
         }
     }
@@ -321,13 +291,10 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("возвращает заказ владельца")
         void getOrder_WhenOwner_ShouldReturnOrder() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, USER_ID)));
 
-            // when
             OrderDto result = orderService.getOrder(ORDER_ID, USER_ID, false);
 
-            // then
             assertEquals(ORDER_ID, result.id());
             verify(orderRepository, times(1)).findById(ORDER_ID);
         }
@@ -335,14 +302,11 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("возвращает список заказов текущего пользователя")
         void getCurrentUserOrders_ShouldMapRepositoryResult() {
-            // given
             when(orderRepository.findAllByUserIdOrderByCreatedAtDesc(USER_ID))
                     .thenReturn(Optional.of(List.of(order(OrderStatus.PENDING, USER_ID))));
 
-            // when
             List<OrderDto> result = orderService.getCurrentUserOrders(USER_ID);
 
-            // then
             assertEquals(1, result.size());
             assertEquals(ORDER_ID, result.get(0).id());
         }
@@ -355,13 +319,10 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("отменяет PENDING заказ и сохраняет причину")
         void cancelOrderBySystem_WhenPending_ShouldMarkCancelledWithReason() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.PENDING, USER_ID)));
 
-            // when
             OrderDto result = orderService.cancelOrderBySystem(ORDER_ID, "Недостаточно товара на складе");
 
-            // then
             assertEquals(OrderStatus.CANCELLED, result.status());
             assertEquals("Недостаточно товара на складе", result.cancellationReason());
         }
@@ -369,15 +330,12 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("повторное событие для уже отменённого заказа игнорируется (идемпотентность)")
         void cancelOrderBySystem_WhenAlreadyCancelled_ShouldStayCancelledAndNotOverwriteReason() {
-            // given
             Order cancelledOrder = order(OrderStatus.CANCELLED, USER_ID);
             cancelledOrder.setCancellationReason("Первая причина");
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(cancelledOrder));
 
-            // when
             OrderDto result = orderService.cancelOrderBySystem(ORDER_ID, "Вторая причина");
 
-            // then
             assertEquals(OrderStatus.CANCELLED, result.status());
             assertEquals("Первая причина", result.cancellationReason());
         }
@@ -385,13 +343,10 @@ class DefaultOrderServiceTest {
         @Test
         @DisplayName("устаревшее событие не отменяет уже подтверждённый заказ")
         void cancelOrderBySystem_WhenAlreadyConfirmed_ShouldNotDowngradeStatus() {
-            // given
             when(orderRepository.findById(ORDER_ID)).thenReturn(Optional.of(order(OrderStatus.CONFIRMED, USER_ID)));
 
-            // when
             OrderDto result = orderService.cancelOrderBySystem(ORDER_ID, "Недостаточно товара на складе");
 
-            // then
             assertEquals(OrderStatus.CONFIRMED, result.status());
         }
     }

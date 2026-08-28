@@ -1,22 +1,18 @@
 package io.cvvexxx.apigateway;
 
-import io.cvvexxx.apigateway.support.RedisBackedGatewayIT;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import io.cvvexxx.apigateway.support.RedisBackedGatewayIT;
 import io.cvvexxx.apigateway.support.StubJwtDecoderConfiguration;
 import io.cvvexxx.apigateway.support.TestTokens;
+import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.context.annotation.Import;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.web.client.RestClient;
@@ -53,20 +49,20 @@ class GatewayServiceRoutesIT extends RedisBackedGatewayIT {
         reviewService.stop();
     }
 
-    @AfterEach
-    void resetStubs() {
-        productService.resetAll();
-        userService.resetAll();
-        orderService.resetAll();
-        reviewService.resetAll();
-    }
-
     @DynamicPropertySource
     static void downstreamUris(DynamicPropertyRegistry registry) {
         registry.add("PRODUCT_SERVICE_URI", () -> "http://localhost:" + productService.port());
         registry.add("USER_SERVICE_URI", () -> "http://localhost:" + userService.port());
         registry.add("ORDER_SERVICE_URI", () -> "http://localhost:" + orderService.port());
         registry.add("REVIEW_SERVICE_URI", () -> "http://localhost:" + reviewService.port());
+    }
+
+    @AfterEach
+    void resetStubs() {
+        productService.resetAll();
+        userService.resetAll();
+        orderService.resetAll();
+        reviewService.resetAll();
     }
 
     private RestClient gateway() {

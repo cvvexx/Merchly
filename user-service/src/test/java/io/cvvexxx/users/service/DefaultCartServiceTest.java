@@ -42,7 +42,6 @@ class DefaultCartServiceTest {
         @Test
         @DisplayName("addItemToCart: если товар уже есть в корзине, инкрементирует количество на 1")
         void addItemToCart_WhenItemExists_ShouldIncrementQuantity() {
-            // given
             AddToCartDto addToCartDto = new AddToCartDto(PRODUCT_ID, 5);
 
             CartItem existingCartItem = CartItem.builder()
@@ -55,10 +54,8 @@ class DefaultCartServiceTest {
             when(cartItemRepository.findByUserIdAndProductId(USER_ID, PRODUCT_ID))
                     .thenReturn(Optional.of(existingCartItem));
 
-            // when
             defaultCartService.addItemToCart(addToCartDto, USER_ID);
 
-            // then
             assertEquals(7, existingCartItem.getQuantity());
 
             verify(cartItemRepository, times(1)).findByUserIdAndProductId(USER_ID, PRODUCT_ID);
@@ -68,7 +65,6 @@ class DefaultCartServiceTest {
         @Test
         @DisplayName("addItemToCart: если товара нет в корзине, создает и сохраняет новую запись")
         void addItemToCart_WhenItemDoesNotExist_ShouldSaveNewCartItem() {
-            // given
             AddToCartDto addToCartDto = new AddToCartDto(PRODUCT_ID, 3);
 
             when(cartItemRepository.findByUserIdAndProductId(USER_ID, PRODUCT_ID))
@@ -83,10 +79,8 @@ class DefaultCartServiceTest {
 
             when(cartItemRepository.save(any(CartItem.class))).thenReturn(savedItem);
 
-            // when
             defaultCartService.addItemToCart(addToCartDto, USER_ID);
 
-            // then
             ArgumentCaptor<CartItem> captor = ArgumentCaptor.forClass(CartItem.class);
             verify(cartItemRepository, times(1)).save(captor.capture());
 
@@ -105,7 +99,6 @@ class DefaultCartServiceTest {
         @Test
         @DisplayName("getCartItems: возвращает список CartItemDto для текущего пользователя")
         void getCartItems_WhenItemsExist_ShouldReturnDtoList() {
-            // given
             UUID productId1 = UUID.randomUUID();
             UUID productId2 = UUID.randomUUID();
 
@@ -126,10 +119,8 @@ class DefaultCartServiceTest {
             when(cartItemRepository.findAllByUserId(USER_ID))
                     .thenReturn(List.of(item1, item2));
 
-            // when
             List<CartItemDto> result = defaultCartService.getCartItems(USER_ID);
 
-            // then
             assertNotNull(result);
             assertEquals(2, result.size());
 
@@ -145,14 +136,11 @@ class DefaultCartServiceTest {
         @Test
         @DisplayName("getCartItems: если корзина пуста, возвращает пустой список")
         void getCartItems_WhenCartIsEmpty_ShouldReturnEmptyList() {
-            // given
             when(cartItemRepository.findAllByUserId(USER_ID))
                     .thenReturn(List.of());
 
-            // when
             List<CartItemDto> result = defaultCartService.getCartItems(USER_ID);
 
-            // then
             assertNotNull(result);
             assertTrue(result.isEmpty());
 
@@ -167,7 +155,6 @@ class DefaultCartServiceTest {
         @Test
         @DisplayName("deleteritemfromcart: успешно удаляет существующий товар из корзины")
         void deleterItemFromCart_WhenItemExists_ShouldDeleteCartItem() {
-            // given
             CartItem existingItem = CartItem.builder()
                     .id(UUID.randomUUID())
                     .userId(USER_ID)
@@ -178,10 +165,8 @@ class DefaultCartServiceTest {
             when(cartItemRepository.findByUserIdAndProductId(USER_ID, PRODUCT_ID))
                     .thenReturn(Optional.of(existingItem));
 
-            // when
             defaultCartService.deleteritemfromcart(PRODUCT_ID, USER_ID);
 
-            // then
             verify(cartItemRepository, times(1)).findByUserIdAndProductId(USER_ID, PRODUCT_ID);
             verify(cartItemRepository, times(1)).delete(existingItem);
         }
@@ -189,11 +174,9 @@ class DefaultCartServiceTest {
         @Test
         @DisplayName("deleteritemfromcart: выбрасывает NoSuchElementException, если товар не найден в корзине")
         void deleterItemFromCart_WhenItemNotFound_ShouldThrowNoSuchElementException() {
-            // given
             when(cartItemRepository.findByUserIdAndProductId(USER_ID, PRODUCT_ID))
                     .thenReturn(Optional.empty());
 
-            // when & then
             NoSuchElementException exception = assertThrows(
                     NoSuchElementException.class,
                     () -> defaultCartService.deleteritemfromcart(PRODUCT_ID, USER_ID)

@@ -54,7 +54,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("findAllProducts: обращение к методу findAll если filter пустой")
     public void ProductService_FindAllProductsWhenFilterIsBlank_ReturnFindAll() {
-        //given
         String filter = "   ";
         var id1 = UUID.randomUUID();
         var id2 = UUID.randomUUID();
@@ -69,10 +68,8 @@ class DefaultProductServiceTest {
                         .build()
         ));
 
-        //when
         productService.findAllProducts(filter);
 
-        //then
         verify(productRepository, times(1)).findAll();
         verifyNoMoreInteractions(productRepository);
         verify(productRepository, never()).findAllByTitleContainingIgnoreCase(anyString());
@@ -81,7 +78,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("findAllProducts: поиск по фильтру, если он не пустой")
     public void ProductService_FindAllProductsWhenFilterIsNotBlank_ReturnFindAllByTitleEtc() {
-        //given
         String filter = "asdf";
         var id1 = UUID.randomUUID();
         var id2 = UUID.randomUUID();
@@ -90,10 +86,8 @@ class DefaultProductServiceTest {
                 new ProductDto(id2, "asdf", "1234", 1, BigDecimal.ONE, "image.png", id2)
         ));
 
-        //when
         var products = productService.findAllProducts(filter);
 
-        //then
         verify(productRepository, times(1)).findAllByTitleContainingIgnoreCase(filter);
         verifyNoMoreInteractions(productRepository);
         assertEquals(2, products.size());
@@ -102,7 +96,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("createProduct: успешное создание с загрузкой изображения")
     void createProduct_WithValidImage_ShouldUploadImageAndSaveProduct() {
-        // given
         String title = "Футболка Merchly";
         String description = "Классный мерч";
         Integer quantity = 1;
@@ -120,10 +113,8 @@ class DefaultProductServiceTest {
         when(productRepository.save(any(Product.class))).thenAnswer(invocation ->
                 invocation.getArgument(0));
 
-        // when
         ProductDto result = productService.createProduct(title, description, quantity, price, createdBy, image);
 
-        // then
         assertNotNull(result);
         assertNotNull(result.id());
         assertEquals(title, result.title());
@@ -142,7 +133,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("createProduct: создание без изображения (null или пустой файл)")
     void createProduct_WithoutImage_ShouldNotUploadImageAndSaveProduct() {
-        // given
         String title = "Кружка";
         String description = "Керамическая";
         Integer quantity = 1;
@@ -153,10 +143,8 @@ class DefaultProductServiceTest {
         when(productRepository.save(any(Product.class))).thenAnswer(invocation ->
                 invocation.getArgument(0));
 
-        // when
         ProductDto result = productService.createProduct(title, description, quantity, price, createdBy, image);
 
-        // then
         assertNotNull(result);
         assertNull(result.imageFileName());
 
@@ -167,7 +155,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("createProduct: если MinioService выбросил исключение, сохранить продукт не пытаясь")
     void createProduct_MinioThrowsException_ShouldThrowException() {
-        // given
         MockMultipartFile image = new MockMultipartFile(
                 "image",
                 "avatar.png",
@@ -177,7 +164,6 @@ class DefaultProductServiceTest {
 
         when(defaultMinioService.upload(image)).thenThrow(new RuntimeException("MinIO error"));
 
-        // when & then
         assertThrows(RuntimeException.class, () ->
                 productService.createProduct("Title", "Desc", 1, BigDecimal.TEN, UUID.randomUUID(), image)
         );
@@ -189,7 +175,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("deleteProduct: если продукт найден, то поставить isAvailable=false")
     public void deleteProduct_UUidIsValid_DeleteProduct() {
-        //given
         UUID productId = UUID.randomUUID();
         Product product = Product.builder()
                 .id(productId)
@@ -198,10 +183,8 @@ class DefaultProductServiceTest {
                 .build();
         when(productRepository.findById(productId)).thenReturn(Optional.of(product));
 
-        //when
         productService.deleteProduct(productId);
 
-        //then
         verifyNoMoreInteractions(productRepository);
         verify(productRepository, times(1)).findById(productId);
         assertEquals("TestProduct", product.getTitle());
@@ -211,41 +194,34 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("deleteProduct: если продукт не найден, выбросить NoSuchElementException")
     public void deleteProduct_UUidIsInvalid_ThrowNoSuchElementException() {
-        //given
         UUID productId = UUID.randomUUID();
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
-        //when
         NoSuchElementException exception = assertThrows(
                 NoSuchElementException.class,
                 () -> productService.deleteProduct(productId)
         );
 
-        //then
         assertEquals("catalogue.errors.product.not_found", exception.getMessage());
     }
 
     @Test
     @DisplayName("findProductById: если товар не найден, то выбросить NoSuchElementException")
     public void findProductById_UUidIsInvalid_ThrowNoSuchElementException() {
-        //given
         UUID productId = UUID.randomUUID();
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
-        //when
         NoSuchElementException exception = assertThrows(
                 NoSuchElementException.class,
                 () -> productService.findProductById(productId)
         );
 
-        //then
         assertEquals("catalogue.errors.product.not_found", exception.getMessage());
     }
 
     @Test
     @DisplayName("findProductById: если товар найден, то вернуть его")
     public void findProductById_UUidIsValid_ReturnProduct() {
-        //given
         UUID productId = UUID.randomUUID();
         when(productRepository.findById(productId)).thenReturn(Optional.of(
                         Product.builder()
@@ -255,10 +231,8 @@ class DefaultProductServiceTest {
                 )
         );
 
-        //when
         ProductDto result = productService.findProductById(productId);
 
-        //then
         assertNotNull(result);
         assertEquals(productId, result.id());
         assertEquals("TestProduct", result.title());
@@ -268,7 +242,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("updateProduct: успешное обновление полей и замена существующей картинки в MinIO")
     void updateProduct_WithNewImageAndExistingOldImage_ShouldUpdateFieldsUploadNewAndDeleteOldImage() {
-        // given
         UUID productId = UUID.randomUUID();
         String oldImage = "old-uuid-image.png";
         String newImageName = "new-uuid-image.png";
@@ -288,7 +261,6 @@ class DefaultProductServiceTest {
         when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
         when(defaultMinioService.upload(newImageFile)).thenReturn(newImageName);
 
-        // when
         productService.updateProduct(
                 productId,
                 "Новое название",
@@ -298,7 +270,6 @@ class DefaultProductServiceTest {
                 newImageFile
         );
 
-        // then
         assertEquals("Новое название", existingProduct.getTitle());
         assertEquals("Новое описание", existingProduct.getDescription());
         assertEquals(new BigDecimal("200.00"), existingProduct.getPrice());
@@ -312,7 +283,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("updateProduct: обновление без передачи файла изображения (поля обновляются, MinIO не вызывается)")
     void updateProduct_WithoutImage_ShouldOnlyUpdateProductFields() {
-        // given
         UUID productId = UUID.randomUUID();
         String oldImage = "old-image.png";
 
@@ -326,19 +296,17 @@ class DefaultProductServiceTest {
 
         when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
 
-        // when
         productService.updateProduct(
                 productId,
                 "Обновленное",
                 "Обновленное",
                 1,
                 BigDecimal.ONE,
-                null // Картинка не передана
+                null
         );
 
-        // then
         assertEquals("Обновленное", existingProduct.getTitle());
-        assertEquals(oldImage, existingProduct.getImageFileName()); // Картинка осталась прежней
+        assertEquals(oldImage, existingProduct.getImageFileName());
 
         verify(defaultMinioService, never()).upload(any());
         verify(defaultMinioService, never()).removeObject(anyString());
@@ -347,11 +315,10 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("updateProduct: загрузка картинки, когда у товара раньше НЕ было картинки (removeObject не вызывается)")
     void updateProduct_WithNewImageWhenOldImageWasNull_ShouldUploadNewAndNotDeleteOld() {
-        // given
         UUID productId = UUID.randomUUID();
         Product existingProduct = Product.builder()
                 .id(productId)
-                .imageFileName(null) // Старой картинки не было
+                .imageFileName(null)
                 .build();
 
         MockMultipartFile newImageFile = new MockMultipartFile(
@@ -362,10 +329,8 @@ class DefaultProductServiceTest {
         when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
         when(defaultMinioService.upload(newImageFile)).thenReturn(newImageName);
 
-        // when
         productService.updateProduct(productId, "Title", "Desc", 1, BigDecimal.TEN, newImageFile);
 
-        // then
         assertEquals(newImageName, existingProduct.getImageFileName());
         verify(defaultMinioService, times(1)).upload(newImageFile);
         verify(defaultMinioService, never()).removeObject(anyString());
@@ -374,11 +339,9 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("updateProduct: выбрасывает NoSuchElementException, если продукт не найден")
     void updateProduct_ProductNotFound_ShouldThrowNoSuchElementException() {
-        // given
         UUID productId = UUID.randomUUID();
         when(productRepository.findById(productId)).thenReturn(Optional.empty());
 
-        // when & then
         NoSuchElementException exception = assertThrows(
                 NoSuchElementException.class,
                 () -> productService.updateProduct(productId, "T", "D", 1, BigDecimal.ONE, null)
@@ -391,7 +354,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("updateProduct: при ошибке в minioService.removeObject метод НЕ должен падать")
     void updateProduct_MinioRemoveThrowsException_ShouldCatchAndCompleteSuccessfully() {
-        // given
         UUID productId = UUID.randomUUID();
         String oldImage = "old.png";
         Product existingProduct = Product.builder()
@@ -404,11 +366,9 @@ class DefaultProductServiceTest {
         when(productRepository.findById(productId)).thenReturn(Optional.of(existingProduct));
         when(defaultMinioService.upload(newImageFile)).thenReturn("new-uuid.png");
 
-        // Имитируем падение MinIO при удалении
         doThrow(new RuntimeException("MinIO error"))
                 .when(defaultMinioService).removeObject(oldImage);
 
-        // when & then — проверяем, что вызов метода не падает
         assertDoesNotThrow(() -> productService.updateProduct(
                 productId, "Title", "Desc", 1, BigDecimal.TEN, newImageFile
         ));
@@ -419,7 +379,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("deductStock: списывает товар и помечает заказ обработанным")
     void deductStock_WithSufficientStock_ShouldDeductAndMarkProcessed() {
-        // given
         UUID orderId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
         Product product = Product.builder().id(productId).quantity(5).build();
@@ -427,10 +386,8 @@ class DefaultProductServiceTest {
         when(processedOrderEventRepository.existsById(orderId)).thenReturn(false);
         when(productRepository.findByIdForUpdate(productId)).thenReturn(Optional.of(product));
 
-        // when
         productService.deductStock(orderId, List.of(new OrderItemPayload(productId, 3)));
 
-        // then
         assertEquals(2, product.getQuantity());
         ArgumentCaptor<ProcessedOrderEvent> eventCaptor = ArgumentCaptor.forClass(ProcessedOrderEvent.class);
         verify(processedOrderEventRepository, times(1)).save(eventCaptor.capture());
@@ -440,7 +397,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("deductStock: если товара не хватает, выбрасывает исключение и не помечает заказ обработанным")
     void deductStock_WithInsufficientStock_ShouldThrowAndNotMarkProcessed() {
-        // given
         UUID orderId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
         Product product = Product.builder().id(productId).quantity(1).build();
@@ -448,7 +404,6 @@ class DefaultProductServiceTest {
         when(processedOrderEventRepository.existsById(orderId)).thenReturn(false);
         when(productRepository.findByIdForUpdate(productId)).thenReturn(Optional.of(product));
 
-        // when & then
         assertThrows(InsufficientStockException.class, () ->
                 productService.deductStock(orderId, List.of(new OrderItemPayload(productId, 3)))
         );
@@ -460,16 +415,13 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("deductStock: если заказ уже был обработан ранее (повтор из Kafka), товар повторно не списывается")
     void deductStock_WhenOrderAlreadyProcessed_ShouldSkipSilently() {
-        // given
         UUID orderId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
 
         when(processedOrderEventRepository.existsById(orderId)).thenReturn(true);
 
-        // when
         productService.deductStock(orderId, List.of(new OrderItemPayload(productId, 3)));
 
-        // then
         verify(productRepository, never()).findByIdForUpdate(any());
         verify(processedOrderEventRepository, never()).save(any());
     }
@@ -477,7 +429,6 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("restoreStock: если заказ был обработан (сток списан), возвращает товар на склад и снимает пометку обработанности")
     void restoreStock_WhenOrderWasProcessed_ShouldRestoreQuantityAndUnmarkProcessed() {
-        // given
         UUID orderId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
         Product product = Product.builder().id(productId).quantity(2).build();
@@ -485,10 +436,8 @@ class DefaultProductServiceTest {
         when(processedOrderEventRepository.existsById(orderId)).thenReturn(true);
         when(productRepository.findByIdForUpdate(productId)).thenReturn(Optional.of(product));
 
-        // when
         productService.restoreStock(orderId, List.of(new OrderItemPayload(productId, 3)));
 
-        // then
         assertEquals(5, product.getQuantity());
         verify(processedOrderEventRepository, times(1)).deleteById(orderId);
     }
@@ -496,16 +445,13 @@ class DefaultProductServiceTest {
     @Test
     @DisplayName("restoreStock: если заказ не был обработан (сток никогда не списывался), ничего не меняет")
     void restoreStock_WhenOrderWasNotProcessed_ShouldDoNothing() {
-        // given
         UUID orderId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
 
         when(processedOrderEventRepository.existsById(orderId)).thenReturn(false);
 
-        // when
         productService.restoreStock(orderId, List.of(new OrderItemPayload(productId, 3)));
 
-        // then
         verify(productRepository, never()).findByIdForUpdate(any());
         verify(processedOrderEventRepository, never()).deleteById(any());
     }

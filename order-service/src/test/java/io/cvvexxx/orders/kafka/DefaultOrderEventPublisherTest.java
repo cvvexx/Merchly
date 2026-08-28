@@ -37,23 +37,19 @@ class DefaultOrderEventPublisherTest {
     @Test
     @DisplayName("отправляет событие в топик order-created с ключом = orderId")
     void publishOrderCreated_ShouldSendEventToConfiguredTopicWithOrderIdAsKey() {
-        // given
         ReflectionTestUtils.setField(publisher, "orderCreatedTopic", TOPIC);
         OrderCreatedEvent event = new OrderCreatedEvent(UUID.randomUUID(), new BigDecimal("100.00"), List.of());
         CompletableFuture<SendResult<String, OrderCreatedEvent>> future = new CompletableFuture<>();
         when(kafkaTemplate.send(eq(TOPIC), eq(event.orderId().toString()), eq(event))).thenReturn(future);
 
-        // when
         publisher.publishOrderCreated(event);
 
-        // then
         verify(kafkaTemplate).send(TOPIC, event.orderId().toString(), event);
     }
 
     @Test
     @DisplayName("при успешной отправке не выбрасывает исключение из callback'а")
     void publishOrderCreated_WhenSendSucceeds_ShouldCompleteCallbackWithoutError() {
-        // given
         ReflectionTestUtils.setField(publisher, "orderCreatedTopic", TOPIC);
         OrderCreatedEvent event = new OrderCreatedEvent(UUID.randomUUID(), new BigDecimal("100.00"), List.of());
         CompletableFuture<SendResult<String, OrderCreatedEvent>> future = new CompletableFuture<>();
@@ -66,28 +62,23 @@ class DefaultOrderEventPublisherTest {
         );
         SendResult<String, OrderCreatedEvent> sendResult = new SendResult<>(producerRecord, recordMetadata);
 
-        // when
         publisher.publishOrderCreated(event);
         future.complete(sendResult);
 
-        // then
         verify(kafkaTemplate).send(TOPIC, event.orderId().toString(), event);
     }
 
     @Test
     @DisplayName("при ошибке отправки исключение из callback'а не пробрасывается наружу")
     void publishOrderCreated_WhenSendFails_ShouldSwallowErrorInCallback() {
-        // given
         ReflectionTestUtils.setField(publisher, "orderCreatedTopic", TOPIC);
         OrderCreatedEvent event = new OrderCreatedEvent(UUID.randomUUID(), new BigDecimal("100.00"), List.of());
         CompletableFuture<SendResult<String, OrderCreatedEvent>> future = new CompletableFuture<>();
         when(kafkaTemplate.send(eq(TOPIC), eq(event.orderId().toString()), eq(event))).thenReturn(future);
 
-        // when
         publisher.publishOrderCreated(event);
         future.completeExceptionally(new RuntimeException("kafka is down"));
 
-        // then
         verify(kafkaTemplate).send(TOPIC, event.orderId().toString(), event);
     }
 }

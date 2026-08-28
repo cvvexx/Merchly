@@ -39,13 +39,10 @@ class DefaultCartServiceTest {
     @Test
     @DisplayName("если корзина пуста, возвращает пустые данные и не обращается к product-service")
     void getCartPage_WhenCartIsEmpty_ShouldReturnEmptyDataWithoutCallingProductService() {
-        // given
         when(userPublicRestClient.getCartItems()).thenReturn(List.of());
 
-        // when
         CartPageData result = cartService.getCartPage();
 
-        // then
         assertEquals(List.of(), result.viewItems());
         assertEquals(BigDecimal.ZERO, result.totalCartPrice());
         verifyNoInteractions(productsInternalRestClient);
@@ -54,7 +51,6 @@ class DefaultCartServiceTest {
     @Test
     @DisplayName("считает subtotal по каждому товару и суммарную стоимость корзины")
     void getCartPage_ShouldBuildViewItemsAndComputeTotalPrice() {
-        // given
         UUID productId = UUID.randomUUID();
         CartItemDto cartItem = new CartItemDto(productId, 3);
         when(userPublicRestClient.getCartItems()).thenReturn(List.of(cartItem));
@@ -63,10 +59,8 @@ class DefaultCartServiceTest {
         when(productsInternalRestClient.findAllProductsByIds(List.of(productId))).thenReturn(List.of(product));
         when(imageUrlFormatter.getProductImageUrl("image.png")).thenReturn("/img/product.png");
 
-        // when
         CartPageData result = cartService.getCartPage();
 
-        // then
         assertEquals(1, result.viewItems().size());
         assertEquals(3, result.viewItems().get(0).quantity());
         assertEquals(new BigDecimal("60.00"), result.viewItems().get(0).subtotal());
@@ -77,16 +71,13 @@ class DefaultCartServiceTest {
     @Test
     @DisplayName("если товар из корзины не найден в product-service, пропускает его без падения")
     void getCartPage_WhenProductMissingFromProductService_ShouldSkipItWithoutFailing() {
-        // given
         UUID missingProductId = UUID.randomUUID();
         CartItemDto cartItem = new CartItemDto(missingProductId, 1);
         when(userPublicRestClient.getCartItems()).thenReturn(List.of(cartItem));
         when(productsInternalRestClient.findAllProductsByIds(List.of(missingProductId))).thenReturn(List.of());
 
-        // when
         CartPageData result = cartService.getCartPage();
 
-        // then
         assertEquals(List.of(), result.viewItems());
         assertEquals(BigDecimal.ZERO, result.totalCartPrice());
     }

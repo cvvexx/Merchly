@@ -32,7 +32,6 @@ class BadRequestControllerAdviceTest {
     @Test
     @DisplayName("handleBindException: возвращает 400 с заголовком из MessageSource и списком сообщений об ошибках")
     void handleBindException_WhenBindingResultHasErrors_ShouldReturnBadRequestWithErrorMessages() {
-        // given
         var target = new Object();
         var bindingResult = new BeanPropertyBindingResult(target, "target");
         bindingResult.reject("field1", "must not be blank");
@@ -42,10 +41,8 @@ class BadRequestControllerAdviceTest {
         when(messageSource.getMessage("errors.400.title", new Object[0], "errors.400.title", locale))
                 .thenReturn("Bad Request");
 
-        // when
         ResponseEntity<ProblemDetail> response = advice.handleBindException(exception, locale);
 
-        // then
         assertNotNull(response.getBody());
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("Bad Request", response.getBody().getDetail());

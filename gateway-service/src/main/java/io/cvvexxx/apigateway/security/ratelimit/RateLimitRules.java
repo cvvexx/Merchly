@@ -5,9 +5,7 @@ import org.springframework.http.HttpMethod;
 import java.time.Duration;
 import java.util.List;
 
-import static io.cvvexxx.apigateway.security.ratelimit.RateLimitKeyType.FORM_LOGIN;
-import static io.cvvexxx.apigateway.security.ratelimit.RateLimitKeyType.IP;
-import static io.cvvexxx.apigateway.security.ratelimit.RateLimitKeyType.USER;
+import static io.cvvexxx.apigateway.security.ratelimit.RateLimitKeyType.*;
 
 public final class RateLimitRules {
 

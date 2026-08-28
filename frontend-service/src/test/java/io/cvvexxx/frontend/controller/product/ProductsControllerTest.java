@@ -46,7 +46,6 @@ class ProductsControllerTest {
     @Test
     @DisplayName("createProduct: valid request returns redirect to product page")
     void createProduct_RequestIsValid_ReturnsRedirectionToProductPage() {
-        // given
         UUID creatorId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
 
@@ -90,10 +89,8 @@ class ProductsControllerTest {
                 .when(productsPublicRestClient)
                 .createProduct("new product title", "new product description", 1, BigDecimal.TEN, image, creatorId);
 
-        // when
         var result = productsController.createProduct(payload, image, model, token);
 
-        // then
         assertEquals("redirect:/catalogue/products/" + productId, result);
         verify(productsPublicRestClient).createProduct("new product title", "new product description", 1,
                 BigDecimal.TEN, image, creatorId);
@@ -103,7 +100,6 @@ class ProductsControllerTest {
     @Test
     @DisplayName("create product returns errors page if request is invalid")
     void createProduct_RequestIsInvalid_ReturnsProductFromWithErrors() {
-        //given
         UUID creatorId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
         var model = new ConcurrentModel();
@@ -127,14 +123,12 @@ class ProductsControllerTest {
         doThrow(new BadRequestException(List.of("error1", "error2")))
                 .when(productsPublicRestClient)
                 .createProduct("    ", null, 1, BigDecimal.ZERO, image, creatorId);
-        //when
         var result = productsController.createProduct(
                 payload,
                 image,
                 model,
                 token
         );
-        //then
         assertEquals("catalogue/products/new_product", result);
         assertEquals(payload, model.getAttribute("payload"));
         assertEquals(List.of("error1", "error2"), model.getAttribute("errors"));

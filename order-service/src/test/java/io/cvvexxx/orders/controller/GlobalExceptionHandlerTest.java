@@ -41,16 +41,13 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleOrderNotFoundException: возвращает 404 с локализованным сообщением и args из исключения")
     void handleOrderNotFoundException_ShouldReturn404WithLocalizedMessage() {
-        // given
         UUID orderId = UUID.randomUUID();
         OrderNotFoundException exception = new OrderNotFoundException(orderId);
         when(messageSource.getMessage(eq("order.errors.order_not_found"), eq(new Object[]{orderId}), anyString(), eq(LOCALE)))
                 .thenReturn("Заказ не найден");
 
-        // when
         ResponseEntity<ProblemDetail> response = handler.handleOrderNotFoundException(exception, LOCALE);
 
-        // then
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertEquals("Заказ не найден", response.getBody().getDetail());
         assertEquals(List.of("Заказ не найден"), response.getBody().getProperties().get("errors"));
@@ -59,15 +56,12 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleOrderAccessDeniedException: возвращает 403 с локализованным сообщением")
     void handleOrderAccessDeniedException_ShouldReturn403WithLocalizedMessage() {
-        // given
         OrderAccessDeniedException exception = new OrderAccessDeniedException();
         when(messageSource.getMessage(eq("order.errors.access_denied"), eq(new Object[0]), anyString(), eq(LOCALE)))
                 .thenReturn("Нет доступа");
 
-        // when
         ResponseEntity<ProblemDetail> response = handler.handleOrderAccessDeniedException(exception, LOCALE);
 
-        // then
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertEquals("Нет доступа", response.getBody().getDetail());
     }
@@ -75,16 +69,13 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleOrderCannotCancelException: возвращает 409 с локализованным сообщением")
     void handleOrderCannotCancelException_ShouldReturn409WithLocalizedMessage() {
-        // given
         UUID orderId = UUID.randomUUID();
         OrderCannotCancelException exception = new OrderCannotCancelException(orderId);
         when(messageSource.getMessage(eq("order.errors.cannot_cancel"), eq(new Object[]{orderId}), anyString(), eq(LOCALE)))
                 .thenReturn("Заказ нельзя отменить");
 
-        // when
         ResponseEntity<ProblemDetail> response = handler.handleOrderCannotCancelException(exception, LOCALE);
 
-        // then
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertEquals("Заказ нельзя отменить", response.getBody().getDetail());
     }
@@ -92,16 +83,13 @@ class GlobalExceptionHandlerTest {
     @Test
     @DisplayName("handleOrderCannotConfirmException: возвращает 409 с локализованным сообщением")
     void handleOrderCannotConfirmException_ShouldReturn409WithLocalizedMessage() {
-        // given
         UUID orderId = UUID.randomUUID();
         OrderCannotConfirmException exception = new OrderCannotConfirmException(orderId);
         when(messageSource.getMessage(eq("order.errors.cannot_confirm"), eq(new Object[]{orderId}), anyString(), eq(LOCALE)))
                 .thenReturn("Заказ нельзя подтвердить");
 
-        // when
         ResponseEntity<ProblemDetail> response = handler.handleOrderCannotConfirmException(exception, LOCALE);
 
-        // then
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertEquals("Заказ нельзя подтвердить", response.getBody().getDetail());
     }
@@ -113,7 +101,6 @@ class GlobalExceptionHandlerTest {
         @Test
         @DisplayName("собирает локализованные сообщения по всем ошибкам валидации в errors")
         void handleBindException_ShouldReturn400WithLocalizedFieldErrors() {
-            // given
             Object target = new Object();
             var bindingResult = new BeanPropertyBindingResult(target, "newOrderDto");
             bindingResult.addError(new FieldError("newOrderDto", "deliveryAddress", "must not be blank"));
@@ -123,10 +110,8 @@ class GlobalExceptionHandlerTest {
             when(messageSource.getMessage(any(FieldError.class), eq(LOCALE)))
                     .thenReturn("Адрес доставки обязателен");
 
-            // when
             ResponseEntity<ProblemDetail> response = handler.handleBindException(exception, LOCALE);
 
-            // then
             assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
             assertEquals("Некорректный запрос", response.getBody().getDetail());
             assertEquals(List.of("Адрес доставки обязателен"), response.getBody().getProperties().get("errors"));

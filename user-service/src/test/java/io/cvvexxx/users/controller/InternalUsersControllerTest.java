@@ -29,10 +29,8 @@ class InternalUsersControllerTest {
     @Test
     @DisplayName("getUserByIds: если ids равен null, возвращает 400 и не обращается к сервису")
     void getUserByIds_WhenIdsIsNull_ShouldReturnBadRequestWithoutCallingService() {
-        // given / when
         ResponseEntity<List<UserProductOwnerDto>> response = controller.getUserByIds(null);
 
-        // then
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals(List.of(), response.getBody());
         verifyNoInteractions(userService);
@@ -41,10 +39,8 @@ class InternalUsersControllerTest {
     @Test
     @DisplayName("getUserByIds: если ids пуст, возвращает 400 и не обращается к сервису")
     void getUserByIds_WhenIdsIsEmpty_ShouldReturnBadRequestWithoutCallingService() {
-        // given / when
         ResponseEntity<List<UserProductOwnerDto>> response = controller.getUserByIds(List.of());
 
-        // then
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals(List.of(), response.getBody());
         verifyNoInteractions(userService);
@@ -53,16 +49,13 @@ class InternalUsersControllerTest {
     @Test
     @DisplayName("getUserByIds: если ids переданы, делегирует поиск в сервис")
     void getUserByIds_WhenIdsProvided_ShouldDelegateToService() {
-        // given
         UUID userId = UUID.randomUUID();
         List<UUID> ids = List.of(userId);
         List<UserProductOwnerDto> users = List.of(new UserProductOwnerDto(userId, "owner", null));
         when(userService.findUsersByIds(ids)).thenReturn(users);
 
-        // when
         ResponseEntity<List<UserProductOwnerDto>> response = controller.getUserByIds(ids);
 
-        // then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(users, response.getBody());
         verify(userService).findUsersByIds(ids);
@@ -71,15 +64,12 @@ class InternalUsersControllerTest {
     @Test
     @DisplayName("getUserById: делегирует поиск пользователя по id в сервис")
     void getUserById_ShouldDelegateToService() {
-        // given
         UUID userId = UUID.randomUUID();
         UserProductOwnerDto user = new UserProductOwnerDto(userId, "owner", null);
         when(userService.findUserById(userId)).thenReturn(user);
 
-        // when
         ResponseEntity<UserProductOwnerDto> response = controller.getUserById(userId);
 
-        // then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(user, response.getBody());
         verify(userService).findUserById(userId);

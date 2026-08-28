@@ -51,7 +51,6 @@ class ProductControllerTest {
     @Test
     @DisplayName("getProductPage: наполняет модель данными из сервиса и возвращает вьюху товара")
     void getProductPage_ShouldPopulateModelFromService() {
-        // given
         UUID productId = UUID.randomUUID();
         Product product = product(productId);
         var model = new ConcurrentModel();
@@ -62,10 +61,8 @@ class ProductControllerTest {
         ProductPageData pageData = new ProductPageData(viewModel, true, "authUser");
         when(defaultProductService.getProductPage(product, pageable, token)).thenReturn(pageData);
 
-        // when
         String result = controller.getProductPage(product, pageable, model, token);
 
-        // then
         assertEquals("catalogue/products/product", result);
         assertEquals(true, model.getAttribute("isAdmin"));
         assertEquals("authUser", model.getAttribute("authUsername"));
@@ -75,24 +72,19 @@ class ProductControllerTest {
     @Test
     @DisplayName("getProductEditPage: возвращает страницу редактирования")
     void getProductEditPage_ShouldReturnEditPage() {
-        // given / when
         String result = controller.getProductEditPage();
 
-        // then
         assertEquals("catalogue/products/edit", result);
     }
 
     @Test
     @DisplayName("deleteProduct: удаляет товар и делает редирект на список товаров")
     void deleteProduct_ShouldDeleteAndRedirectToList() {
-        // given
         UUID productId = UUID.randomUUID();
         Product product = product(productId);
 
-        // when
         String result = controller.deleteProduct(product);
 
-        // then
         assertEquals("redirect:/catalogue/products/list", result);
         verify(productsPublicRestClient).deleteProduct(productId);
     }
@@ -100,7 +92,6 @@ class ProductControllerTest {
     @Test
     @DisplayName("handleNoSuchElementException: возвращает 404 и локализованное сообщение об ошибке")
     void handleNoSuchElementException_ShouldSetNotFoundStatusAndLocalizedMessage() {
-        // given
         var exception = new NoSuchElementException("catalogue.errors.product.not_found");
         var response = new MockHttpServletResponse();
         var model = new ConcurrentModel();
@@ -108,10 +99,8 @@ class ProductControllerTest {
         when(messageSource.getMessage("catalogue.errors.product.not_found", new Object[0],
                 "catalogue.errors.product.not_found", locale)).thenReturn("Product not found");
 
-        // when
         String result = controller.handleNoSuchElementException(exception, locale, response, model);
 
-        // then
         assertEquals("error/404", result);
         assertEquals(HttpServletResponse.SC_NOT_FOUND, response.getStatus());
         assertEquals("Product not found", model.getAttribute("error"));
@@ -120,10 +109,8 @@ class ProductControllerTest {
     @Test
     @DisplayName("accessDenied: возвращает страницу 403")
     void accessDenied_ShouldReturn403Page() {
-        // given / when
         String result = controller.accessDenied();
 
-        // then
         assertEquals("error/403", result);
     }
 
@@ -150,26 +137,21 @@ class ProductControllerTest {
         @Test
         @DisplayName("если товар найден, возвращает его")
         void product_WhenFound_ShouldReturnProduct() {
-            // given
             UUID productId = UUID.randomUUID();
             Product product = product(productId);
             when(productsPublicRestClient.findProductById(productId)).thenReturn(java.util.Optional.of(product));
 
-            // when
             Product result = controller.product(productId);
 
-            // then
             assertEquals(product, result);
         }
 
         @Test
         @DisplayName("если товар не найден, выбрасывает NoSuchElementException")
         void product_WhenNotFound_ShouldThrowNoSuchElementException() {
-            // given
             UUID productId = UUID.randomUUID();
             when(productsPublicRestClient.findProductById(productId)).thenReturn(java.util.Optional.empty());
 
-            // when / then
             assertThrows(NoSuchElementException.class, () -> controller.product(productId));
         }
     }
@@ -181,17 +163,14 @@ class ProductControllerTest {
         @Test
         @DisplayName("при успешном обновлении делает редирект на страницу товара")
         void updateProduct_WhenValid_ShouldRedirectToProductPage() {
-            // given
             UUID productId = UUID.randomUUID();
             Product product = product(productId);
             var payload = new UpdateProductPayload("title", "desc", 5, BigDecimal.TEN);
             var image = new MockMultipartFile("image", "image.png", "image/png", "123".getBytes());
             var model = new ConcurrentModel();
 
-            // when
             String result = controller.updateProduct(product, image, payload, model);
 
-            // then
             assertEquals("redirect:/catalogue/products/" + productId, result);
             verify(productsPublicRestClient).updateProduct(
                     productId, "title", "desc", 5, BigDecimal.TEN, image
@@ -201,7 +180,6 @@ class ProductControllerTest {
         @Test
         @DisplayName("при ошибке валидации возвращает страницу редактирования с ошибками")
         void updateProduct_WhenBadRequest_ShouldReturnEditPageWithErrors() {
-            // given
             UUID productId = UUID.randomUUID();
             Product product = product(productId);
             var payload = new UpdateProductPayload("", null, -1, BigDecimal.ZERO);
@@ -212,10 +190,8 @@ class ProductControllerTest {
                     .when(productsPublicRestClient)
                     .updateProduct(productId, "", null, -1, BigDecimal.ZERO, image);
 
-            // when
             String result = controller.updateProduct(product, image, payload, model);
 
-            // then
             assertEquals("catalogue/products/edit", result);
             assertEquals(payload, model.getAttribute("payload"));
             assertEquals(List.of("error1"), model.getAttribute("errors"));

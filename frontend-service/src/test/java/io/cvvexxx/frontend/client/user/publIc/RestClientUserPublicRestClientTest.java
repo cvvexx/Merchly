@@ -45,36 +45,30 @@ class RestClientUserPublicRestClientTest {
         @Test
         @DisplayName("при 400 выбрасывает BadRequestException с ошибками из тела ответа")
         void registerUser_When400_ShouldThrowBadRequestExceptionWithErrors() {
-            // given
             server.expect(requestTo("http://localhost/api/users/register"))
                     .andRespond(withStatus(BAD_REQUEST)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"errors\":[\"email is invalid\"]}"));
             var avatar = new MockMultipartFile("userAvatar", "avatar.png", "image/png", "123".getBytes());
 
-            // when
             BadRequestException exception = assertThrows(BadRequestException.class,
                     () -> client.registerUser(newUserDto(), avatar));
 
-            // then
             assertEquals(List.of("email is invalid"), exception.getErrors());
         }
 
         @Test
         @DisplayName("при 409 с полем 'field' и 'detail' выбрасывает FieldAlreadyExistsException с этими данными")
         void registerUser_When409WithFieldAndDetail_ShouldThrowFieldAlreadyExistsExceptionWithThatData() {
-            // given
             server.expect(requestTo("http://localhost/api/users/register"))
                     .andRespond(withStatus(CONFLICT)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"detail\":\"Username already taken\",\"field\":\"username\"}"));
             var avatar = new MockMultipartFile("userAvatar", "avatar.png", "image/png", "123".getBytes());
 
-            // when
             FieldAlreadyExistsException exception = assertThrows(FieldAlreadyExistsException.class,
                     () -> client.registerUser(newUserDto(), avatar));
 
-            // then
             assertEquals("username", exception.getFieldName());
             assertEquals("Username already taken", exception.getMessage());
         }
@@ -82,16 +76,13 @@ class RestClientUserPublicRestClientTest {
         @Test
         @DisplayName("при 409 без тела ответа выбрасывает FieldAlreadyExistsException со значениями по умолчанию")
         void registerUser_When409WithEmptyBody_ShouldThrowFieldAlreadyExistsExceptionWithDefaults() {
-            // given
             server.expect(requestTo("http://localhost/api/users/register"))
                     .andRespond(withStatus(CONFLICT));
             var avatar = new MockMultipartFile("userAvatar", "avatar.png", "image/png", "123".getBytes());
 
-            // when
             FieldAlreadyExistsException exception = assertThrows(FieldAlreadyExistsException.class,
                     () -> client.registerUser(newUserDto(), avatar));
 
-            // then
             assertEquals("usernameOrEmail", exception.getFieldName());
             assertEquals("Пользователь с такими данными уже существует", exception.getMessage());
         }

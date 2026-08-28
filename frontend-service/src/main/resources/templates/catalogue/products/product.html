@@ -15,7 +15,6 @@
 
     <div class="row g-4 justify-content-center">
 
-        <!-- Изображение товара -->
         <div class="col-lg-6 reveal">
             <div class="card shadow-sm border-0 product-shot h-100">
                 <div class="card-body p-3 d-flex align-items-center">
@@ -26,7 +25,6 @@
             </div>
         </div>
 
-        <!-- Название, цена, покупка -->
         <div class="col-lg-6 reveal">
             <div class="card shadow-sm border-0">
                 <div class="card-body p-4">
@@ -57,7 +55,6 @@
                               th:text="${data.product.price != null ? #numbers.formatDecimal(data.product.price, 1, 'WHITESPACE', 2, 'POINT') + ' ₽' : 'Цена не указана'}">0.00 ₽</span>
                     </p>
 
-                    <!-- Остаток тиража -->
                     <p class="mb-4" th:if="${data.product.quantity != null}">
                         <span class="eyebrow d-block mb-1">Тираж</span>
                         <span class="fw-bold text-success" th:if="${data.product.quantity > 0}">
@@ -79,7 +76,6 @@
                         <a class="btn btn-outline-primary btn-lg px-4" th:href="@{/cart}">Перейти в корзину</a>
                     </div>
 
-                    <!-- Панель управления товаром (для ADMIN) -->
                     <div class="d-flex flex-wrap gap-2 mt-4 pt-3 border-top" sec:authorize="hasRole('ADMIN')">
                         <span class="eyebrow w-100">Управление товаром · ID <span class="mono"
                                                                                   th:text="${data.product.id}"></span></span>
@@ -102,7 +98,6 @@
         </div>
     </div>
 
-    <!-- Описание -->
     <div class="row justify-content-center mt-4">
         <div class="col-lg-12 reveal">
             <div class="card shadow-sm border-0">
@@ -115,7 +110,6 @@
         </div>
     </div>
 
-    <!-- ============================== Отзывы ============================== -->
     <section class="row justify-content-center mt-5">
         <div class="col-lg-12">
 
@@ -126,7 +120,6 @@
                 </div>
             </div>
 
-            <!-- Ошибки валидации отзыва -->
             <div class="alert alert-danger" th:if="${errors}">
                 <ul class="mb-0">
                     <li th:each="error : ${errors}" th:text="${error}">Ошибка</li>
@@ -135,7 +128,6 @@
 
             <div class="row g-4">
 
-                <!-- Форма отзыва -->
                 <div class="col-lg-5">
                     <div class="card shadow-sm border-0 reveal">
                         <div class="card-body p-4">
@@ -168,7 +160,6 @@
                     </div>
                 </div>
 
-                <!-- Список отзывов -->
                 <div class="col-lg-7">
 
                     <div class="empty-state reveal" th:if="${data.reviews().isEmpty()}">
@@ -193,7 +184,6 @@
                                     </span>
                                 </div>
 
-                                <!-- Управление своим отзывом (или любым — для админа) -->
                                 <div class="d-flex gap-2" th:if="${isAdmin or review.username == authUsername}">
                                     <button aria-label="Редактировать отзыв" class="btn btn-sm btn-outline-secondary"
                                             data-bs-toggle="modal"
@@ -217,7 +207,6 @@
                             <p class="card-text mt-2 mb-0" th:text="${review.comment}">Текст отзыва...</p>
                         </div>
 
-                        <!-- Редактирование отзыва -->
                         <div aria-hidden="true" class="modal fade" tabindex="-1"
                              th:id="'editReviewModal-' + ${review.reviewId}">
                             <div class="modal-dialog modal-dialog-centered">

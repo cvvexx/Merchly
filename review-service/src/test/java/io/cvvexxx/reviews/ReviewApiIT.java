@@ -31,13 +31,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Real end-to-end test: boots the full Spring context against a real
- * Postgres and a real Redis (both Testcontainers, both on dynamically
- * assigned ports/addresses - production wires different addresses via
- * env vars, so nothing here is hardcoded), drives it through actual HTTP
- * calls, and verifies persistence/caching behaviour for real.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Testcontainers
@@ -76,12 +69,10 @@ class ReviewApiIT {
     @Test
     @DisplayName("создание, чтение (с кешем статистики), обновление и удаление отзыва через реальные Postgres+Redis")
     void reviewLifecycle_ThroughRealPostgresAndRedis_WorksEndToEnd() {
-        // given
         UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
         UUID productId = UUID.randomUUID();
         NewReviewDto newReviewDto = new NewReviewDto(productId, 4, "Good product");
 
-        // when: создаём отзыв
         ResponseEntity<ReviewDto> createResponse = restClient()
                 .post()
                 .uri("/api/reviews/products")
@@ -90,25 +81,21 @@ class ReviewApiIT {
                 .retrieve()
                 .toEntity(ReviewDto.class);
 
-        // then: отзыв реально сохранён в Postgres
         assertEquals(HttpStatus.OK, createResponse.getStatusCode());
         ReviewDto created = createResponse.getBody();
         assertTrue(reviewRepository.findById(created.reviewId()).isPresent());
         assertEquals(productId, created.productId());
         assertEquals(4, created.rating());
 
-        // when: читаем статистику по продукту первый раз (наполняем кеш в Redis)
         ResponseEntity<ReviewStatsDto> firstStats = restClient()
                 .get()
                 .uri("/api/reviews/products/{productId}/stats", productId)
                 .retrieve()
                 .toEntity(ReviewStatsDto.class);
-        // then
         assertEquals(HttpStatus.OK, firstStats.getStatusCode());
         assertEquals(4.0, firstStats.getBody().averageRating());
         assertEquals(1L, firstStats.getBody().totalReviews());
 
-        // when: обновляем отзыв (должен инвалидировать кеш статистики в Redis)
         UpdateReviewDto updateReviewDto = new UpdateReviewDto(created.reviewId(), 2, "Changed my mind");
         ResponseEntity<ReviewDto> updateResponse = restClient()
                 .patch()
@@ -117,28 +104,23 @@ class ReviewApiIT {
                 .body(updateReviewDto)
                 .retrieve()
                 .toEntity(ReviewDto.class);
-        // then
         assertEquals(HttpStatus.OK, updateResponse.getStatusCode());
         assertEquals(2, updateResponse.getBody().rating());
 
-        // when: читаем статистику снова - должна отражать обновлённый рейтинг, а не устаревшее закешированное значение
         ResponseEntity<ReviewStatsDto> statsAfterUpdate = restClient()
                 .get()
                 .uri("/api/reviews/products/{productId}/stats", productId)
                 .retrieve()
                 .toEntity(ReviewStatsDto.class);
-        // then
         assertEquals(HttpStatus.OK, statsAfterUpdate.getStatusCode());
         assertEquals(2.0, statsAfterUpdate.getBody().averageRating());
 
-        // when: удаляем отзыв
         ResponseEntity<Void> deleteResponse = restClient()
                 .delete()
                 .uri("/api/reviews/products/{reviewId}", created.reviewId())
                 .headers(headers -> headers.addAll(authHeaders()))
                 .retrieve()
                 .toBodilessEntity();
-        // then: отзыв реально удалён из Postgres
         assertEquals(HttpStatus.NO_CONTENT, deleteResponse.getStatusCode());
         assertTrue(reviewRepository.findById(created.reviewId()).isEmpty());
     }
@@ -146,7 +128,6 @@ class ReviewApiIT {
     @Test
     @DisplayName("повторное чтение статистики отзывов - второй запрос отдаётся из реального Redis-кеша без ошибок")
     void getProductStats_ReadTwiceInARow_ShouldServeSecondReadFromRedisCacheWithoutThrowing() {
-        // given
         UUID productId = UUID.randomUUID();
         restClient()
                 .post()
@@ -156,14 +137,12 @@ class ReviewApiIT {
                 .retrieve()
                 .toBodilessEntity();
 
-        // when: первое чтение наполняет кеш статистики в Redis
         ResponseEntity<ReviewStatsDto> firstRead = restClient()
                 .get()
                 .uri("/api/reviews/products/{productId}/stats", productId)
                 .retrieve()
                 .toEntity(ReviewStatsDto.class);
 
-        // then: второе чтение - настоящий cache hit, читает и десериализует ReviewStatsDto из Redis
         ResponseEntity<ReviewStatsDto> secondRead = restClient()
                 .get()
                 .uri("/api/reviews/products/{productId}/stats", productId)
@@ -178,12 +157,10 @@ class ReviewApiIT {
     @Test
     @DisplayName("создание отзыва с некорректным рейтингом возвращает 400 и не сохраняет ничего в Postgres")
     void createReview_WithInvalidRating_ReturnsBadRequestAndPersistsNothing() {
-        // given
         UUID productId = UUID.randomUUID();
         NewReviewDto invalidReviewDto = new NewReviewDto(productId, 7, "invalid rating");
         long countBefore = reviewRepository.count();
 
-        // when
         ResponseEntity<ProblemDetail> response = restClient()
                 .post()
                 .uri("/api/reviews/products")
@@ -194,7 +171,6 @@ class ReviewApiIT {
                 })
                 .toEntity(ProblemDetail.class);
 
-        // then
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals(countBefore, reviewRepository.count());
     }

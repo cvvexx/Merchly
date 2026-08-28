@@ -45,7 +45,6 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("createReview: если запрос корректен, то вернуть сохраненный отзыв в виде Dto")
         public void createReview_requestIsValid_returnReviewDto() {
-            // given
             UUID userId = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
             String comment = "comment";
@@ -53,14 +52,12 @@ class DefaultReviewServiceTest {
 
             when(reviewRepository.save(any(Review.class))).thenAnswer(i -> i.getArgument(0));
 
-            // when
             ReviewDto reviewDto = defaultReviewService.createReview(new NewReviewDto(
                     productId,
                     rating,
                     comment
             ), userId);
 
-            // then
             assertNotNull(reviewDto);
             assertEquals("comment", reviewDto.comment());
             assertEquals(rating, reviewDto.rating());
@@ -70,14 +67,12 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("createReview: если отзыв уже существует, то выбросить IllegalStateException")
         public void createReview_reviewAlreadyExists_throwIllegalStateException() {
-            // given
             UUID userId = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
             String comment = "comment";
             int rating = 3;
             when(reviewRepository.existsByProductIdAndUserId(productId, userId)).thenReturn(true);
 
-            // when
             IllegalStateException exception = assertThrows(
                     IllegalStateException.class, () -> defaultReviewService.createReview(new NewReviewDto(
                             productId,
@@ -86,7 +81,6 @@ class DefaultReviewServiceTest {
                     ), userId)
             );
 
-            // then
             assertNotNull(exception);
             assertEquals("You already have an review on this product", exception.getMessage());
         }
@@ -99,7 +93,6 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("getReviewsByProduct: если товар есть, отдать отзывы в виде Page")
         public void getReviewsByProduct_requestIsValid_returnPageOfReviewDto() {
-            // given
             UUID userId1 = UUID.randomUUID();
             UUID userId2 = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
@@ -114,10 +107,8 @@ class DefaultReviewServiceTest {
             when(reviewRepository.findAllByProductId(productId, Pageable.unpaged()))
                     .thenReturn(reviewPage);
 
-            // when
             var reviewDtoPage = defaultReviewService.getReviewsByProduct(productId, Pageable.unpaged());
 
-            // then
             verify(reviewRepository, times(1)).findAllByProductId(productId, Pageable.unpaged());
             assertEquals(2, reviewDtoPage.getTotalElements());
         }
@@ -125,15 +116,12 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("getReviewsByProduct: если отзывов на товар нет, то вернуть пустой объект Page")
         public void getReviewsByProduct_requestIsInvalid_returnEmptyPage() {
-            // given
             UUID productId = UUID.randomUUID();
             when(reviewRepository.findAllByProductId(productId, Pageable.unpaged()))
                     .thenReturn(new PageImpl<>(List.of()));
 
-            // when
             var result = defaultReviewService.getReviewsByProduct(productId, Pageable.unpaged());
 
-            // then
             verify(reviewRepository, times(1)).findAllByProductId(productId, Pageable.unpaged());
             assertTrue(result.isEmpty());
             verifyNoMoreInteractions(reviewRepository);
@@ -147,7 +135,6 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("updateReview: автор отзыва успешно обновляет оценку и комментарий")
         void updateReview_ByAuthor_ShouldUpdateFieldsAndReturnDto() {
-            // given
             UUID reviewId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
@@ -164,10 +151,8 @@ class DefaultReviewServiceTest {
 
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
 
-            // when
             ReviewDto result = defaultReviewService.updateReview(updateDto, userId, false);
 
-            // then
             assertNotNull(result);
             assertEquals(reviewId, result.reviewId());
             assertEquals(productId, result.productId());
@@ -175,7 +160,6 @@ class DefaultReviewServiceTest {
             assertEquals(5, result.rating());
             assertEquals("Отличный товар!", result.comment());
 
-            // Проверяем изменение полей самой сущности (dirty checking в Hibernate)
             assertEquals(5, existingReview.getRating());
             assertEquals("Отличный товар!", existingReview.getComment());
 
@@ -185,10 +169,9 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("updateReview: администратор может обновить чужой отзыв")
         void updateReview_ByAdmin_ShouldUpdateReview() {
-            // given
             UUID reviewId = UUID.randomUUID();
             UUID authorId = UUID.randomUUID();
-            UUID adminUserId = UUID.randomUUID(); // Другой пользователь, но isAdmin = true
+            UUID adminUserId = UUID.randomUUID();
 
             Review existingReview = Review.builder()
                     .id(reviewId)
@@ -201,14 +184,12 @@ class DefaultReviewServiceTest {
 
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
 
-            // when
             ReviewDto result = defaultReviewService.updateReview(updateDto, adminUserId, true);
 
-            // then
             assertNotNull(result);
             assertEquals(4, result.rating());
             assertEquals("Модерировано админом", result.comment());
-            assertEquals(authorId, result.userId()); // ID автора отзыва не изменяется
+            assertEquals(authorId, result.userId());
 
             verify(reviewRepository, times(1)).findById(reviewId);
         }
@@ -216,7 +197,6 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("updateReview: выбрасывает AccessDeniedException, если пользователь не автор и не админ")
         void updateReview_NotAuthorAndNotAdmin_ShouldThrowAccessDeniedException() {
-            // given
             UUID reviewId = UUID.randomUUID();
             UUID authorId = UUID.randomUUID();
             UUID strangerUserId = UUID.randomUUID();
@@ -232,7 +212,6 @@ class DefaultReviewServiceTest {
 
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
 
-            // when & then
             AccessDeniedException exception = assertThrows(
                     AccessDeniedException.class,
                     () -> defaultReviewService.updateReview(updateDto, strangerUserId, false)
@@ -240,7 +219,6 @@ class DefaultReviewServiceTest {
 
             assertEquals("You are not allowed to update this review", exception.getMessage());
 
-            // Поля не должны измениться
             assertEquals(5, existingReview.getRating());
             assertEquals("Авторский отзыв", existingReview.getComment());
         }
@@ -248,13 +226,11 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("updateReview: выбрасывает NoSuchElementException, если отзыв не найден")
         void updateReview_ReviewNotFound_ShouldThrowNoSuchElementException() {
-            // given
             UUID reviewId = UUID.randomUUID();
             UpdateReviewDto updateDto = new UpdateReviewDto(reviewId, 5, "Комментарий");
 
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.empty());
 
-            // when & then
             NoSuchElementException exception = assertThrows(
                     NoSuchElementException.class,
                     () -> defaultReviewService.updateReview(updateDto, UUID.randomUUID(), false)
@@ -271,7 +247,6 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("deleteReview: автор отзыва успешно удаляет свой отзыв")
         void deleteReview_ByAuthor_ShouldDeleteAndReturnProductId() {
-            // given
             UUID reviewId = UUID.randomUUID();
             UUID userId = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
@@ -284,10 +259,8 @@ class DefaultReviewServiceTest {
 
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
 
-            // when
             UUID resultProductId = defaultReviewService.deleteReview(reviewId, userId, false);
 
-            // then
             assertEquals(productId, resultProductId);
             verify(reviewRepository, times(1)).findById(reviewId);
             verify(reviewRepository, times(1)).delete(existingReview);
@@ -296,7 +269,6 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("deleteReview: администратор успешно удаляет чужой отзыв")
         void deleteReview_ByAdmin_ShouldDeleteAndReturnProductId() {
-            // given
             UUID reviewId = UUID.randomUUID();
             UUID authorId = UUID.randomUUID();
             UUID adminUserId = UUID.randomUUID();
@@ -310,10 +282,8 @@ class DefaultReviewServiceTest {
 
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
 
-            // when
             UUID resultProductId = defaultReviewService.deleteReview(reviewId, adminUserId, true);
 
-            // then
             assertEquals(productId, resultProductId);
             verify(reviewRepository, times(1)).findById(reviewId);
             verify(reviewRepository, times(1)).delete(existingReview);
@@ -322,7 +292,6 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("deleteReview: выбрасывает AccessDeniedException, если удаляет не автор и не админ")
         void deleteReview_NotAuthorAndNotAdmin_ShouldThrowAccessDeniedException() {
-            // given
             UUID reviewId = UUID.randomUUID();
             UUID authorId = UUID.randomUUID();
             UUID strangerUserId = UUID.randomUUID();
@@ -335,7 +304,6 @@ class DefaultReviewServiceTest {
 
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.of(existingReview));
 
-            // when & then
             AccessDeniedException exception = assertThrows(
                     AccessDeniedException.class,
                     () -> defaultReviewService.deleteReview(reviewId, strangerUserId, false)
@@ -349,12 +317,10 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("deleteReview: выбрасывает NoSuchElementException, если отзыв не найден")
         void deleteReview_ReviewNotFound_ShouldThrowNoSuchElementException() {
-            // given
             UUID reviewId = UUID.randomUUID();
 
             when(reviewRepository.findById(reviewId)).thenReturn(Optional.empty());
 
-            // when & then
             NoSuchElementException exception = assertThrows(
                     NoSuchElementException.class,
                     () -> defaultReviewService.deleteReview(reviewId, UUID.randomUUID(), false)
@@ -372,16 +338,13 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("getProductStats: возвращает реальную статистику товара, если она есть в БД")
         void getProductStats_WhenStatsExist_ShouldReturnStats() {
-            // given
             UUID productId = UUID.randomUUID();
             ReviewStatsDto expectedStats = new ReviewStatsDto(productId, 4.8, 15L);
 
             when(reviewRepository.getProductStats(productId)).thenReturn(Optional.of(expectedStats));
 
-            // when
             ReviewStatsDto actualStats = defaultReviewService.getProductStats(productId);
 
-            // then
             assertNotNull(actualStats);
             assertEquals(productId, actualStats.productId());
             assertEquals(4.8, actualStats.averageRating());
@@ -393,15 +356,12 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("getProductStats: возвращает дефолтную статистику (0.0, 0L), если отзывов нет")
         void getProductStats_WhenStatsNotExist_ShouldReturnDefaultStats() {
-            // given
             UUID productId = UUID.randomUUID();
 
             when(reviewRepository.getProductStats(productId)).thenReturn(Optional.empty());
 
-            // when
             ReviewStatsDto actualStats = defaultReviewService.getProductStats(productId);
 
-            // then
             assertNotNull(actualStats);
             assertEquals(productId, actualStats.productId());
             assertEquals(0.0, actualStats.averageRating());
@@ -418,13 +378,10 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("getProductsStats: возвращает пустой список, если передан null или пустой список")
         void getProductsStats_NullOrEmptyList_ShouldReturnEmptyListWithoutRepositoryCall() {
-            // given - null and empty product id lists require no repository stubbing
 
-            // when
             List<ReviewStatsDto> resultNull = defaultReviewService.getProductsStats(null);
             List<ReviewStatsDto> resultEmpty = defaultReviewService.getProductsStats(List.of());
 
-            // then
             assertTrue(resultNull.isEmpty());
             assertTrue(resultEmpty.isEmpty());
             verifyNoInteractions(reviewRepository);
@@ -433,10 +390,9 @@ class DefaultReviewServiceTest {
         @Test
         @DisplayName("getProductsStats: возвращает корректный список со статистикой и подставляет дефолты для отсутствующих товаров")
         void getProductsStats_ValidProductIds_ShouldMapStatsAndDefaultMissing() {
-            // given
-            UUID productId1 = UUID.randomUUID(); // Есть статистика
-            UUID productId2 = UUID.randomUUID(); // Нет статистики
-            UUID productId3 = UUID.randomUUID(); // Есть статистика
+            UUID productId1 = UUID.randomUUID();
+            UUID productId2 = UUID.randomUUID();
+            UUID productId3 = UUID.randomUUID();
 
             List<UUID> productIds = List.of(productId1, productId2, productId3);
 
@@ -445,24 +401,19 @@ class DefaultReviewServiceTest {
 
             when(reviewRepository.getProductsStats(productIds)).thenReturn(List.of(stats1, stats3));
 
-            // when
             List<ReviewStatsDto> result = defaultReviewService.getProductsStats(productIds);
 
-            // then
             assertNotNull(result);
             assertEquals(3, result.size());
 
-            // Товар 1
             assertEquals(productId1, result.get(0).productId());
             assertEquals(4.5, result.get(0).averageRating());
             assertEquals(10L, result.get(0).totalReviews());
 
-            // Товар 2 (подставились дефолты)
             assertEquals(productId2, result.get(1).productId());
             assertEquals(0.0, result.get(1).averageRating());
             assertEquals(0L, result.get(1).totalReviews());
 
-            // Товар 3
             assertEquals(productId3, result.get(2).productId());
             assertEquals(3.0, result.get(2).averageRating());
             assertEquals(2L, result.get(2).totalReviews());

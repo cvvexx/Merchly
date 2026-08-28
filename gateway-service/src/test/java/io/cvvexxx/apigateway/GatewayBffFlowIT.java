@@ -1,21 +1,17 @@
 package io.cvvexxx.apigateway;
 
-import io.cvvexxx.apigateway.support.RedisBackedGatewayIT;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.cvvexxx.apigateway.client.KeycloakRestClient;
 import io.cvvexxx.apigateway.dto.KeycloakTokenResponse;
+import io.cvvexxx.apigateway.support.RedisBackedGatewayIT;
 import io.cvvexxx.apigateway.support.StubJwtDecoderConfiguration;
 import io.cvvexxx.apigateway.support.TestTokens;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -23,24 +19,15 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.io.IOException;
 import java.net.CookieManager;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.net.URLEncoder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.absent;
-import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.post;
-import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.containing;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
-import static com.github.tomakehurst.wiremock.client.WireMock.urlPathMatching;
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -71,14 +58,14 @@ class GatewayBffFlowIT extends RedisBackedGatewayIT {
         frontend.stop();
     }
 
-    @AfterEach
-    void resetStubs() {
-        frontend.resetAll();
-    }
-
     @DynamicPropertySource
     static void frontendUri(DynamicPropertyRegistry registry) {
         registry.add("FRONTEND_SERVICE_URI", () -> "http://localhost:" + frontend.port());
+    }
+
+    @AfterEach
+    void resetStubs() {
+        frontend.resetAll();
     }
 
     private URI uri(String path) {

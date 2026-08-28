@@ -45,124 +45,103 @@ class RestClientOrdersRestClientTest {
         @Test
         @DisplayName("400 с полем 'errors' в теле -> BadRequestException с этими ошибками")
         void createOrder_When400WithErrorsField_ShouldThrowBadRequestExceptionWithErrors() {
-            // given
             server.expect(requestTo("http://localhost/api/orders/create"))
                     .andExpect(method(POST))
                     .andRespond(withStatus(BAD_REQUEST)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"errors\":[\"deliveryAddress must not be blank\"]}"));
 
-            // when
             BadRequestException exception = assertThrows(BadRequestException.class,
                     () -> client.createOrder(newOrderDto()));
 
-            // then
             assertEquals(List.of("deliveryAddress must not be blank"), exception.getErrors());
         }
 
         @Test
         @DisplayName("400 с пустым телом -> BadRequestException с сообщением по умолчанию")
         void createOrder_When400WithEmptyBody_ShouldThrowBadRequestExceptionWithDefaultMessage() {
-            // given
             server.expect(requestTo("http://localhost/api/orders/create"))
                     .andExpect(method(POST))
                     .andRespond(withStatus(BAD_REQUEST));
 
-            // when
             BadRequestException exception = assertThrows(BadRequestException.class,
                     () -> client.createOrder(newOrderDto()));
 
-            // then
             assertEquals(List.of("Неизвестная ошибка сервера"), exception.getErrors());
         }
 
         @Test
         @DisplayName("400 с 'detail', но без 'errors' -> BadRequestException с [detail]")
         void createOrder_When400WithDetailOnly_ShouldThrowBadRequestExceptionWithDetail() {
-            // given
             server.expect(requestTo("http://localhost/api/orders/create"))
                     .andExpect(method(POST))
                     .andRespond(withStatus(BAD_REQUEST)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"detail\":\"Item is out of stock\"}"));
 
-            // when
             BadRequestException exception = assertThrows(BadRequestException.class,
                     () -> client.createOrder(newOrderDto()));
 
-            // then
             assertEquals(List.of("Item is out of stock"), exception.getErrors());
         }
 
         @Test
         @DisplayName("403 -> OrderAccessDeniedException с ошибками из тела ответа")
         void createOrder_When403_ShouldThrowOrderAccessDeniedException() {
-            // given
             server.expect(requestTo("http://localhost/api/orders/create"))
                     .andExpect(method(POST))
                     .andRespond(withStatus(FORBIDDEN)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"errors\":[\"access denied\"]}"));
 
-            // when
             OrderAccessDeniedException exception = assertThrows(OrderAccessDeniedException.class,
                     () -> client.createOrder(newOrderDto()));
 
-            // then
             assertEquals(List.of("access denied"), exception.getErrors());
         }
 
         @Test
         @DisplayName("404 -> OrderNotFoundException с ошибками из тела ответа")
         void createOrder_When404_ShouldThrowOrderNotFoundException() {
-            // given
             server.expect(requestTo("http://localhost/api/orders/create"))
                     .andExpect(method(POST))
                     .andRespond(withStatus(NOT_FOUND)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"errors\":[\"order not found\"]}"));
 
-            // when
             OrderNotFoundException exception = assertThrows(OrderNotFoundException.class,
                     () -> client.createOrder(newOrderDto()));
 
-            // then
             assertEquals(List.of("order not found"), exception.getErrors());
         }
 
         @Test
         @DisplayName("409 -> OrderCannotChangeStatusException с ошибками из тела ответа")
         void createOrder_When409_ShouldThrowOrderCannotChangeStatusException() {
-            // given
             server.expect(requestTo("http://localhost/api/orders/create"))
                     .andExpect(method(POST))
                     .andRespond(withStatus(CONFLICT)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"errors\":[\"cannot change status\"]}"));
 
-            // when
             OrderCannotChangeStatusException exception = assertThrows(OrderCannotChangeStatusException.class,
                     () -> client.createOrder(newOrderDto()));
 
-            // then
             assertEquals(List.of("cannot change status"), exception.getErrors());
         }
 
         @Test
         @DisplayName("неотображённый статус (например 422) -> BaseClientException с ошибками из тела ответа")
         void createOrder_WhenUnmappedStatus_ShouldThrowBaseClientException() {
-            // given
             server.expect(requestTo("http://localhost/api/orders/create"))
                     .andExpect(method(POST))
                     .andRespond(withStatus(UNPROCESSABLE_ENTITY)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"errors\":[\"unprocessable\"]}"));
 
-            // when
             BaseClientException exception = assertThrows(BaseClientException.class,
                     () -> client.createOrder(newOrderDto()));
 
-            // then
             assertEquals(List.of("unprocessable"), exception.getErrors());
         }
     }
