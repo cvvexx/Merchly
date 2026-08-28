@@ -42,15 +42,12 @@ class RestClientProductsPublicRestClientTest {
         @Test
         @DisplayName("если продукт не найден (404), возвращает Optional.empty() вместо исключения")
         void findProductById_When404_ShouldReturnEmptyOptional() {
-            // given
             UUID productId = UUID.randomUUID();
             server.expect(requestTo("http://localhost/api/products/" + productId))
                     .andRespond(withStatus(NOT_FOUND));
 
-            // when
             Optional<Product> result = client.findProductById(productId);
 
-            // then
             assertTrue(result.isEmpty());
         }
     }
@@ -62,19 +59,16 @@ class RestClientProductsPublicRestClientTest {
         @Test
         @DisplayName("при 400 выбрасывает BadRequestException с ошибками из тела ответа")
         void createProduct_When400_ShouldThrowBadRequestExceptionWithErrors() {
-            // given
             server.expect(requestTo("http://localhost/api/products"))
                     .andRespond(withStatus(BAD_REQUEST)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"errors\":[\"title must not be blank\"]}"));
             var image = new MockMultipartFile("image", "image.png", "image/png", "123".getBytes());
 
-            // when
             BadRequestException exception = assertThrows(BadRequestException.class, () ->
                     client.createProduct("", "desc", 1, BigDecimal.TEN, image, UUID.randomUUID())
             );
 
-            // then
             assertEquals(List.of("title must not be blank"), exception.getErrors());
         }
     }
@@ -86,7 +80,6 @@ class RestClientProductsPublicRestClientTest {
         @Test
         @DisplayName("при 400 выбрасывает BadRequestException с ошибками из тела ответа")
         void updateProduct_When400_ShouldThrowBadRequestExceptionWithErrors() {
-            // given
             UUID productId = UUID.randomUUID();
             server.expect(requestTo("http://localhost/api/products/" + productId))
                     .andRespond(withStatus(BAD_REQUEST)
@@ -94,12 +87,10 @@ class RestClientProductsPublicRestClientTest {
                             .body("{\"errors\":[\"price must be positive\"]}"));
             var image = new MockMultipartFile("image", "image.png", "image/png", "123".getBytes());
 
-            // when
             BadRequestException exception = assertThrows(BadRequestException.class, () ->
                     client.updateProduct(productId, "title", "desc", 1, BigDecimal.ZERO, image)
             );
 
-            // then
             assertEquals(List.of("price must be positive"), exception.getErrors());
         }
     }
@@ -111,12 +102,10 @@ class RestClientProductsPublicRestClientTest {
         @Test
         @DisplayName("при 404 выбрасывает NoSuchElementException")
         void deleteProduct_When404_ShouldThrowNoSuchElementException() {
-            // given
             UUID productId = UUID.randomUUID();
             server.expect(requestTo("http://localhost/api/products/" + productId))
                     .andRespond(withStatus(NOT_FOUND));
 
-            // when / then
             assertThrows(NoSuchElementException.class, () -> client.deleteProduct(productId));
         }
     }

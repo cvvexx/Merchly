@@ -90,7 +90,7 @@ services:
     image: quay.io/keycloak/keycloak:24.0
     container_name: merchly_keycloak
     restart: always
-    command: start-dev
+    command: start-dev --import-realm
     env_file:
       - .env.dev
     environment:
@@ -103,6 +103,8 @@ services:
       KC_HTTP_PORT: 8090
     ports:
       - "8090:8090"
+    volumes:
+      - ./.keycloak:/opt/keycloak/data/import:ro
     depends_on:
       - keycloak_db
 
@@ -121,6 +123,33 @@ services:
     volumes:
       - minio_data:/data
     command: server /data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD", "mc", "ready", "local" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc
+    container_name: merchly_minio_init
+    env_file:
+      - .env.dev
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./.seed/minio:/seed:ro
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin};
+      /usr/bin/mc mb myminio/merchly-products --ignore-existing;
+      /usr/bin/mc mb myminio/merchly-users --ignore-existing;
+      /usr/bin/mc anonymous set download myminio/merchly-products;
+      /usr/bin/mc anonymous set download myminio/merchly-users;
+      /usr/bin/mc mirror --overwrite /seed/products myminio/merchly-products;
+      /usr/bin/mc mirror --overwrite /seed/users myminio/merchly-users;
+      exit 0;
+      "
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0

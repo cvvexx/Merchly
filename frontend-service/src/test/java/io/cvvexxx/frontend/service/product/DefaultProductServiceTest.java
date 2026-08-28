@@ -62,7 +62,6 @@ class DefaultProductServiceTest {
                 username,
                 UUID.randomUUID(),
                 "access-token",
-                "refresh-token",
                 roles.stream()
                         .map(SimpleGrantedAuthority::new)
                         .map(GrantedAuthority.class::cast)
@@ -77,13 +76,10 @@ class DefaultProductServiceTest {
         @Test
         @DisplayName("если product-service вернул пустой список, не обращается к user/review сервисам")
         void getProductsList_WhenNoProducts_ShouldReturnEmptyDataWithoutFurtherCalls() {
-            // given
             when(productsPublicRestClient.findAllProducts("filter")).thenReturn(List.of());
 
-            // when
             ProductListData result = productService.getProductsList("filter");
 
-            // then
             assertEquals(List.of(), result.viewModels());
             verifyNoInteractions(userInternalRestClient, reviewsRestClient);
         }
@@ -91,7 +87,6 @@ class DefaultProductServiceTest {
         @Test
         @DisplayName("собирает viewModel из товара, владельца и статистики отзывов; если статистики нет - подставляет нулевую заглушку")
         void getProductsList_ShouldEnrichProductsWithOwnersAndReviewStats() {
-            // given
             UUID creatorId = UUID.randomUUID();
             UUID productWithStatsId = UUID.randomUUID();
             UUID productWithoutStatsId = UUID.randomUUID();
@@ -111,10 +106,8 @@ class DefaultProductServiceTest {
             when(imageUrlFormatter.getProductImageUrl("image.png")).thenReturn("/img/product.png");
             when(imageUrlFormatter.getUserAvatarUrl("avatar.png")).thenReturn("/img/avatar.png");
 
-            // when
             ProductListData result = productService.getProductsList(null);
 
-            // then
             assertEquals(2, result.viewModels().size());
             ProductOwnerViewModel withStats = result.viewModels().stream()
                     .filter(vm -> vm.product().id().equals(productWithStatsId))
@@ -134,7 +127,6 @@ class DefaultProductServiceTest {
         @Test
         @DisplayName("если reviewsRestClient вернул null, обрабатывает это как пустую статистику")
         void getProductsList_WhenReviewStatsIsNull_ShouldTreatAsEmptyStats() {
-            // given
             UUID creatorId = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
             Product product = product(productId, creatorId);
@@ -146,10 +138,8 @@ class DefaultProductServiceTest {
             when(imageUrlFormatter.getProductImageUrl("image.png")).thenReturn("/img/product.png");
             when(imageUrlFormatter.getUserAvatarUrl("avatar.png")).thenReturn("/img/avatar.png");
 
-            // when
             ProductListData result = productService.getProductsList(null);
 
-            // then
             assertEquals(1, result.viewModels().size());
             assertEquals(0L, result.viewModels().get(0).reviewsCount());
             assertEquals(0.0, result.viewModels().get(0).averageRating());
@@ -163,7 +153,6 @@ class DefaultProductServiceTest {
         @Test
         @DisplayName("определяет isAdmin=true, если токен содержит ROLE_ADMIN, и подставляет имена рецензентов")
         void getProductPage_WhenTokenHasAdminRole_ShouldReturnAdminTrueAndReviewerUsernames() {
-            // given
             UUID creatorId = UUID.randomUUID();
             UUID reviewerId = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
@@ -188,10 +177,8 @@ class DefaultProductServiceTest {
 
             KeycloakJwtAuthenticationToken token = tokenWithRoles("admin-user", List.of("ROLE_ADMIN"));
 
-            // when
             ProductPageData result = productService.getProductPage(product, pageable, token);
 
-            // then
             assertTrue(result.isAdmin());
             assertEquals("admin-user", result.authUsername());
             assertEquals("reviewer", result.viewModel().reviews().getContent().get(0).username());
@@ -202,7 +189,6 @@ class DefaultProductServiceTest {
         @Test
         @DisplayName("если у отзывов нет userId, не обращается к user-service за именами и isAdmin=false для не-админа")
         void getProductPage_WhenNoReviewers_ShouldSkipUsernameLookupAndReturnAdminFalse() {
-            // given
             UUID creatorId = UUID.randomUUID();
             UUID productId = UUID.randomUUID();
             Product product = product(productId, creatorId);
@@ -218,10 +204,8 @@ class DefaultProductServiceTest {
 
             KeycloakJwtAuthenticationToken token = tokenWithRoles("plain-user", List.of("ROLE_USER"));
 
-            // when
             ProductPageData result = productService.getProductPage(product, pageable, token);
 
-            // then
             assertTrue(!result.isAdmin());
             assertEquals(0L, result.viewModel().reviewsCount());
             assertEquals(0.0, result.viewModel().averageRating());

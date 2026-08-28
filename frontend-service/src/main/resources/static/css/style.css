@@ -1,24 +1,13 @@
-/* =========================================================================
-   Merchly — фирменный стиль поверх Bootstrap 5.
-   Направление: «Тираж» — визуальный язык печатного цеха.
-   Две краски (фиолетовая и пурпурная), штампы статусов, моноширинные цифры.
-
-   Подключается ОДНОЙ строкой сразу после CDN-ссылки на bootstrap.min.css
-   и ничего не знает о бизнес-логике — только внешний вид.
-   ========================================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;800&family=JetBrains+Mono:wght@500;700&display=swap');
 
 :root {
-    /* Фирменная палитра — две печатные краски по бумаге */
     --brand: #5b3df0;
     --brand-dark: #4527c9;
     --brand-darker: #34209e;
     --brand-light: #efeafe;
     --brand-rgb: 91, 61, 240;
 
-    /* Вторая краска. Используется точечно: активный пункт меню,
-       счётчик корзины, штрих в заголовке главной. */
     --flare: #ff2e7e;
     --flare-dark: #d81b62;
     --flare-rgb: 255, 46, 126;
@@ -56,14 +45,11 @@
     --font-body: 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
 
-    /* Высота верхней панели — от неё считаются отступы и «липкие» блоки */
     --rail-h: 68px;
     --dock-h: 64px;
 
     color-scheme: light;
 }
-
-/* ---------- База ---------- */
 
 html {
     scroll-behavior: smooth;
@@ -85,7 +71,6 @@ h1, h2, h3, h4, h5, h6,
     color: var(--ink);
 }
 
-/* Наборный шрифт-акцидент: только крупные заголовки страниц и главной. */
 h1, .h1, .display-1, .display-4, .page-title {
     font-family: var(--font-display);
     font-weight: 600;
@@ -106,14 +91,12 @@ a:hover {
     color: #fff;
 }
 
-/* Единое кольцо фокуса — клавиатурная навигация должна быть видна везде */
 :focus-visible {
     outline: 3px solid rgba(var(--brand-rgb), 0.55);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
 }
 
-/* Тонкий скроллбар в духе общего стиля (webkit) */
 ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -133,8 +116,6 @@ a:hover {
     background: rgba(91, 61, 240, 0.45);
 }
 
-/* Моноширинные цифры — номера заказов, суммы, количества.
-   Табличные цифры не «прыгают» при пересчёте итога. */
 .mono,
 .price,
 .order-id {
@@ -143,7 +124,6 @@ a:hover {
     letter-spacing: -0.02em;
 }
 
-/* Надзаголовок: короткая метка над блоком */
 .eyebrow {
     font-family: var(--font-mono);
     font-size: 0.7rem;
@@ -152,11 +132,6 @@ a:hover {
     letter-spacing: 0.14em;
     color: var(--ink-soft);
 }
-
-/* =========================================================================
-   ВЕРХНЯЯ ПАНЕЛЬ  (fragments/layout.html :: topbar)
-   Одна панель на все страницы: каталог, заказы, корзина, профиль.
-   ========================================================================= */
 
 .top-rail {
     position: sticky;
@@ -183,7 +158,6 @@ a:hover {
     padding-bottom: 0.6rem;
 }
 
-/* Логотип: точка-краска + наборное начертание */
 .rail-brand {
     display: inline-flex;
     align-items: center;
@@ -215,7 +189,6 @@ a:hover {
     box-shadow: 0 0 0 6px rgba(var(--flare-rgb), 0.3);
 }
 
-/* Ссылки-разделы. Активный подчёркнут второй краской. */
 .rail-nav {
     display: flex;
     align-items: center;
@@ -273,7 +246,6 @@ a:hover {
     flex-shrink: 0;
 }
 
-/* Кнопки панели — один размер для всех, без разнобоя */
 .rail-btn {
     display: inline-flex;
     align-items: center;
@@ -312,7 +284,6 @@ a:hover {
     color: #fff;
 }
 
-/* Корзина со счётчиком — цель «полёта» товара */
 .cart-pill {
     position: relative;
 }
@@ -338,7 +309,6 @@ a:hover {
     display: none;
 }
 
-/* Штамп: счётчик «впечатывается» при добавлении товара */
 .cart-pill.is-stamped .cart-count {
     animation: stamp 0.45s var(--ease-back);
 }
@@ -370,7 +340,6 @@ a:hover {
     }
 }
 
-/* На узких экранах разделы уезжают в нижний док, панель остаётся компактной */
 @media (max-width: 767.98px) {
     .rail-nav {
         display: none;
@@ -392,11 +361,6 @@ a:hover {
         padding: 0.45rem 0.7rem;
     }
 }
-
-/* =========================================================================
-   НИЖНИЙ ДОК — мобильная навигация (fragments/layout.html :: dock)
-   Разделы всегда под большим пальцем, без раскрывающегося меню.
-   ========================================================================= */
 
 .dock {
     display: none;
@@ -422,7 +386,6 @@ a:hover {
         box-shadow: 0 -8px 24px -16px rgba(22, 18, 58, 0.4);
     }
 
-    /* Чтобы док не перекрывал последний элемент страницы */
     body {
         padding-bottom: calc(var(--dock-h) + env(safe-area-inset-bottom, 0px));
     }
@@ -455,7 +418,6 @@ a:hover {
         color: var(--brand);
     }
 
-    /* Метка активного раздела — короткий штрих второй краской */
     .dock__item.is-active::before {
         content: '';
         position: absolute;
@@ -491,10 +453,6 @@ a:hover {
     }
 }
 
-/* =========================================================================
-   Заголовок страницы — общий блок под панелью
-   ========================================================================= */
-
 .page-head {
     display: flex;
     flex-wrap: wrap;
@@ -509,7 +467,6 @@ a:hover {
     font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.2rem);
 }
 
-/* Ссылка «назад» с уезжающей стрелкой */
 .back-link {
     display: inline-flex;
     align-items: center;
@@ -535,14 +492,11 @@ a:hover {
     transform: translateX(-4px);
 }
 
-/* Тот же приём, но стрелка ведёт вперёд */
 .back-link--forward:hover i,
 .back-link--forward:hover .back-link__arrow {
     transform: translateX(4px);
 }
 
-/* Центрирование страниц входа и ошибок без вертикального переполнения:
-   vh-100 вместе с панелью давало лишнюю полосу прокрутки. */
 .page-center {
     display: flex;
     align-items: center;
@@ -550,8 +504,6 @@ a:hover {
     min-height: calc(100vh - var(--rail-h) - 3rem);
     padding: 2rem 0;
 }
-
-/* ---------- Кнопки ---------- */
 
 .btn {
     font-weight: 700;
@@ -673,15 +625,12 @@ a:hover {
     opacity: 0.65;
 }
 
-/* Кнопка в состоянии «готово» — краткое подтверждение вместо всплывающего окна */
 .btn.is-done {
     background: var(--ok) !important;
     border-color: var(--ok) !important;
     color: #fff !important;
     animation: rail-btn-pop 0.45s var(--ease-back);
 }
-
-/* ---------- Карточки ---------- */
 
 .card {
     background: var(--paper);
@@ -724,8 +673,6 @@ a:hover {
     background: rgba(91, 61, 240, 0.03) !important;
 }
 
-/* Наведение только на кликабельные карточки (список товаров, список заказов).
-   Обычные карточки-контейнеры не двигаются: подъём обещает переход. */
 .card-lift:hover,
 .hover-shadow:hover {
     transform: translateY(-4px);
@@ -740,14 +687,11 @@ a:hover {
     transition: all 0.22s var(--ease);
 }
 
-/* ---------- Формы ---------- */
-
 .form-label {
     color: var(--ink-soft);
     letter-spacing: 0.04em;
 }
 
-/* Подпись поля, набранная как надзаголовок, сохраняет свой трекинг */
 .form-label.eyebrow {
     margin-bottom: 0.4rem;
     letter-spacing: 0.14em;
@@ -777,8 +721,6 @@ a:hover {
     font-weight: 700;
     border-radius: var(--radius-sm);
 }
-
-/* ---------- Значки, бейджи ---------- */
 
 .badge {
     border-radius: var(--radius-pill);
@@ -812,8 +754,6 @@ a:hover {
     background: var(--slate) !important;
 }
 
-/* Штамп статуса заказа: заказ проходит по инстанциям и получает оттиск.
-   Прямоугольная рамка, моноширинный набор, лёгкий наклон — как оттиск печати. */
 .stamp {
     display: inline-flex;
     align-items: center;
@@ -845,7 +785,6 @@ a:hover {
     background: rgba(225, 29, 72, 0.07);
 }
 
-/* Пульсация, пока заказ ожидает решения склада */
 .stamp--pending::before {
     content: '';
     width: 0.45rem;
@@ -865,8 +804,6 @@ a:hover {
         transform: scale(0.7);
     }
 }
-
-/* ---------- Утилитарные цветовые классы Bootstrap ---------- */
 
 .text-primary {
     color: var(--brand) !important;
@@ -928,8 +865,6 @@ a:hover {
     background-color: var(--canvas) !important;
 }
 
-/* ---------- Алерты ---------- */
-
 .alert {
     border: 1px solid transparent;
     border-left: 4px solid transparent;
@@ -971,8 +906,6 @@ a:hover {
     color: var(--ink-soft);
 }
 
-/* ---------- Таблицы ---------- */
-
 .table {
     --bs-table-bg: transparent;
     color: var(--ink);
@@ -999,7 +932,6 @@ a:hover {
     background-color: rgba(91, 61, 240, 0.05);
 }
 
-/* Строка корзины, которую удаляют: сворачивается, а не исчезает рывком */
 tr.is-removing {
     animation: row-out 0.32s var(--ease) forwards;
 }
@@ -1011,8 +943,6 @@ tr.is-removing {
     }
 }
 
-/* ---------- Модальные окна ---------- */
-
 .modal-content {
     border: none;
     border-radius: var(--radius-lg);
@@ -1023,12 +953,6 @@ tr.is-removing {
     border-color: var(--hairline);
 }
 
-/* =========================================================================
-   ДВИЖЕНИЕ
-   ========================================================================= */
-
-/* Появление блоков при прокрутке. Стартовое состояние ставится из JS
-   (класс js-motion на <html>), чтобы без скриптов контент был виден. */
 .js-motion .reveal {
     opacity: 0;
     transform: translateY(18px);
@@ -1041,7 +965,6 @@ tr.is-removing {
     transition-delay: var(--reveal-delay, 0ms);
 }
 
-/* «Полёт в корзину»: клон изображения товара, летящий в панель */
 .flying-item {
     position: fixed;
     z-index: 2000;
@@ -1051,7 +974,6 @@ tr.is-removing {
     pointer-events: none;
 }
 
-/* Всплывающие уведомления вместо alert() */
 .toast-rail {
     position: fixed;
     right: 1rem;
@@ -1115,7 +1037,6 @@ tr.is-removing {
     }
 }
 
-/* Кто просил меньше движения — тот получает статичный интерфейс */
 @media (prefers-reduced-motion: reduce) {
     html {
         scroll-behavior: auto;
@@ -1133,14 +1054,6 @@ tr.is-removing {
     }
 }
 
-/* =========================================================================
-   Компоненты страниц
-   ========================================================================= */
-
-/* ---------- Главная: обложка ---------- */
-
-/* Обложка живёт прямо на бумаге страницы: белая панель вокруг заголовка
-   превращала свободное поле справа в пустую коробку. */
 .hero {
     position: relative;
     padding: clamp(2rem, 1rem + 5vw, 4.5rem) 0 clamp(2.5rem, 2rem + 3vw, 4rem);
@@ -1152,8 +1065,6 @@ tr.is-removing {
     font-size: clamp(2rem, 1.2rem + 4vw, 3.9rem);
 }
 
-/* Ключевое слово обведено пурпурной краской: штрих «прокатывается»
-   по слову при загрузке — как валик по трафарету. */
 .ink-stroke {
     position: relative;
     display: inline-block;
@@ -1173,7 +1084,6 @@ tr.is-removing {
     transform-origin: left center;
 }
 
-/* Текст лежит поверх штриха */
 .ink-stroke__text {
     position: relative;
 }
@@ -1202,7 +1112,6 @@ tr.is-removing {
     margin-top: 2rem;
 }
 
-/* Три коротких факта о магазине под обложкой */
 .facts {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1238,8 +1147,6 @@ tr.is-removing {
     color: var(--ink-soft);
 }
 
-/* ---------- Аватары ---------- */
-
 .avatar-wrapper,
 .avatar-preview-wrapper {
     width: 120px;
@@ -1274,7 +1181,6 @@ tr.is-removing {
     border-radius: var(--radius-lg) var(--radius-lg) 0 0;
 }
 
-/* Строка «поле — значение» в профиле */
 .field-row {
     padding: 0.7rem 0;
     border-bottom: 1px solid var(--hairline);
@@ -1291,8 +1197,6 @@ tr.is-removing {
     font-weight: 700;
     color: var(--ink);
 }
-
-/* ---------- Каталог ---------- */
 
 .product-card-img-wrapper {
     position: relative;
@@ -1313,7 +1217,6 @@ tr.is-removing {
     transform: scale(1.06);
 }
 
-/* Ценник-бирка поверх изображения: цена читается до наведения */
 .price-tag {
     position: absolute;
     right: 0.75rem;
@@ -1333,7 +1236,6 @@ tr.is-removing {
     color: var(--ink);
 }
 
-/* Пробитое отверстие бирки */
 .price-tag::before {
     content: '';
     width: 0.4rem;
@@ -1379,8 +1281,6 @@ tr.is-removing {
     border-radius: 50%;
 }
 
-/* ---------- Прочее ---------- */
-
 .hover-link {
     transition: color 0.2s var(--ease);
 }
@@ -1397,7 +1297,6 @@ hr, .border-top, .border-bottom, .border-start {
     border-color: var(--hairline) !important;
 }
 
-/* Пустое состояние — приглашение к действию, а не сообщение об ошибке */
 .empty-state {
     padding: 3rem 1.5rem;
     border-radius: var(--radius-lg);

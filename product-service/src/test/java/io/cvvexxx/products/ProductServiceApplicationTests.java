@@ -10,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.time.Instant;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.cloud.config.enabled=false")
 @ActiveProfiles("test")
 class ProductServiceApplicationTests {
 

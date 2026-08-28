@@ -13,7 +13,6 @@
         </a>
     </div>
 
-    <!-- Ошибки обработки заказа -->
     <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert" th:if="${errors}">
         <h2 class="alert-heading h6">
             <i aria-hidden="true" class="bi bi-exclamation-triangle-fill me-2"></i>Заказ не обработан
@@ -24,14 +23,12 @@
         <button aria-label="Закрыть" class="btn-close" data-bs-dismiss="alert" type="button"></button>
     </div>
 
-    <!-- Причина отмены -->
     <div class="alert alert-warning alert-dismissible fade show shadow-sm mb-4" role="alert"
          th:if="${#strings.toString(order.status) == 'CANCELLED' && order.cancellationReason != null}">
         <h2 class="alert-heading h6">
             <i aria-hidden="true" class="bi bi-exclamation-triangle-fill me-2"></i>Почему заказ отменён
         </h2>
 
-        <!-- Ищем товары заказа, чьи ID упомянуты в тексте причины отмены -->
         <p class="mb-0"
            th:with="matchedItems=${order.items.?[#root.order.cancellationReason != null && #root.order.cancellationReason.contains(productId.toString())]}">
 
@@ -55,12 +52,10 @@
                     <p class="eyebrow mb-1">Заказ</p>
                     <h1 class="h4 mb-1 fw-bold order-id"
                         th:text="'#' + ${#strings.toUpperCase(#strings.substring(order.id, 0, 8))}">#3A7F21C4</h1>
-                    <!-- Полный идентификатор нужен только для обращения в поддержку -->
                     <span class="mono text-muted d-block" style="font-size: 0.72rem;"
                           th:text="${order.id}">полный идентификатор</span>
                 </div>
 
-                <!-- Штамп статуса -->
                 <span class="stamp"
                       th:classappend="${#strings.toString(order.status) == 'CONFIRMED' ? 'stamp--confirmed' :
                                        (#strings.toString(order.status) == 'PENDING' ? 'stamp--pending' : 'stamp--cancelled')}"
@@ -133,7 +128,6 @@
             </div>
         </div>
 
-        <!-- Действия доступны, пока заказ не решён -->
         <div class="card-footer p-3 d-flex flex-wrap justify-content-end gap-2"
              th:if="${#strings.toString(order.status) == 'PENDING'}">
 
@@ -146,7 +140,6 @@
             </form>
         </div>
 
-        <!-- Отменённый заказ: путь обратно в каталог -->
         <div class="card-footer p-3 d-flex justify-content-end"
              th:if="${#strings.toString(order.status) == 'CANCELLED'}">
             <a class="btn btn-outline-primary" th:href="@{/catalogue/products/list}">Собрать заказ заново</a>
@@ -158,7 +151,6 @@
 <nav th:replace="~{fragments/layout :: dock('orders')}"></nav>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 
-<!-- Пока склад думает, страница сама отслеживает смену статуса -->
 <script th:inline="javascript">
     (function () {
         const currentStatus = /*[[${#strings.toString(order.status)}]]*/ 'PENDING';

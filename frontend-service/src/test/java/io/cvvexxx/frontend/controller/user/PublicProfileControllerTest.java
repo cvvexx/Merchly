@@ -33,13 +33,10 @@ class PublicProfileControllerTest {
     @Test
     @DisplayName("если открыт собственный профиль, делает редирект на /profile и не обращается к user-service")
     void showPublicProfile_WhenOwnProfile_ShouldRedirectToProfileWithoutCallingUserService() {
-        // given
         var model = new ConcurrentModel();
 
-        // when
         String result = controller.showPublicProfile("johndoe", model, "JohnDoe");
 
-        // then
         assertEquals("redirect:/profile", result);
         verifyNoInteractions(userPublicRestClient, imageUrlFormatter);
     }
@@ -47,7 +44,6 @@ class PublicProfileControllerTest {
     @Test
     @DisplayName("если открыт чужой профиль, наполняет модель данными профиля и URL аватара")
     void showPublicProfile_WhenOtherUsersProfile_ShouldPopulateModelWithProfileAndAvatar() {
-        // given
         UserProfilePublicDto profile = new UserProfilePublicDto(
                 UUID.randomUUID(), "janedoe", "FEMALE", LocalDate.of(1990, 1, 1), "avatar.png"
         );
@@ -55,10 +51,8 @@ class PublicProfileControllerTest {
         when(imageUrlFormatter.getUserAvatarUrl("avatar.png")).thenReturn("/img/avatar.png");
         var model = new ConcurrentModel();
 
-        // when
         String result = controller.showPublicProfile("janedoe", model, "johndoe");
 
-        // then
         assertEquals("user/public-profile", result);
         assertEquals(profile, model.getAttribute("profile"));
         assertEquals("/img/avatar.png", model.getAttribute("userAvatarUrl"));

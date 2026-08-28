@@ -38,13 +38,11 @@ class UsersControllerTest {
     @Test
     @DisplayName("registerUser: при ошибках валидации выбрасывает BindException и не регистрирует пользователя")
     void registerUser_WhenBindingResultHasErrors_ShouldThrowBindException() {
-        // given
         NewUserDto dto = newUserDto();
         MultipartFile avatar = new MockMultipartFile("image", new byte[0]);
         BindingResult bindingResult = new BeanPropertyBindingResult(dto, "newUserDto");
         bindingResult.reject("username", "must not be blank");
 
-        // when / then
         assertThrows(BindException.class, () -> controller.registerUser(dto, avatar, bindingResult));
 
         verifyNoInteractions(userService);
@@ -53,17 +51,14 @@ class UsersControllerTest {
     @Test
     @DisplayName("registerUser: при валидном запросе делегирует регистрацию сервису")
     void registerUser_WhenValid_ShouldDelegateToService() throws BindException {
-        // given
         NewUserDto dto = newUserDto();
         MultipartFile avatar = new MockMultipartFile("image", new byte[0]);
         BindingResult bindingResult = new BeanPropertyBindingResult(dto, "newUserDto");
         UserCreatedDto created = new UserCreatedDto(UUID.randomUUID(), dto.username());
         when(userService.registerUserInKeycloakAndLocalDb(dto, avatar)).thenReturn(created);
 
-        // when
         ResponseEntity<UserCreatedDto> response = controller.registerUser(dto, avatar, bindingResult);
 
-        // then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(created, response.getBody());
         verify(userService).registerUserInKeycloakAndLocalDb(dto, avatar);
@@ -72,16 +67,13 @@ class UsersControllerTest {
     @Test
     @DisplayName("getSecurityUserInfo: извлекает userId из sub-claim и возвращает информацию о пользователе")
     void getSecurityUserInfo_ShouldReturnInfoForCurrentUser() {
-        // given
         UUID userId = UUID.randomUUID();
         Jwt jwt = jwtFor(userId);
         UserInfoDto info = new UserInfoDto("username", "email@test.com", "M", LocalDate.of(2000, 1, 1), Set.of("USER"), null);
         when(userService.getUserInfo(userId)).thenReturn(info);
 
-        // when
         ResponseEntity<UserInfoDto> response = controller.getSecurityUserInfo(jwt);
 
-        // then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(info, response.getBody());
         verify(userService).getUserInfo(userId);
@@ -90,13 +82,11 @@ class UsersControllerTest {
     @Test
     @DisplayName("updateUserInfo: при ошибках валидации выбрасывает BindException и не обновляет пользователя")
     void updateUserInfo_WhenBindingResultHasErrors_ShouldThrowBindException() {
-        // given
         UpdateUserDto dto = updateUserDto();
         Jwt jwt = jwtFor(UUID.randomUUID());
         BindingResult bindingResult = new BeanPropertyBindingResult(dto, "updateUserDto");
         bindingResult.reject("email", "must be valid");
 
-        // when / then
         assertThrows(BindException.class, () -> controller.updateUserInfo(dto, null, jwt, bindingResult));
 
         verifyNoInteractions(userService);
@@ -105,16 +95,13 @@ class UsersControllerTest {
     @Test
     @DisplayName("updateUserInfo: при валидном запросе обновляет данные текущего пользователя")
     void updateUserInfo_WhenValid_ShouldDelegateToServiceForCurrentUser() throws BindException {
-        // given
         UUID userId = UUID.randomUUID();
         Jwt jwt = jwtFor(userId);
         UpdateUserDto dto = updateUserDto();
         BindingResult bindingResult = new BeanPropertyBindingResult(dto, "updateUserDto");
 
-        // when
         ResponseEntity<Void> response = controller.updateUserInfo(dto, null, jwt, bindingResult);
 
-        // then
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(userService).updateUserInfo(userId, dto, null);
     }
@@ -122,15 +109,12 @@ class UsersControllerTest {
     @Test
     @DisplayName("getPublicUserProfile: делегирует поиск публичного профиля по username")
     void getPublicUserProfile_ShouldDelegateToService() {
-        // given
         String username = "public_user";
         UserProfilePublicDto profile = new UserProfilePublicDto(UUID.randomUUID(), username, "M", LocalDate.of(1995, 5, 5), null);
         when(userService.getPublicUserProfile(username)).thenReturn(profile);
 
-        // when
         ResponseEntity<UserProfilePublicDto> response = controller.getPublicUserProfile(username);
 
-        // then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(profile, response.getBody());
         verify(userService).getPublicUserProfile(username);

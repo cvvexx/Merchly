@@ -46,13 +46,8 @@ import java.util.UUID;
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Full-stack integration test: real Postgres and Kafka via Testcontainers, downstream
- * product-service/user-service calls stubbed with WireMock. No address (DB, broker, downstream
- * service) is hardcoded - everything is discovered at runtime via {@link DynamicPropertySource},
- * the same way production wires different addresses per environment via env vars.
- */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "spring.cloud.config.enabled=false")
 @ActiveProfiles("test")
 @Testcontainers
 class OrderApiIT {
@@ -62,7 +57,6 @@ class OrderApiIT {
     static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16");
     @Container
     static ConfluentKafkaContainer kafka = new ConfluentKafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"));
-    // Кеш заказов работает через Redis: без своего контейнера тест ушёл бы на localhost:6379
     @Container
     static RedisContainer redis = new RedisContainer("redis:7-alpine");
 
@@ -74,8 +68,6 @@ class OrderApiIT {
                         """)));
         wireMockServer.stubFor(delete(urlEqualTo("/api/users/cart"))
                 .willReturn(noContent()));
-        // Запасной ответ для незастабленных товаров: настоящий product-service на неизвестные
-        // id отдаёт пустой список, а не 404
         wireMockServer.stubFor(get(urlPathEqualTo("/api/internal/products"))
                 .atPriority(10)
                 .willReturn(okJson("[]")));
@@ -118,7 +110,6 @@ class OrderApiIT {
 
     @Test
     void createOrder_WhenProductServiceRespondsAndUserIsAuthenticated_ShouldPersistOrderAndClearCart() {
-        // given
         UUID productId = UUID.randomUUID();
         stubProduct(productId, new BigDecimal("49.90"));
         NewOrderDto newOrderDto = new NewOrderDto(
@@ -127,7 +118,6 @@ class OrderApiIT {
                 "leave at the door"
         );
 
-        // when
         ResponseEntity<OrderDto> response = restClient()
                 .post()
                 .uri("/api/orders/create")
@@ -136,7 +126,6 @@ class OrderApiIT {
                 .retrieve()
                 .toEntity(OrderDto.class);
 
-        // then
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getHeaders().getLocation());
         OrderDto createdOrder = response.getBody();
@@ -153,8 +142,7 @@ class OrderApiIT {
 
     @Test
     void createOrder_WhenProductServiceHasNoSuchProduct_ShouldFailAndNotPersistOrder() {
-        // given
-        UUID unknownProductId = UUID.randomUUID(); // deliberately not stubbed -> product-service replies with an empty list
+        UUID unknownProductId = UUID.randomUUID();
         NewOrderDto newOrderDto = new NewOrderDto(
                 List.of(new NewOrderItemDto(unknownProductId, 1)),
                 "Moscow, Lenina 1",
@@ -162,7 +150,6 @@ class OrderApiIT {
         );
         long ordersBefore = orderRepository.count();
 
-        // when
         ResponseEntity<String> response = restClient()
                 .post()
                 .uri("/api/orders/create")
@@ -173,14 +160,12 @@ class OrderApiIT {
                 })
                 .toEntity(String.class);
 
-        // then
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertEquals(ordersBefore, orderRepository.count());
     }
 
     @Test
     void cancelOrder_WhenPending_ShouldPublishOrderCancelledEventToRealKafkaSoProductServiceCanRestoreStock() {
-        // given: заказ создан и уже мог быть обработан product-service (сток списан)
         UUID productId = UUID.randomUUID();
         stubProduct(productId, new BigDecimal("49.90"));
         NewOrderDto newOrderDto = new NewOrderDto(
@@ -198,7 +183,6 @@ class OrderApiIT {
 
         var orderCancelledConsumer = createOrderCancelledConsumer();
         try {
-            // when
             ResponseEntity<OrderDto> cancelResponse = restClient()
                     .post()
                     .uri("/api/orders/{id}/cancel", createdOrder.id())
@@ -206,12 +190,9 @@ class OrderApiIT {
                     .retrieve()
                     .toEntity(OrderDto.class);
 
-            // then: заказ отменён в БД...
             assertEquals(HttpStatus.OK, cancelResponse.getStatusCode());
             assertEquals(OrderStatus.CANCELLED, orderRepository.findById(createdOrder.id()).orElseThrow().getStatus());
 
-            // ...и в реальный топик order-cancelled опубликовано компенсирующее событие с товарами заказа,
-            // чтобы product-service вернул списанный сток обратно на склад
             var record = KafkaTestUtils.getSingleRecord(orderCancelledConsumer, orderCancelledTopic, Duration.ofSeconds(15));
             assertEquals(createdOrder.id(), record.value().orderId());
             assertEquals(1, record.value().items().size());
@@ -237,10 +218,6 @@ class OrderApiIT {
         return consumer;
     }
 
-    /**
-     * order-service забирает товары заказа одним батчевым запросом
-     * {@code GET /api/internal/products?ids=...}, поэтому стаб отвечает списком.
-     */
     private void stubProduct(UUID productId, BigDecimal price) {
         wireMockServer.stubFor(get(urlPathEqualTo("/api/internal/products"))
                 .withQueryParam("ids", equalTo(productId.toString()))

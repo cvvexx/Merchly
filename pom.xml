@@ -25,6 +25,7 @@
         <module>review-service</module>
         <module>order-service</module>
         <module>config-server</module>
+        <module>gateway-service</module>
     </modules>
 
     <properties>
@@ -34,8 +35,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- BOM Spring Cloud: версии стартеров config-server и config-клиентов
-                 задаются здесь один раз, модули подключают артефакты без <version>. -->
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>

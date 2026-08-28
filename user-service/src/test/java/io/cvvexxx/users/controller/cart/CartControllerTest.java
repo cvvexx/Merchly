@@ -32,16 +32,13 @@ class CartControllerTest {
     @Test
     @DisplayName("getCartItems: извлекает userId из sub-claim и возвращает список товаров корзины")
     void getCartItems_ShouldReturnItemsForCurrentUser() {
-        // given
         UUID userId = UUID.randomUUID();
         Jwt jwt = jwtFor(userId);
         List<CartItemDto> items = List.of(new CartItemDto(UUID.randomUUID(), 2));
         when(cartService.getCartItems(userId)).thenReturn(items);
 
-        // when
         ResponseEntity<List<CartItemDto>> response = controller.getCartItems(jwt);
 
-        // then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(items, response.getBody());
         verify(cartService).getCartItems(userId);
@@ -50,15 +47,12 @@ class CartControllerTest {
     @Test
     @DisplayName("addProductToCart: делегирует добавление товара в корзину текущего пользователя")
     void addProductToCart_ShouldDelegateToServiceForCurrentUser() {
-        // given
         UUID userId = UUID.randomUUID();
         Jwt jwt = jwtFor(userId);
         AddToCartDto dto = new AddToCartDto(UUID.randomUUID(), 3);
 
-        // when
         ResponseEntity<Void> response = controller.addProductToCart(dto, jwt);
 
-        // then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(cartService).addItemToCart(dto, userId);
     }
@@ -66,15 +60,12 @@ class CartControllerTest {
     @Test
     @DisplayName("removeProductFromCart: делегирует удаление товара текущего пользователя и возвращает 204")
     void removeProductFromCart_ShouldDeleteItemForCurrentUser() {
-        // given
         UUID userId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
         Jwt jwt = jwtFor(userId);
 
-        // when
         ResponseEntity<Void> response = controller.removeProductFromCart(jwt, productId);
 
-        // then
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(cartService).deleteritemfromcart(productId, userId);
     }
@@ -82,14 +73,11 @@ class CartControllerTest {
     @Test
     @DisplayName("clearCart: очищает корзину текущего пользователя и возвращает 204")
     void clearCart_ShouldClearCartForCurrentUser() {
-        // given
         UUID userId = UUID.randomUUID();
         Jwt jwt = jwtFor(userId);
 
-        // when
         ResponseEntity<Void> response = controller.clearCart(jwt);
 
-        // then
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(cartService).clearCart(userId);
     }

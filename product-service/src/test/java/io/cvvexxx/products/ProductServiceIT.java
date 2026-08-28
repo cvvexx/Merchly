@@ -56,14 +56,6 @@ import java.util.UUID;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Full end-to-end integration test: real Postgres, real Kafka, real Redis and real MinIO,
- * all started via Testcontainers on random ports and wired in exclusively through
- * {@link DynamicPropertySource} - no host/port is ever hardcoded, since production addresses
- * differ from dev/test (they're injected via env vars per docker-compose.prod.yml).
- * Named *IT.java so it's picked up by maven-failsafe-plugin during `mvn verify`, not by
- * Surefire's `mvn test` (which stays fast and Docker-free).
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @Testcontainers
@@ -152,17 +144,14 @@ class ProductServiceIT {
 
     @Test
     void createProduct_ShouldPersistToRealPostgresAndUploadImageToRealMinio() {
-        // given
         NewProductPayload payload = new NewProductPayload(
                 "Integration test product", "created via ProductServiceIT", 5,
                 new BigDecimal("19.99"), UUID.randomUUID()
         );
         byte[] imageBytes = "fake-png-bytes".getBytes();
 
-        // when
         ResponseEntity<ProductDto> response = createProduct(payload, imageBytes, ADMIN_TOKEN);
 
-        // then
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         ProductDto created = response.getBody();
         assertNotNull(created);
@@ -181,21 +170,18 @@ class ProductServiceIT {
     @Test
     @DisplayName("повторное чтение продукта - второй запрос отдаётся из реального Redis-кеша без ошибок")
     void getProduct_ReadTwiceInARow_ShouldServeSecondReadFromRedisCacheWithoutThrowing() {
-        // given
         ProductDto created = createProduct(
                 new NewProductPayload("Cached product", "desc", 5, new BigDecimal("9.99"), UUID.randomUUID()),
                 null, ADMIN_TOKEN
         ).getBody();
         assertNotNull(created);
 
-        // when: первое чтение наполняет кеш в Redis
         ProductDto firstRead = restClient()
                 .get()
                 .uri("/api/products/{id}", created.id())
                 .retrieve()
                 .body(ProductDto.class);
 
-        // then: второе чтение - настоящий cache hit, читает и десериализует значение из Redis
         ProductDto secondRead = restClient()
                 .get()
                 .uri("/api/products/{id}", created.id())
@@ -209,13 +195,11 @@ class ProductServiceIT {
     @Test
     @DisplayName("повторное чтение списка продуктов - второй запрос отдаётся из реального Redis-кеша без ошибок")
     void getAllProducts_ReadTwiceInARow_ShouldServeSecondReadFromRedisCacheWithoutThrowing() {
-        // given
         createProduct(
                 new NewProductPayload("Listed product", "desc", 2, BigDecimal.ONE, UUID.randomUUID()),
                 null, ADMIN_TOKEN
         );
 
-        // when: первое чтение наполняет кеш списка в Redis
         List<ProductDto> firstRead = restClient()
                 .get()
                 .uri("/api/products")
@@ -223,8 +207,6 @@ class ProductServiceIT {
                 .body(new org.springframework.core.ParameterizedTypeReference<List<ProductDto>>() {
                 });
 
-        // then: второе чтение - настоящий cache hit по списку (Stream.toList() - final класс,
-        // тот самый случай, что раньше валился с SerializationException)
         List<ProductDto> secondRead = restClient()
                 .get()
                 .uri("/api/products")
@@ -237,22 +219,18 @@ class ProductServiceIT {
 
     @Test
     void createProduct_WhenCallerIsNotAdmin_ShouldReturn403AndNotPersist() {
-        // given
         NewProductPayload payload = new NewProductPayload(
                 "Should be rejected", "desc", 1, BigDecimal.TEN, UUID.randomUUID()
         );
 
-        // when
         ResponseEntity<ProductDto> response = createProduct(payload, null, USER_TOKEN);
 
-        // then
         assertEquals(HttpStatus.FORBIDDEN, response.getStatusCode());
         assertTrue(productRepository.findAllByTitleContainingIgnoreCase("Should be rejected").isEmpty());
     }
 
     @Test
     void updateProduct_WithNewImage_ShouldReplaceOldImageInMinioAndPersistChanges() {
-        // given
         ProductDto created = createProduct(
                 new NewProductPayload("Original title", "original desc", 3, BigDecimal.ONE, UUID.randomUUID()),
                 "original-image-bytes".getBytes(), ADMIN_TOKEN
@@ -264,10 +242,8 @@ class ProductServiceIT {
                 "Updated title", "updated desc", 7, new BigDecimal("42.50")
         );
 
-        // when
         ResponseEntity<Void> response = updateProduct(created.id(), updatePayload, "new-image-bytes".getBytes(), ADMIN_TOKEN);
 
-        // then
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         Product updated = productRepository.findById(created.id()).orElseThrow();
         assertEquals("Updated title", updated.getTitle());
@@ -285,14 +261,12 @@ class ProductServiceIT {
 
     @Test
     void deleteProduct_ShouldSoftDeleteSoSubsequentGetReturns404() {
-        // given
         ProductDto created = createProduct(
                 new NewProductPayload("To be deleted", "desc", 1, BigDecimal.ONE, UUID.randomUUID()),
                 null, ADMIN_TOKEN
         ).getBody();
         assertNotNull(created);
 
-        // when
         ResponseEntity<Void> deleteResponse = restClient()
                 .delete()
                 .uri("/api/products/{id}", created.id())
@@ -302,7 +276,6 @@ class ProductServiceIT {
                 })
                 .toBodilessEntity();
 
-        // then
         assertEquals(HttpStatus.NO_CONTENT, deleteResponse.getStatusCode());
         ResponseEntity<String> getResponse = restClient()
                 .get()
@@ -317,7 +290,6 @@ class ProductServiceIT {
 
     @Test
     void handleOrderCreated_WithSufficientStock_ShouldDeductStockViaRealKafkaAndPostgres() {
-        // given
         UUID productId = UUID.randomUUID();
         productRepository.save(Product.builder()
                 .id(productId).title("Stock product").quantity(10)
@@ -328,10 +300,8 @@ class ProductServiceIT {
                 orderId, new BigDecimal("30.00"), List.of(new OrderItemPayload(productId, 3))
         );
 
-        // when
         kafkaTemplate.send(orderCreatedTopic, orderId.toString(), event);
 
-        // then
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
             Product refreshed = productRepository.findById(productId).orElseThrow();
             assertEquals(7, refreshed.getQuantity());
@@ -341,7 +311,6 @@ class ProductServiceIT {
 
     @Test
     void handleOrderCancelled_AfterStockWasDeducted_ShouldRestoreStockViaRealKafkaAndPostgres() {
-        // given: сток по заказу уже списан через реальный Kafka (тот же путь, что и в тесте выше)
         UUID productId = UUID.randomUUID();
         productRepository.save(Product.builder()
                 .id(productId).title("Cancelled order product").quantity(10)
@@ -353,11 +322,9 @@ class ProductServiceIT {
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() ->
                 assertEquals(7, productRepository.findById(productId).orElseThrow().getQuantity()));
 
-        // when: заказ отменяется - order-service публикует OrderCancelledEvent с теми же товарами
         OrderCancelledEvent cancelledEvent = new OrderCancelledEvent(orderId, List.of(new OrderItemPayload(productId, 3)));
         kafkaTemplate.send(orderCancelledTopic, orderId.toString(), cancelledEvent);
 
-        // then: сток восстановлен до исходного значения, и заказ больше не считается обработанным
         await().atMost(Duration.ofSeconds(15)).untilAsserted(() -> {
             Product refreshed = productRepository.findById(productId).orElseThrow();
             assertEquals(10, refreshed.getQuantity());
@@ -367,7 +334,6 @@ class ProductServiceIT {
 
     @Test
     void handleOrderCancelled_WhenStockWasNeverDeducted_ShouldLeaveStockUnchanged() {
-        // given: сток по заказу никогда не списывался (например, отменён до обработки OrderCreatedEvent)
         UUID productId = UUID.randomUUID();
         productRepository.save(Product.builder()
                 .id(productId).title("Never deducted product").quantity(10)
@@ -375,14 +341,9 @@ class ProductServiceIT {
                 .build());
         UUID orderId = UUID.randomUUID();
 
-        // when
         kafkaTemplate.send(orderCancelledTopic, orderId.toString(),
                 new OrderCancelledEvent(orderId, List.of(new OrderItemPayload(productId, 3))));
 
-        // then: остаток не меняется (10, а не 13) - восстанавливать было нечего.
-        // Даём консьюмеру реальное время обработать сообщение, затем убеждаемся, что сток не менялся
-        // ни в какой момент (а не только в самом конце) - pollDelay гарантирует хотя бы одну проверку
-        // уже после того, как сообщение точно должно было быть обработано.
         await().pollDelay(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(10)).untilAsserted(() ->
                 assertEquals(10, productRepository.findById(productId).orElseThrow().getQuantity())
         );
@@ -390,7 +351,6 @@ class ProductServiceIT {
 
     @Test
     void handleOrderCreated_WithInsufficientStock_ShouldPublishOrderFailedEventOnRealKafkaAndNotDeduct() {
-        // given
         UUID productId = UUID.randomUUID();
         productRepository.save(Product.builder()
                 .id(productId).title("Low stock product").quantity(1)
@@ -402,10 +362,8 @@ class ProductServiceIT {
         );
         orderFailedConsumer = createOrderFailedConsumer();
 
-        // when
         kafkaTemplate.send(orderCreatedTopic, orderId.toString(), event);
 
-        // then
         var record = KafkaTestUtils.getSingleRecord(orderFailedConsumer, orderFailedTopic, Duration.ofSeconds(15));
         OrderFailedEvent failedEvent = record.value();
         assertEquals(orderId, failedEvent.orderId());

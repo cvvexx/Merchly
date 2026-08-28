@@ -44,15 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
-/**
- * Exercises {@link DefaultOrderService} against a real Redis (Testcontainers) instead of mocking
- * the repository outright, so it proves the {@code @Cacheable}/{@code @CacheEvict} wiring on the
- * "order"/"userOrder" caches actually reads from and invalidates Redis - not just that the
- * underlying business logic is correct. Downstream collaborators (product-service, user-service,
- * Kafka publishing) are mocked - they are unrelated to caching and are already covered by
- * {@link io.cvvexxx.orders.OrderApiIT}.
- */
-@SpringBootTest
+@SpringBootTest(properties = "spring.cloud.config.enabled=false")
 @ActiveProfiles("test")
 @Testcontainers
 @Import(OrderServiceRedisCacheIT.ITConfig.class)
@@ -149,16 +141,11 @@ class OrderServiceRedisCacheIT {
         @Test
         @DisplayName("второй вызов подряд не обращается к репозиторию - заказ отдаётся из Redis")
         void getOrder_CalledTwice_ShouldHitRepositoryOnlyOnce() {
-            // given
             Order order = persistOrder(OrderStatus.PENDING);
 
-            // when
             OrderDto first = orderService.getOrder(order.getId(), userId, false);
             OrderDto second = orderService.getOrder(order.getId(), userId, false);
 
-            // then: сравниваем по полям, а не через equals() - BigDecimal, пройдя через
-            // Redis JSON (де)сериализацию, может сменить scale и перестать быть equals-равным
-            // при том, что compareTo/значение остаются теми же
             assertEquals(first.id(), second.id());
             assertEquals(first.status(), second.status());
             assertEquals(0, first.totalAmount().compareTo(second.totalAmount()));
@@ -168,13 +155,10 @@ class OrderServiceRedisCacheIT {
         @Test
         @DisplayName("после вызова в Redis появляется запись кэша order::<orderId>")
         void getOrder_ShouldPopulateRedisCacheEntry() {
-            // given
             Order order = persistOrder(OrderStatus.PENDING);
 
-            // when
             orderService.getOrder(order.getId(), userId, false);
 
-            // then
             Cache.ValueWrapper cached = cacheManager.getCache(ORDER_CACHE).get(order.getId());
             assertNotNull(cached, "Ожидалась запись в Redis-кэше после вызова getOrder");
         }
@@ -182,17 +166,14 @@ class OrderServiceRedisCacheIT {
         @Test
         @DisplayName("если статус заказа меняется в обход сервиса, кэш продолжает отдавать устаревшие данные из Redis")
         void getOrder_WhenUnderlyingRowChangesWithoutEviction_ShouldServeStaleCachedData() {
-            // given: прогреваем кэш
             Order order = persistOrder(OrderStatus.PENDING);
             OrderDto cached = orderService.getOrder(order.getId(), userId, false);
             assertEquals(OrderStatus.PENDING, cached.status());
 
-            // when: меняем статус напрямую через репозиторий, минуя сервис (без @CacheEvict)
             order.setStatus(OrderStatus.CONFIRMED);
             orderRepository.saveAndFlush(order);
             OrderDto secondRead = orderService.getOrder(order.getId(), userId, false);
 
-            // then: сервис всё ещё отдаёт закэшированный в Redis (устаревший) статус
             assertEquals(OrderStatus.PENDING, secondRead.status());
         }
     }
@@ -204,14 +185,11 @@ class OrderServiceRedisCacheIT {
         @Test
         @DisplayName("второй вызов подряд не обращается к репозиторию - список отдаётся из Redis")
         void getCurrentUserOrders_CalledTwice_ShouldHitRepositoryOnlyOnce() {
-            // given
             persistOrder(OrderStatus.PENDING);
 
-            // when
             List<OrderDto> first = orderService.getCurrentUserOrders(userId);
             List<OrderDto> second = orderService.getCurrentUserOrders(userId);
 
-            // then
             assertEquals(1, first.size());
             assertEquals(first.get(0).id(), second.get(0).id());
             verify(orderRepository, times(1)).findAllByUserIdOrderByCreatedAtDesc(userId);
@@ -220,16 +198,13 @@ class OrderServiceRedisCacheIT {
         @Test
         @DisplayName("новый заказ, созданный в обход сервиса, не появляется во втором вызове - список читается из Redis")
         void getCurrentUserOrders_WhenNewOrderAddedWithoutEviction_ShouldServeStaleCachedList() {
-            // given: прогреваем кэш одним заказом
             persistOrder(OrderStatus.PENDING);
             List<OrderDto> cached = orderService.getCurrentUserOrders(userId);
             assertEquals(1, cached.size());
 
-            // when: добавляем ещё один заказ напрямую через репозиторий, минуя сервис
             persistOrder(OrderStatus.PENDING);
             List<OrderDto> secondRead = orderService.getCurrentUserOrders(userId);
 
-            // then
             assertEquals(1, secondRead.size());
         }
     }
@@ -241,20 +216,16 @@ class OrderServiceRedisCacheIT {
         @Test
         @DisplayName("confirmOrder вытесняет заказ и список заказов пользователя из Redis")
         void confirmOrder_ShouldEvictOrderAndUserOrdersCaches() {
-            // given: прогреваем оба кэша
             Order order = persistOrder(OrderStatus.PENDING);
             orderService.getOrder(order.getId(), userId, false);
             orderService.getCurrentUserOrders(userId);
 
-            // when
             OrderDto confirmed = orderService.confirmOrder(order.getId(), userId, false);
 
-            // then: обе записи вытеснены из Redis сразу после изменения
             assertEquals(OrderStatus.CONFIRMED, confirmed.status());
             assertNull(cacheManager.getCache(ORDER_CACHE).get(order.getId()));
             assertNull(cacheManager.getCache(USER_ORDER_CACHE).get(userId));
 
-            // and: следующие вызовы видят актуальный статус, а не устаревший из старого кэша
             assertEquals(OrderStatus.CONFIRMED, orderService.getOrder(order.getId(), userId, false).status());
             assertEquals(OrderStatus.CONFIRMED, orderService.getCurrentUserOrders(userId).get(0).status());
         }
@@ -262,15 +233,12 @@ class OrderServiceRedisCacheIT {
         @Test
         @DisplayName("cancelOrderByUser вытесняет заказ и список заказов пользователя из Redis")
         void cancelOrderByUser_ShouldEvictOrderAndUserOrdersCaches() {
-            // given
             Order order = persistOrder(OrderStatus.PENDING);
             orderService.getOrder(order.getId(), userId, false);
             orderService.getCurrentUserOrders(userId);
 
-            // when
             OrderDto cancelled = orderService.cancelOrderByUser(order.getId(), userId, false);
 
-            // then
             assertEquals(OrderStatus.CANCELLED, cancelled.status());
             assertNull(cacheManager.getCache(ORDER_CACHE).get(order.getId()));
             assertNull(cacheManager.getCache(USER_ORDER_CACHE).get(userId));
@@ -280,15 +248,12 @@ class OrderServiceRedisCacheIT {
         @Test
         @DisplayName("cancelOrderBySystem вытесняет заказ и список заказов пользователя из Redis")
         void cancelOrderBySystem_ShouldEvictOrderAndUserOrdersCaches() {
-            // given
             Order order = persistOrder(OrderStatus.PENDING);
             orderService.getOrder(order.getId(), userId, false);
             orderService.getCurrentUserOrders(userId);
 
-            // when
             OrderDto cancelled = orderService.cancelOrderBySystem(order.getId(), "Недостаточно товара на складе");
 
-            // then
             assertEquals(OrderStatus.CANCELLED, cancelled.status());
             assertNull(cacheManager.getCache(ORDER_CACHE).get(order.getId()));
             assertNull(cacheManager.getCache(USER_ORDER_CACHE).get(userId));
@@ -297,7 +262,6 @@ class OrderServiceRedisCacheIT {
         @Test
         @DisplayName("createOrder вытесняет список заказов пользователя из Redis")
         void createOrder_ShouldEvictUserOrdersCache() {
-            // given: прогреваем кэш списком из одного ранее оформленного заказа
             persistOrder(OrderStatus.PENDING);
             List<OrderDto> cached = orderService.getCurrentUserOrders(userId);
             assertEquals(1, cached.size());
@@ -311,13 +275,10 @@ class OrderServiceRedisCacheIT {
                     "leave at the door"
             );
 
-            // when
             orderService.createOrder(newOrderDto, userId);
 
-            // then: запись вытеснена из Redis сразу после создания заказа
             assertNull(cacheManager.getCache(USER_ORDER_CACHE).get(userId));
 
-            // and: следующий вызов видит оба заказа, а не устаревший список из одного
             assertEquals(2, orderService.getCurrentUserOrders(userId).size());
         }
     }

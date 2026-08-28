@@ -36,15 +36,12 @@ class ProductsRestControllerTest {
     @Test
     @DisplayName("getAllProducts: делегирует поиск в сервис с переданным фильтром")
     void getAllProducts_ShouldDelegateToServiceWithFilter() {
-        // given
         String filter = "shirt";
         ProductDto product = new ProductDto(UUID.randomUUID(), "T-Shirt", "Desc", 1, BigDecimal.TEN, "image.png", UUID.randomUUID());
         when(productService.findAllProducts(filter)).thenReturn(List.of(product));
 
-        // when
         ResponseEntity<List<ProductDto>> response = controller.getAllProducts(filter);
 
-        // then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(List.of(product), response.getBody());
         verify(productService).findAllProducts(filter);
@@ -53,12 +50,10 @@ class ProductsRestControllerTest {
     @Test
     @DisplayName("createProduct: при ошибках валидации выбрасывает BindException и не создаёт товар")
     void createProduct_WhenBindingResultHasErrors_ShouldThrowBindException() {
-        // given
         NewProductPayload payload = new NewProductPayload("Ab", "Desc", 1, BigDecimal.TEN, UUID.randomUUID());
         var bindingResult = new BeanPropertyBindingResult(payload, "newProductPayload");
         bindingResult.reject("title", "size must be between 3 and 50");
 
-        // when / then
         assertThrows(BindException.class, () ->
                 controller.createProduct(payload, null, UriComponentsBuilder.newInstance(), bindingResult)
         );
@@ -69,7 +64,6 @@ class ProductsRestControllerTest {
     @Test
     @DisplayName("createProduct: при валидном запросе создаёт товар и возвращает Location")
     void createProduct_WhenValid_ShouldCreateProductAndReturnLocation() throws BindException {
-        // given
         UUID productId = UUID.randomUUID();
         UUID createdBy = UUID.randomUUID();
         NewProductPayload payload = new NewProductPayload("Title", "Desc", 1, BigDecimal.TEN, createdBy);
@@ -80,12 +74,10 @@ class ProductsRestControllerTest {
         when(productService.createProduct(payload.title(), payload.description(), payload.quantity(),
                 payload.price(), payload.createdBy(), image)).thenReturn(createdProduct);
 
-        // when
         ResponseEntity<?> response = controller.createProduct(
                 payload, image, UriComponentsBuilder.fromUriString("http://localhost"), bindingResult
         );
 
-        // then
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertEquals(createdProduct, response.getBody());
         assertEquals("/api/products/" + productId, response.getHeaders().getLocation().getPath());

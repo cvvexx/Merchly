@@ -37,12 +37,6 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-/**
- * Exercises {@link DefaultCartService} against a real Redis (Testcontainers) instead of mocking
- * the repository outright, so it proves the {@code @Cacheable}/{@code @CacheEvict} wiring on the
- * "userCart" cache actually reads from and invalidates Redis - not just that the underlying
- * business logic is correct.
- */
 @SpringBootTest
 @ActiveProfiles("test")
 @Testcontainers
@@ -83,7 +77,6 @@ class CartServiceRedisCacheIT {
 
     @BeforeEach
     void createOwningUser() {
-        // cart_items.user_id has a FK to users - a cart row needs an owning user to exist
         userRepository.saveAndFlush(new User(
                 userId, "cache_it_" + userId, "cache_it_" + userId + "@example.com",
                 Gender.F, LocalDate.of(1995, 5, 5), Set.of(), null
@@ -136,14 +129,11 @@ class CartServiceRedisCacheIT {
         @Test
         @DisplayName("второй вызов подряд не обращается к репозиторию - данные отдаются из Redis")
         void getCartItems_CalledTwice_ShouldHitRepositoryOnlyOnce() {
-            // given
             persistCartItem(UUID.randomUUID(), 3);
 
-            // when
             List<CartItemDto> first = cartService.getCartItems(userId);
             List<CartItemDto> second = cartService.getCartItems(userId);
 
-            // then
             assertEquals(first, second);
             verify(cartItemRepository, times(1)).findAllByUserId(userId);
         }
@@ -151,13 +141,10 @@ class CartServiceRedisCacheIT {
         @Test
         @DisplayName("после вызова в Redis появляется запись кэша userCart для пользователя")
         void getCartItems_ShouldPopulateRedisCacheEntry() {
-            // given
             persistCartItem(UUID.randomUUID(), 1);
 
-            // when
             cartService.getCartItems(userId);
 
-            // then
             Cache.ValueWrapper cached = cacheManager.getCache(CACHE_NAME).get(userId);
             assertNotNull(cached, "Ожидалась запись в Redis-кэше после вызова getCartItems");
         }
@@ -165,16 +152,13 @@ class CartServiceRedisCacheIT {
         @Test
         @DisplayName("если данные меняются в обход сервиса, кэш продолжает отдавать устаревшие данные из Redis")
         void getCartItems_WhenUnderlyingRowChangesWithoutEviction_ShouldServeStaleCachedData() {
-            // given: прогреваем кэш
             persistCartItem(UUID.randomUUID(), 1);
             List<CartItemDto> cachedResult = cartService.getCartItems(userId);
             assertEquals(1, cachedResult.size());
 
-            // when: меняем данные напрямую через репозиторий, минуя сервис (без @CacheEvict)
             persistCartItem(UUID.randomUUID(), 5);
             List<CartItemDto> secondResult = cartService.getCartItems(userId);
 
-            // then: сервис всё ещё отдаёт закэшированный в Redis (устаревший) результат
             assertEquals(1, secondResult.size());
             assertEquals(cachedResult, secondResult);
         }
@@ -187,17 +171,13 @@ class CartServiceRedisCacheIT {
         @Test
         @DisplayName("addItemToCart вытесняет запись из Redis, следующий getCartItems видит новый товар")
         void addItemToCart_ShouldEvictCacheEntry() {
-            // given: прогреваем кэш пустым списком
             assertTrue(cartService.getCartItems(userId).isEmpty());
 
-            // when
             UUID productId = UUID.randomUUID();
             cartService.addItemToCart(new AddToCartDto(productId, 2), userId);
 
-            // then: запись вытеснена из Redis сразу после изменения
             assertNull(cacheManager.getCache(CACHE_NAME).get(userId));
 
-            // and: следующий вызов видит добавленный товар, а не устаревший пустой список
             List<CartItemDto> after = cartService.getCartItems(userId);
             assertEquals(1, after.size());
             assertEquals(productId, after.get(0).productId());
@@ -206,15 +186,12 @@ class CartServiceRedisCacheIT {
         @Test
         @DisplayName("deleteritemfromcart вытесняет запись из Redis, следующий getCartItems не видит удалённый товар")
         void deleteItemFromCart_ShouldEvictCacheEntry() {
-            // given
             UUID productId = UUID.randomUUID();
             persistCartItem(productId, 1);
             assertEquals(1, cartService.getCartItems(userId).size());
 
-            // when
             cartService.deleteritemfromcart(productId, userId);
 
-            // then
             assertNull(cacheManager.getCache(CACHE_NAME).get(userId));
             assertTrue(cartService.getCartItems(userId).isEmpty());
         }
@@ -222,15 +199,12 @@ class CartServiceRedisCacheIT {
         @Test
         @DisplayName("clearCart вытесняет запись из Redis, следующий getCartItems возвращает пустой список")
         void clearCart_ShouldEvictCacheEntry() {
-            // given
             persistCartItem(UUID.randomUUID(), 1);
             persistCartItem(UUID.randomUUID(), 2);
             assertEquals(2, cartService.getCartItems(userId).size());
 
-            // when
             cartService.clearCart(userId);
 
-            // then
             assertNull(cacheManager.getCache(CACHE_NAME).get(userId));
             assertTrue(cartService.getCartItems(userId).isEmpty());
         }

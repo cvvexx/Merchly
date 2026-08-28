@@ -1,19 +1,8 @@
-/* =========================================================================
-   Merchly — общий фронтенд-слой.
-   Подключается одной строкой из fragments/layout.html :: scripts.
-   Отвечает только за поведение интерфейса: уведомления, счётчик корзины,
-   появление блоков, «полёт» товара в корзину.
-   ========================================================================= */
 
 (function () {
     'use strict';
 
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-    /* ---------------------------------------------------------------------
-       Уведомления. Заменяют alert(): не блокируют страницу и не прерывают
-       действие пользователя.
-       ------------------------------------------------------------------- */
 
     function getToastRail() {
         let rail = document.querySelector('.toast-rail');
@@ -50,10 +39,6 @@
         }, 3600);
     }
 
-    /* ---------------------------------------------------------------------
-       Счётчик корзины в панели и в нижнем доке
-       ------------------------------------------------------------------- */
-
     function setCartCount(count, stamp) {
         const targets = document.querySelectorAll('[data-cart-count]');
         targets.forEach(function (el) {
@@ -68,13 +53,11 @@
         const pill = document.querySelector('.cart-pill');
         if (pill) {
             pill.classList.remove('is-stamped');
-            // Перезапуск анимации: браузеру нужен новый кадр
             void pill.offsetWidth;
             pill.classList.add('is-stamped');
         }
     }
 
-    // Счётчик живёт в модуле: панель отрисовывается до ответа сервера
     let cartCount = 0;
 
     function readCartCount() {
@@ -85,8 +68,6 @@
         cartCount = Math.max(0, count);
     }
 
-    // Кнопка корзины отрисовывается только вошедшим пользователям —
-    // её наличие и есть признак того, что корзину можно запрашивать.
     function isAuthenticated() {
         return !!document.querySelector('.cart-pill');
     }
@@ -107,14 +88,8 @@
                 }
             })
             .catch(function () {
-                /* Счётчик — вспомогательная информация: молча пропускаем сбой */
             });
     }
-
-    /* ---------------------------------------------------------------------
-       «Полёт в корзину» — изображение товара по дуге уходит в панель.
-       Показывает, что именно добавлено и куда оно попало.
-       ------------------------------------------------------------------- */
 
     function flyToCart(sourceImage) {
         const target = document.querySelector('.cart-pill');
@@ -141,7 +116,6 @@
         const dx = (to.left + to.width / 2) - (from.left + from.width / 2);
         const dy = (to.top + to.height / 2) - (from.top + from.height / 2);
 
-        // Подъём в середине пути превращает прямую в дугу
         const lift = Math.min(160, Math.abs(dy) * 0.45 + 60);
 
         const animation = clone.animate([
@@ -162,19 +136,56 @@
         };
     }
 
-    /* ---------------------------------------------------------------------
-       Добавление товара в корзину (каталог и карточка товара)
-       ------------------------------------------------------------------- */
+    const CSRF_COOKIE = 'XSRF-TOKEN';
+    const CSRF_HEADER = 'X-XSRF-TOKEN';
+    const CSRF_PARAM = '_csrf';
+
+    function csrfToken() {
+        const match = document.cookie.match(new RegExp('(^|; )' + CSRF_COOKIE + '=([^;]*)'));
+        return match ? decodeURIComponent(match[2]) : null;
+    }
 
     function csrfHeaders(base) {
         const headers = base || {};
-        const token = document.querySelector('meta[name="_csrf"]');
-        const header = document.querySelector('meta[name="_csrf_header"]');
+        const token = csrfToken();
 
-        if (token && header && token.content && header.content) {
-            headers[header.content] = token.content;
+        if (token) {
+            headers[CSRF_HEADER] = token;
         }
         return headers;
+    }
+
+    function injectCsrfIntoForms(root) {
+        const token = csrfToken();
+        if (!token) {
+            return;
+        }
+
+        (root || document).querySelectorAll('form').forEach(function (form) {
+            const method = (form.getAttribute('method') || 'get').toLowerCase();
+            if (method !== 'post') {
+                return;
+            }
+
+            if ((form.getAttribute('enctype') || '').toLowerCase() === 'multipart/form-data') {
+                const action = form.getAttribute('action') || window.location.pathname;
+                if (!/[?&]_csrf=/.test(action)) {
+                    form.setAttribute('action',
+                        action + (action.indexOf('?') === -1 ? '?' : '&')
+                        + CSRF_PARAM + '=' + encodeURIComponent(token));
+                }
+                return;
+            }
+
+            let field = form.querySelector('input[name="' + CSRF_PARAM + '"]');
+            if (!field) {
+                field = document.createElement('input');
+                field.type = 'hidden';
+                field.name = CSRF_PARAM;
+                form.appendChild(field);
+            }
+            field.value = token;
+        });
     }
 
     async function addToCart(button) {
@@ -196,8 +207,6 @@
                 throw new Error('HTTP ' + response.status);
             }
 
-            // Источник «полёта» — изображение товара. В каталоге оно лежит
-            // в той же карточке, на странице товара — в соседней колонке.
             const scope = button.closest('.card');
             const image = (scope && scope.querySelector('[data-cart-image]'))
                 || document.querySelector('[data-cart-image]');
@@ -223,10 +232,6 @@
         }
     }
 
-    /* ---------------------------------------------------------------------
-       Появление блоков при прокрутке
-       ------------------------------------------------------------------- */
-
     function initReveal() {
         const items = document.querySelectorAll('.reveal');
         if (!items.length) {
@@ -251,17 +256,12 @@
         }, {rootMargin: '0px 0px -8% 0px', threshold: 0.05});
 
         items.forEach(function (item, index) {
-            // Каскад внутри одной группы: сетка проявляется по очереди
             const group = item.dataset.revealGroup;
             const step = group ? index % 9 : Math.min(index, 6);
             item.style.setProperty('--reveal-delay', (step * 55) + 'ms');
             observer.observe(item);
         });
     }
-
-    /* ---------------------------------------------------------------------
-       Состояние верхней панели при прокрутке
-       ------------------------------------------------------------------- */
 
     function initRail() {
         const rail = document.querySelector('.top-rail');
@@ -284,13 +284,10 @@
         }, {passive: true});
     }
 
-    /* ---------------------------------------------------------------------
-       Запуск
-       ------------------------------------------------------------------- */
-
     function init() {
         initRail();
         initReveal();
+        injectCsrfIntoForms();
         refreshCartCount();
 
         document.addEventListener('click', function (event) {
@@ -314,6 +311,8 @@
         readCartCount: readCartCount,
         writeCartCount: writeCartCount,
         csrfHeaders: csrfHeaders,
+        csrfToken: csrfToken,
+        injectCsrfIntoForms: injectCsrfIntoForms,
         flyToCart: flyToCart
     };
 })();

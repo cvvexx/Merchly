@@ -41,13 +41,11 @@ class OrderControllerTest {
     @Test
     @DisplayName("createOrder: при ошибках валидации выбрасывает BindException и не создаёт заказ")
     void createOrder_WhenBindingResultHasErrors_ShouldThrowBindException() {
-        // given
         NewOrderDto dto = new NewOrderDto(List.of(new NewOrderItemDto(UUID.randomUUID(), 1)), "", "");
         var bindingResult = new BeanPropertyBindingResult(dto, "newOrderDto");
         bindingResult.reject("deliveryAddress", "must not be blank");
         Jwt jwt = jwtWithRoles(UUID.randomUUID(), List.of());
 
-        // when / then
         assertThrows(BindException.class, () ->
                 controller.createOrder(dto, bindingResult, jwt, UriComponentsBuilder.newInstance())
         );
@@ -58,7 +56,6 @@ class OrderControllerTest {
     @Test
     @DisplayName("createOrder: при валидном запросе создаёт заказ для пользователя из sub-claim и возвращает Location")
     void createOrder_WhenValid_ShouldCreateOrderForCurrentUserAndReturnLocation() throws BindException {
-        // given
         UUID userId = UUID.randomUUID();
         UUID orderId = UUID.randomUUID();
         NewOrderDto dto = new NewOrderDto(List.of(new NewOrderItemDto(UUID.randomUUID(), 1)), "address", "comment");
@@ -66,12 +63,10 @@ class OrderControllerTest {
         Jwt jwt = jwtWithRoles(userId, List.of());
         when(orderService.createOrder(dto, userId)).thenReturn(order(orderId, userId));
 
-        // when
         ResponseEntity<OrderDto> response = controller.createOrder(
                 dto, bindingResult, jwt, UriComponentsBuilder.fromUriString("http://localhost")
         );
 
-        // then
         assertEquals(orderId, response.getBody().id());
         verify(orderService).createOrder(eq(dto), eq(userId));
     }
@@ -98,55 +93,45 @@ class OrderControllerTest {
         @Test
         @DisplayName("realm_access.roles содержит 'ADMIN' -> isAdmin=true")
         void confirmOrder_WhenRealmRolesContainAdmin_ShouldPassIsAdminTrue() {
-            // given
             UUID userId = UUID.randomUUID();
             UUID orderId = UUID.randomUUID();
             Jwt jwt = jwtWithRoles(userId, List.of("ADMIN"));
             when(orderService.confirmOrder(orderId, userId, true)).thenReturn(order(orderId, userId));
 
-            // when
             controller.confirmOrder(orderId, jwt);
 
-            // then
             verify(orderService).confirmOrder(orderId, userId, true);
         }
 
         @Test
         @DisplayName("realm_access.roles содержит 'ROLE_ADMIN' -> isAdmin=true")
         void confirmOrder_WhenRealmRolesContainRolePrefixedAdmin_ShouldPassIsAdminTrue() {
-            // given
             UUID userId = UUID.randomUUID();
             UUID orderId = UUID.randomUUID();
             Jwt jwt = jwtWithRoles(userId, List.of("ROLE_ADMIN"));
             when(orderService.confirmOrder(orderId, userId, true)).thenReturn(order(orderId, userId));
 
-            // when
             controller.confirmOrder(orderId, jwt);
 
-            // then
             verify(orderService).confirmOrder(orderId, userId, true);
         }
 
         @Test
         @DisplayName("realm_access.roles без ADMIN -> isAdmin=false")
         void confirmOrder_WhenRealmRolesDoNotContainAdmin_ShouldPassIsAdminFalse() {
-            // given
             UUID userId = UUID.randomUUID();
             UUID orderId = UUID.randomUUID();
             Jwt jwt = jwtWithRoles(userId, List.of("USER"));
             when(orderService.confirmOrder(orderId, userId, false)).thenReturn(order(orderId, userId));
 
-            // when
             controller.confirmOrder(orderId, jwt);
 
-            // then
             verify(orderService).confirmOrder(orderId, userId, false);
         }
 
         @Test
         @DisplayName("realm_access отсутствует в токене -> isAdmin=false, а не падение")
         void confirmOrder_WhenRealmAccessClaimMissing_ShouldPassIsAdminFalse() {
-            // given
             UUID userId = UUID.randomUUID();
             UUID orderId = UUID.randomUUID();
             Jwt jwt = Jwt.withTokenValue("token")
@@ -155,10 +140,8 @@ class OrderControllerTest {
                     .build();
             when(orderService.confirmOrder(orderId, userId, false)).thenReturn(order(orderId, userId));
 
-            // when
             controller.confirmOrder(orderId, jwt);
 
-            // then
             verify(orderService).confirmOrder(orderId, userId, false);
         }
     }

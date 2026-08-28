@@ -38,7 +38,6 @@ class RestClientProductsRestClientTest {
     @Test
     @DisplayName("findById: возвращает товар при успешном ответе от product-service")
     void findById_WhenProductExists_ShouldReturnProduct() {
-        // given
         UUID productId = UUID.randomUUID();
         mockServer.expect(requestTo("http://product-service/api/products/" + productId))
                 .andExpect(method(org.springframework.http.HttpMethod.GET))
@@ -47,36 +46,30 @@ class RestClientProductsRestClientTest {
                         MediaType.APPLICATION_JSON
                 ));
 
-        // when
         ProductDto result = client.findById(productId);
 
-        // then
         assertEquals(productId, result.id());
     }
 
     @Test
     @DisplayName("findById: при 404 от product-service выбрасывает NoSuchElementException")
     void findById_WhenProductNotFound_ShouldThrowNoSuchElementException() {
-        // given
         UUID productId = UUID.randomUUID();
         mockServer.expect(requestTo("http://product-service/api/products/" + productId))
                 .andExpect(method(org.springframework.http.HttpMethod.GET))
                 .andRespond(withStatus(org.springframework.http.HttpStatus.NOT_FOUND));
 
-        // when / then
         assertThrows(NoSuchElementException.class, () -> client.findById(productId));
     }
 
     @Test
     @DisplayName("findById: при ошибке сервера выбрасывает IllegalStateException")
     void findById_WhenServerError_ShouldThrowIllegalStateException() {
-        // given
         UUID productId = UUID.randomUUID();
         mockServer.expect(requestTo("http://product-service/api/products/" + productId))
                 .andExpect(method(org.springframework.http.HttpMethod.GET))
                 .andRespond(withServerError());
 
-        // when / then
         assertThrows(IllegalStateException.class, () -> client.findById(productId));
     }
 }

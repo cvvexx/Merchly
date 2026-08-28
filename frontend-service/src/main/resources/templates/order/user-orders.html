@@ -18,7 +18,6 @@
         </a>
     </div>
 
-    <!-- Заказов ещё нет -->
     <div class="empty-state reveal" th:if="${orders == null or orders.isEmpty()}">
         <span class="empty-state__icon"><i aria-hidden="true" class="bi bi-receipt"></i></span>
         <h2 class="empty-state__title">Заказов пока нет</h2>
@@ -26,7 +25,6 @@
         <a class="btn btn-primary btn-lg px-4" th:href="@{/catalogue/products/list}">Выбрать первый товар</a>
     </div>
 
-    <!-- Список заказов -->
     <div class="row row-cols-1 g-3" th:if="${orders != null and !orders.isEmpty()}">
         <div class="col reveal" data-reveal-group="orders" th:each="order : ${orders}">
 
@@ -36,7 +34,6 @@
 
                     <div>
                         <p class="eyebrow mb-1">Заказ</p>
-                        <!-- Короткий код: полный UUID нечитаем и не нужен в списке -->
                         <h2 class="h5 mb-2 fw-bold text-dark order-id"
                             th:text="'#' + ${#strings.toUpperCase(#strings.substring(order.id, 0, 8))}">#3A7F21C4</h2>
 
@@ -56,7 +53,6 @@
                     </div>
 
                     <div class="d-flex flex-column align-items-md-end gap-3">
-                        <!-- Штамп статуса -->
                         <span class="stamp"
                               th:classappend="${#strings.toString(order.status) == 'CONFIRMED' ? 'stamp--confirmed' :
                                                (#strings.toString(order.status) == 'PENDING' ? 'stamp--pending' : 'stamp--cancelled')}"

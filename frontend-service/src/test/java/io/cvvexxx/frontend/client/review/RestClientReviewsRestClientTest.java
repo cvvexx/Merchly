@@ -39,32 +39,26 @@ class RestClientReviewsRestClientTest {
         @Test
         @DisplayName("при 400 с полем 'errors' выбрасывает BadRequestException с этими ошибками")
         void createReview_When400WithErrorsField_ShouldThrowBadRequestExceptionWithErrors() {
-            // given
             server.expect(requestTo("http://localhost/api/reviews/products"))
                     .andRespond(withStatus(BAD_REQUEST)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"errors\":[\"rating must be <= 5\"]}"));
             NewReviewDto dto = new NewReviewDto(UUID.randomUUID(), 6, "invalid");
 
-            // when
             BadRequestException exception = assertThrows(BadRequestException.class, () -> client.createReview(dto));
 
-            // then
             assertEquals(List.of("rating must be <= 5"), exception.getErrors());
         }
 
         @Test
         @DisplayName("при 400 с пустым телом выбрасывает BadRequestException с сообщением по умолчанию")
         void createReview_When400WithEmptyBody_ShouldThrowBadRequestExceptionWithDefaultMessage() {
-            // given
             server.expect(requestTo("http://localhost/api/reviews/products"))
                     .andRespond(withStatus(BAD_REQUEST));
             NewReviewDto dto = new NewReviewDto(UUID.randomUUID(), 6, "invalid");
 
-            // when
             BadRequestException exception = assertThrows(BadRequestException.class, () -> client.createReview(dto));
 
-            // then
             assertEquals(List.of("Неизвестная ошибка сервера"), exception.getErrors());
         }
     }
@@ -76,17 +70,14 @@ class RestClientReviewsRestClientTest {
         @Test
         @DisplayName("при 400 с 'detail', но без 'errors' выбрасывает BadRequestException с [detail]")
         void updateReview_When400WithDetailOnly_ShouldThrowBadRequestExceptionWithDetail() {
-            // given
             server.expect(requestTo("http://localhost/api/reviews/products"))
                     .andRespond(withStatus(BAD_REQUEST)
                             .contentType(MediaType.APPLICATION_JSON)
                             .body("{\"detail\":\"Review not found\"}"));
             UpdateReviewDto dto = new UpdateReviewDto(UUID.randomUUID(), 4, "ok");
 
-            // when
             BadRequestException exception = assertThrows(BadRequestException.class, () -> client.updateReview(dto));
 
-            // then
             assertEquals(List.of("Review not found"), exception.getErrors());
         }
     }

@@ -3,7 +3,6 @@ package io.cvvexxx.frontend.integration;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
-import com.redis.testcontainers.RedisContainer;
 import io.cvvexxx.frontend.security.KeycloakJwtAuthenticationToken;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -12,16 +11,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -39,30 +34,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-/**
- * Real end-to-end test: a live embedded servlet context, the actual Spring Security
- * filter chain, a real Redis-backed HTTP session (Testcontainers), and real outbound
- * RestClient HTTP calls against WireMock standing in for product/user/reviews services.
- * No address (Redis host/port, downstream base URLs) is hardcoded - everything is
- * discovered at runtime via @DynamicPropertySource, exactly like production discovers
- * its own addresses through environment variables per docker-compose.prod.yml.
- */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Testcontainers
 class ProductsListFlowIT {
-
-    @Container
-    static RedisContainer redis = new RedisContainer(DockerImageName.parse("redis:7-alpine"));
 
     static WireMockServer wireMock = new WireMockServer(WireMockConfiguration.options().dynamicPort());
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Autowired
-    private RedisConnectionFactory redisConnectionFactory;
 
     @BeforeAll
     static void startWireMock() {
@@ -76,8 +56,7 @@ class ProductsListFlowIT {
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.redis.host", redis::getHost);
-        registry.add("spring.data.redis.port", () -> redis.getMappedPort(6379));
+        registry.add("spring.restclient.uri.api_gateway", wireMock::baseUrl);
         registry.add("spring.restclient.uri.product_service", wireMock::baseUrl);
         registry.add("spring.restclient.uri.user_service", wireMock::baseUrl);
         registry.add("spring.restclient.uri.reviews_service", wireMock::baseUrl);
@@ -91,7 +70,6 @@ class ProductsListFlowIT {
 
     @Test
     void getProductsList_WhenProductsExist_ShouldRenderListWithOwnerAndReviewStatsFromRealHttpCalls() throws Exception {
-        // given
         UUID productId = UUID.randomUUID();
         UUID ownerId = UUID.randomUUID();
         String productJson = """
@@ -114,12 +92,10 @@ class ProductsListFlowIT {
 
         var token = fakeUserToken();
 
-        // when
         var result = mockMvc.perform(get("/catalogue/products/list")
                 .param("filter", "mouse")
                 .with(authentication(token)));
 
-        // then
         result.andExpect(status().isOk())
                 .andExpect(view().name("catalogue/products/list"))
                 .andExpect(model().attributeExists("products"));
@@ -130,30 +106,16 @@ class ProductsListFlowIT {
     }
 
     @Test
-    void redisConnectionFactory_ShouldConnectToTheRealTestcontainersRedis() {
-        //given
-
-        // when
-        try (var connection = redisConnectionFactory.getConnection()) {
-            // then
-            assertThat(connection.ping()).isEqualTo("PONG");
-        }
-    }
-
-    @Test
     void getProductsList_WhenNoProductsReturned_ShouldRenderEmptyListWithoutCallingOwnerOrReviewServices() throws Exception {
-        // given
         wireMock.stubFor(WireMock.get(urlPathEqualTo("/api/products"))
                 .willReturn(aResponse().withStatus(200).withHeader("Content-Type", "application/json").withBody("[]")));
 
         var token = fakeUserToken();
 
-        // when
         var result = mockMvc.perform(get("/catalogue/products/list")
                 .param("filter", "nonexistent")
                 .with(authentication(token)));
 
-        // then
         result.andExpect(status().isOk())
                 .andExpect(view().name("catalogue/products/list"));
 
@@ -176,7 +138,7 @@ class ProductsListFlowIT {
                 .map(GrantedAuthority.class::cast)
                 .toList();
         String notExpiredAccessToken = fakeJwt(userId, Instant.now().plus(1, ChronoUnit.HOURS));
-        return new KeycloakJwtAuthenticationToken(userId.toString(), userId, notExpiredAccessToken, "refresh-token", authorities);
+        return new KeycloakJwtAuthenticationToken(userId.toString(), userId, notExpiredAccessToken, authorities);
     }
 
     private String fakeJwt(UUID subject, Instant expiresAt) {

@@ -35,11 +35,9 @@ class DefaultOrderServiceTest {
     @Test
     @DisplayName("enrichOrders: пустой/null список заказов не обращается к product-service и возвращает пустой список")
     void enrichOrders_WithEmptyOrNullOrders_ShouldReturnEmptyListWithoutCallingProductService() {
-        // given / when
         var resultForNull = orderService.enrichOrders(null);
         var resultForEmpty = orderService.enrichOrders(List.of());
 
-        // then
         assertEquals(List.of(), resultForNull);
         assertEquals(List.of(), resultForEmpty);
         verifyNoInteractions(productsRestClient);
@@ -48,7 +46,6 @@ class DefaultOrderServiceTest {
     @Test
     @DisplayName("enrichOrders: подставляет название товара из product-service и запрашивает только уникальные id")
     void enrichOrders_ShouldMapProductTitlesAndDeduplicateProductIds() {
-        // given
         UUID productId = UUID.randomUUID();
         UUID otherProductId = UUID.randomUUID();
         OrderDto order = order(List.of(
@@ -60,10 +57,8 @@ class DefaultOrderServiceTest {
         when(productsRestClient.findAllProductsByIds(List.of(productId, otherProductId)))
                 .thenReturn(List.of(product(productId, "Футболка"), product(otherProductId, "Кружка")));
 
-        // when
         List<OrderDetailsView> result = orderService.enrichOrders(List.of(order));
 
-        // then
         assertEquals(1, result.size());
         assertEquals(3, result.get(0).items().size());
         assertEquals("Футболка", result.get(0).items().get(0).title());
@@ -78,25 +73,20 @@ class DefaultOrderServiceTest {
     @Test
     @DisplayName("enrichOrders: если товар не найден в product-service, подставляет заглушку вместо падения")
     void enrichOrders_WhenProductMissingFromProductService_ShouldFallBackToPlaceholderTitle() {
-        // given
         UUID productId = UUID.randomUUID();
         OrderDto order = order(List.of(orderItem(productId, 1)));
         when(productsRestClient.findAllProductsByIds(List.of(productId))).thenReturn(List.of());
 
-        // when
         List<OrderDetailsView> result = orderService.enrichOrders(List.of(order));
 
-        // then
         assertEquals("Товар не найден", result.get(0).items().get(0).title());
     }
 
     @Test
     @DisplayName("enrichOrder: null заказ -> null результат")
     void enrichOrder_WhenOrderIsNull_ShouldReturnNull() {
-        // given / when
         OrderDetailsView result = orderService.enrichOrder(null);
 
-        // then
         assertNull(result);
         verifyNoInteractions(productsRestClient);
     }
@@ -104,7 +94,6 @@ class DefaultOrderServiceTest {
     @Test
     @DisplayName("enrichOrder: делегирует в enrichOrders и возвращает первый результат")
     void enrichOrder_ShouldReturnEnrichedOrder() {
-        // given
         UUID orderId = UUID.randomUUID();
         UUID productId = UUID.randomUUID();
         OrderDto order = order(orderId, List.of(orderItem(productId, 1)));
@@ -112,10 +101,8 @@ class DefaultOrderServiceTest {
         when(productsRestClient.findAllProductsByIds(List.of(productId)))
                 .thenReturn(List.of(product(productId, "Кружка")));
 
-        // when
         OrderDetailsView result = orderService.enrichOrder(order);
 
-        // then
         assertEquals(orderId, result.id());
         assertEquals("Кружка", result.items().get(0).title());
     }

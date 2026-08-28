@@ -18,7 +18,6 @@
         </a>
     </div>
 
-    <!-- Пустая корзина -->
     <div class="empty-state reveal" th:if="${items.isEmpty()}">
         <span class="empty-state__icon"><i aria-hidden="true" class="bi bi-bag"></i></span>
         <h2 class="empty-state__title">В корзине пока пусто</h2>
@@ -28,7 +27,6 @@
 
     <div class="row g-4" id="cart-content" th:if="${!items.isEmpty()}">
 
-        <!-- Список товаров -->
         <div class="col-lg-7 reveal">
             <div class="card shadow-sm border-0">
                 <div class="card-body p-0">
@@ -80,7 +78,6 @@
             </div>
         </div>
 
-        <!-- Оформление заказа -->
         <div class="col-lg-5 reveal">
             <div class="card shadow border-0">
                 <div class="card-body p-4">
@@ -135,7 +132,6 @@
 <nav th:replace="~{fragments/layout :: dock('cart')}"></nav>
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 
-<!-- Удаление товара без перезагрузки страницы -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.delete-btn').forEach(function (button) {

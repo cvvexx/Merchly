@@ -11,25 +11,22 @@ import java.util.UUID;
 @Getter
 public class KeycloakJwtAuthenticationToken extends AbstractAuthenticationToken implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private final String principal;
     private final UUID userId;
     private final String accessToken;
-    private final String refreshToken;
 
     public KeycloakJwtAuthenticationToken(
             String principal,
             UUID userId,
             String accessToken,
-            String refreshToken,
             Collection<? extends GrantedAuthority> authorities
     ) {
         super(authorities);
         this.principal = principal;
         this.userId = userId;
         this.accessToken = accessToken;
-        this.refreshToken = refreshToken;
         setAuthenticated(true);
     }
 
@@ -42,5 +39,4 @@ public class KeycloakJwtAuthenticationToken extends AbstractAuthenticationToken 
     public Object getPrincipal() {
         return principal;
     }
-
 }

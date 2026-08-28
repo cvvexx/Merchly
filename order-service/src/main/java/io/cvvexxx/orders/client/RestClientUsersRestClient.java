@@ -14,7 +14,7 @@ public class RestClientUsersRestClient implements UsersRestClient {
     @Override
     public void clearUserCart() {
         log.info("Clearing user cart...");
-        restClient//TODO(ADD try/catch)
+        restClient
                 .delete()
                 .uri("/api/users/cart")
                 .retrieve()

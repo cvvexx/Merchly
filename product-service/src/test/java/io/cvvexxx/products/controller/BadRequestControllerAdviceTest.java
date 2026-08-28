@@ -31,7 +31,6 @@ class BadRequestControllerAdviceTest {
     @Test
     @DisplayName("handleBindException: возвращает 400 с локализованным заголовком и списком ошибок")
     void handleBindException_ShouldReturnBadRequestWithLocalizedTitleAndErrors() {
-        // given
         Object target = new Object();
         var bindingResult = new BeanPropertyBindingResult(target, "target");
         bindingResult.reject("title", "must not be blank");
@@ -40,10 +39,8 @@ class BadRequestControllerAdviceTest {
         when(messageSource.getMessage("errors.400.title", new Object[0], "errors.400.title", locale))
                 .thenReturn("Bad Request");
 
-        // when
         ResponseEntity<ProblemDetail> response = advice.handleBindException(exception, locale);
 
-        // then
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("Bad Request", response.getBody().getDetail());
         assertEquals(List.of("must not be blank"), response.getBody().getProperties().get("errors"));

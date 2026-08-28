@@ -39,17 +39,14 @@ class CartControllerTest {
     @Test
     @DisplayName("getCartPage: наполняет модель товарами и итоговой суммой корзины")
     void getCartPage_ShouldPopulateModelWithItemsAndTotalPrice() {
-        // given
         Product product = new Product(UUID.randomUUID(), "title", "desc", 1, BigDecimal.TEN, "image.png", UUID.randomUUID());
         CartItemView item = new CartItemView(product, 2, "/img/product.png");
         CartPageData pageData = new CartPageData(List.of(item), new BigDecimal("20.00"));
         when(defaultCartService.getCartPage()).thenReturn(pageData);
         var model = new ConcurrentModel();
 
-        // when
         String result = controller.getCartPage(model);
 
-        // then
         assertEquals("cart/cart", result);
         assertEquals(List.of(item), model.getAttribute("items"));
         assertEquals(new BigDecimal("20.00"), model.getAttribute("totalPrice"));
@@ -58,13 +55,10 @@ class CartControllerTest {
     @Test
     @DisplayName("addProductToCart: делегирует добавление товара в корзину user-service и возвращает 200 OK")
     void addProductToCart_ShouldDelegateToUserServiceAndReturnOk() {
-        // given
         AddToCartDto dto = new AddToCartDto(UUID.randomUUID(), 3);
 
-        // when
         ResponseEntity<Void> response = controller.addProductToCart(dto);
 
-        // then
         assertEquals(HttpStatus.OK, response.getStatusCode());
         verify(userPublicRestClient).addProductToCart(dto);
     }
@@ -72,13 +66,10 @@ class CartControllerTest {
     @Test
     @DisplayName("deleteProductFromCart: делегирует удаление товара из корзины и возвращает 204 No Content")
     void deleteProductFromCart_ShouldDelegateToUserServiceAndReturnNoContent() {
-        // given
         UUID productId = UUID.randomUUID();
 
-        // when
         ResponseEntity<Void> response = controller.deleteProductFromCart(productId);
 
-        // then
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
         verify(userPublicRestClient).deleteProductFromCart(productId);
     }

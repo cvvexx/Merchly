@@ -1,6 +1,5 @@
 package io.cvvexxx.frontend.config;
 
-import io.cvvexxx.frontend.client.keycloak.KeycloakRestClient;
 import io.cvvexxx.frontend.client.order.RestClientOrdersRestClient;
 import io.cvvexxx.frontend.client.product.internal.RestClientProductsInternalRestClient;
 import io.cvvexxx.frontend.client.product.publIc.RestClientProductsPublicRestClient;
@@ -18,11 +17,11 @@ import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.client.*;
-import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.AuthorizedClientServiceOAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.client.OAuth2ClientHttpRequestInterceptor;
 import org.springframework.web.client.RestClient;
 
@@ -31,23 +30,19 @@ import java.io.IOException;
 @Configuration
 public class RestClientBeans {
 
-    @Bean
-    public OAuth2AuthorizedClientManager authorizedClientManager(
-            ClientRegistrationRepository clientRegistrationRepository,
-            OAuth2AuthorizedClientRepository authorizedClientRepository
-    ) {
-        var authorizedClientProvider = OAuth2AuthorizedClientProviderBuilder.builder()
-                .authorizationCode()
-                .refreshToken()
-                .clientCredentials() // Включаем поддержку client_credentials
-                .build();
+    private ClientHttpResponse relayUserToken(
+            HttpRequest request,
+            byte[] body,
+            ClientHttpRequestExecution execution
+    ) throws IOException {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
-        var authorizedClientManager = new DefaultOAuth2AuthorizedClientManager(
-                clientRegistrationRepository, authorizedClientRepository
-        );
-        authorizedClientManager.setAuthorizedClientProvider(authorizedClientProvider);
+        if (authentication instanceof KeycloakJwtAuthenticationToken jwtToken
+                && jwtToken.getAccessToken() != null) {
+            request.getHeaders().add(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken.getAccessToken());
+        }
 
-        return authorizedClientManager;
+        return execution.execute(request, body);
     }
 
     @Bean("serviceAccountAuthorizedClientManager")
@@ -67,52 +62,15 @@ public class RestClientBeans {
         return authorizedClientManager;
     }
 
-    private ClientHttpResponse getClientHttpRequestInterceptor(
-            HttpRequest request,
-            byte[] body,
-            ClientHttpRequestExecution execution,
-            OAuth2AuthorizedClientManager authorizedClientManager
-    ) throws IOException {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        // 1. Вариант, если аутентификация через OAuth2 (SSO/Redirect)
-        if (authentication instanceof OAuth2AuthenticationToken oauth2Token) {
-            OAuth2AuthorizeRequest authorizeRequest = OAuth2AuthorizeRequest
-                    .withClientRegistrationId(oauth2Token.getAuthorizedClientRegistrationId())
-                    .principal(authentication)
-                    .build();
-
-            OAuth2AuthorizedClient client = authorizedClientManager.authorize(authorizeRequest);
-
-            if (client != null && client.getAccessToken() != null) {
-                request.getHeaders().add(
-                        HttpHeaders.AUTHORIZATION,
-                        "Bearer " + client.getAccessToken().getTokenValue()
-                );
-            }
-        } else if (authentication instanceof KeycloakJwtAuthenticationToken jwtToken) {
-            if (jwtToken.getCredentials() != null) {
-                request.getHeaders().add(
-                        HttpHeaders.AUTHORIZATION,
-                        "Bearer " + jwtToken.getCredentials()
-                );
-            }
-        }
-
-        return execution.execute(request, body);
-    }
-
     @Bean
     public RestClientProductsPublicRestClient productsPublicRestClient(
-            @Value("${spring.restclient.uri.product_service:http://localhost:8081}") String restClientUri,
-            OAuth2AuthorizedClientManager authorizedClientManager
+            @Value("${spring.restclient.uri.api_gateway:${spring.restclient.uri.product_service:http://localhost:8081}}")
+            String restClientUri
     ) {
         return new RestClientProductsPublicRestClient(
                 RestClient.builder()
                         .baseUrl(restClientUri)
-                        .requestInterceptor((request, body, execution) ->
-                                getClientHttpRequestInterceptor(request, body, execution, authorizedClientManager)
-                        )
+                        .requestInterceptor(this::relayUserToken)
                         .build()
         );
     }
@@ -138,15 +96,13 @@ public class RestClientBeans {
 
     @Bean
     public RestClientUserPublicRestClient userPublicRestClient(
-            @Value("${spring.restclient.uri.user_service:http://localhost:8082}") String restClientUri,
-            OAuth2AuthorizedClientManager authorizedClientManager
+            @Value("${spring.restclient.uri.api_gateway:${spring.restclient.uri.user_service:http://localhost:8082}}")
+            String restClientUri
     ) {
         return new RestClientUserPublicRestClient(
                 RestClient.builder()
                         .baseUrl(restClientUri)
-                        .requestInterceptor((request, body, execution) ->
-                                getClientHttpRequestInterceptor(request, body, execution, authorizedClientManager)
-                        )
+                        .requestInterceptor(this::relayUserToken)
                         .build()
         );
     }
@@ -172,49 +128,25 @@ public class RestClientBeans {
 
     @Bean
     public RestClientReviewsRestClient restClientReviewsRestClient(
-            @Value("${spring.restclient.uri.reviews_service}") String restClientUri,
-            OAuth2AuthorizedClientManager authorizedClientManager
+            @Value("${spring.restclient.uri.api_gateway:${spring.restclient.uri.reviews_service}}") String restClientUri
     ) {
         return new RestClientReviewsRestClient(
                 RestClient.builder()
                         .baseUrl(restClientUri)
-                        .requestInterceptor((request, body, execution) ->
-                                getClientHttpRequestInterceptor(request, body, execution, authorizedClientManager)
-                        )
+                        .requestInterceptor(this::relayUserToken)
                         .build()
         );
     }
 
     @Bean
     public RestClientOrdersRestClient restClientOrdersRestClient(
-            @Value("${spring.restclient.uri.orders_service}") String restClientUri,
-            OAuth2AuthorizedClientManager authorizedClientManager
+            @Value("${spring.restclient.uri.api_gateway:${spring.restclient.uri.orders_service}}") String restClientUri
     ) {
         return new RestClientOrdersRestClient(
                 RestClient.builder()
                         .baseUrl(restClientUri)
-                        .requestInterceptor((request, body, execution) ->
-                                getClientHttpRequestInterceptor(request, body, execution, authorizedClientManager))
+                        .requestInterceptor(this::relayUserToken)
                         .build()
-        );
-    }
-
-    @Bean
-    public KeycloakRestClient keycloakAuthClient(
-            @Value("${keycloak.client-id:merchly_frontend_client}")
-            String clientId,
-
-            @Value("${spring.security.oauth2.client.provider.keycloak.token-uri}")
-            String tokenUri,
-
-            @Value("${spring.security.oauth2.client.registration.keycloak.client-secret}")
-            String clientSecret
-    ) {
-        return new KeycloakRestClient(
-                RestClient.builder().build(),
-                clientId,
-                tokenUri,
-                clientSecret
         );
     }
 }

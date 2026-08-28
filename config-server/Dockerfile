@@ -8,6 +8,7 @@ COPY order-service/pom.xml order-service/
 COPY product-service/pom.xml product-service/
 COPY review-service/pom.xml review-service/
 COPY user-service/pom.xml user-service/
+COPY gateway-service/pom.xml gateway-service/
 RUN mvn -B -ntp dependency:go-offline -Dmaven.test.skip=true
 
 COPY . .

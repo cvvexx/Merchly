@@ -1,4 +1,4 @@
-package io.cvvexxx.frontend.dto.user;
+package io.cvvexxx.apigateway.dto;
 
 public record LoginUserDto(
         String login,

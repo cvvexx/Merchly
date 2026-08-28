@@ -37,10 +37,6 @@ public class CartController {
         return "cart/cart";
     }
 
-    /**
-     * Число товаров в корзине для счётчика в панели навигации.
-     * Отдельный лёгкий метод: карточки товаров здесь не нужны.
-     */
     @GetMapping("/count")
     @ResponseBody
     public ResponseEntity<Map<String, Integer>> getCartItemsCount() {

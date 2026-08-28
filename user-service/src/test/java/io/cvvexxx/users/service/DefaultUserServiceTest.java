@@ -86,7 +86,6 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("Успешная регистрация пользователя в системе")
         void registerUser_Success() {
-            // given
             Role role = new Role();
             role.setRole("USER");
 
@@ -101,7 +100,7 @@ class DefaultUserServiceTest {
             );
 
             when(roleRepository.findByRole("USER")).thenReturn(Optional.of(role));
-            when(userRepository.saveAndFlush(any(User.class))).thenReturn(savedUser); // Используем saveAndFlush
+            when(userRepository.saveAndFlush(any(User.class))).thenReturn(savedUser);
 
             when(usersResource.create(any(UserRepresentation.class))).thenReturn(keycloakResponse);
             when(keycloakResponse.getStatus()).thenReturn(201);
@@ -111,26 +110,22 @@ class DefaultUserServiceTest {
             when(avatarFile.isEmpty()).thenReturn(false);
             when(defaultMinioService.upload(avatarFile)).thenReturn("avatar.png");
 
-            // when
             UserCreatedDto result = defaultUserService.registerUserInKeycloakAndLocalDb(newUserDto, avatarFile);
 
-            // then
             assertNotNull(result);
             assertEquals(UUID.fromString(KEYCLOAK_ID), result.id());
             assertEquals("testuser", result.username());
 
             verify(defaultMinioService, times(1)).upload(avatarFile);
-            verify(userRepository, times(1)).saveAndFlush(any(User.class)); // Заменили save на saveAndFlush
+            verify(userRepository, times(1)).saveAndFlush(any(User.class));
         }
 
         @Test
         @DisplayName("Ошибка 409 (Конфликт) от Keycloak выбрасывает IllegalArgumentException")
         void registerUser_KeycloakConflict_ShouldThrowException() {
-            // given
             when(usersResource.create(any(UserRepresentation.class))).thenReturn(keycloakResponse);
             when(keycloakResponse.getStatus()).thenReturn(409);
 
-            // when & then
             FieldAlreadyExistsException ex = assertThrows(
                     FieldAlreadyExistsException.class,
                     () -> defaultUserService.registerUserInKeycloakAndLocalDb(newUserDto, null)
@@ -143,7 +138,6 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("Ошибка сохранения в БД вызывает откат (удаление из Keycloak и MinIO)")
         void registerUser_DbFailure_ShouldRollback() {
-            // given
             when(usersResource.create(any(UserRepresentation.class))).thenReturn(keycloakResponse);
             when(keycloakResponse.getStatus()).thenReturn(201);
             when(keycloakResponse.getHeaderString("Location")).thenReturn("http://localhost:8090/" + KEYCLOAK_ID);
@@ -155,7 +149,6 @@ class DefaultUserServiceTest {
 
             when(usersResource.get(KEYCLOAK_ID)).thenReturn(userResource);
 
-            // when & then
             EntityNotFoundException ex = assertThrows(
                     EntityNotFoundException.class,
                     () -> defaultUserService.registerUserInKeycloakAndLocalDb(newUserDto, avatarFile)
@@ -173,7 +166,6 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("Успешное получение информации с фильтрацией системных ролей")
         void getUserInfo_Success() {
-            // given
             Role role1 = new Role();
             role1.setRole("USER");
             Role role2 = new Role();
@@ -187,10 +179,8 @@ class DefaultUserServiceTest {
 
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
 
-            // when
             UserInfoDto result = defaultUserService.getUserInfo(USER_ID);
 
-            // then
             assertEquals("testuser", result.username());
             assertFalse(result.roles().contains("ROLE_USER"));
         }
@@ -212,7 +202,6 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("Успешное обновление пользователя с заменой аватара")
         void updateUserInfo_WithNewAvatar_ShouldUpdateDbAndMinioAndKeycloak() {
-            // given
             User user = new User();
             user.setId(USER_ID);
             user.setUsername("old_username");
@@ -225,10 +214,8 @@ class DefaultUserServiceTest {
             when(avatarFile.isEmpty()).thenReturn(false);
             when(defaultMinioService.upload(avatarFile)).thenReturn("new_avatar.png");
 
-            // when
             defaultUserService.updateUserInfo(USER_ID, updateDto, avatarFile);
 
-            // then
             ArgumentCaptor<UserRepresentation> repCaptor = ArgumentCaptor.forClass(UserRepresentation.class);
             verify(userResource, times(1)).update(repCaptor.capture());
             assertEquals("new_username", repCaptor.getValue().getUsername());
@@ -243,14 +230,12 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("Если Keycloak падает, выбрасывается RuntimeException")
         void updateUserInfo_KeycloakFails_ShouldThrowException() {
-            // given
             User user = new User();
             user.setId(USER_ID);
 
             when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
             when(usersResource.get(USER_ID.toString())).thenThrow(new RuntimeException("Keycloak timeout"));
 
-            // when & then
             RuntimeException ex = assertThrows(
                     RuntimeException.class,
                     () -> defaultUserService.updateUserInfo(USER_ID, updateDto, null)
@@ -267,17 +252,14 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("findUsersByIds: игнорирует null ID и возвращает корректный список")
         void findUsersByIds_Success() {
-            // given
             User user = new User();
             user.setId(USER_ID);
             user.setUsername("owner");
 
             when(userRepository.findAllByIdIn(List.of(USER_ID))).thenReturn(List.of(user));
 
-            // when
             List<UserProductOwnerDto> result = defaultUserService.findUsersByIds(Arrays.asList(USER_ID, null));
 
-            // then
             assertEquals(1, result.size());
             assertEquals("owner", result.get(0).username());
         }
@@ -285,13 +267,10 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("findUsersByIds: если передан пустой список валидных ID, возвращает пустой список")
         void findUsersByIds_EmptyValidIds_ReturnsEmpty() {
-            // given
             List<UUID> idsWithOnlyNull = Collections.singletonList(null);
 
-            // when
             List<UserProductOwnerDto> result = defaultUserService.findUsersByIds(idsWithOnlyNull);
 
-            // then
             assertTrue(result.isEmpty());
             verifyNoInteractions(userRepository);
         }
@@ -299,10 +278,8 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("findUserById: если ID null, возвращает анонимного пользователя")
         void findUserById_NullId_ReturnsAnonymous() {
-            // given / when
             UserProductOwnerDto result = defaultUserService.findUserById(null);
 
-            // then
             assertEquals("Неизвестен", result.username());
             assertNull(result.id());
         }
@@ -315,7 +292,6 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("Успешное получение публичного профиля по юзернейму")
         void getPublicUserProfile_Success() {
-            // given
             User user = new User();
             user.setId(USER_ID);
             user.setUsername("public_user");
@@ -323,10 +299,8 @@ class DefaultUserServiceTest {
 
             when(userRepository.findByUsername("public_user")).thenReturn(Optional.of(user));
 
-            // when
             UserProfilePublicDto result = defaultUserService.getPublicUserProfile("public_user");
 
-            // then
             assertEquals(USER_ID, result.id());
             assertEquals("public_user", result.username());
         }
@@ -334,10 +308,8 @@ class DefaultUserServiceTest {
         @Test
         @DisplayName("Если пользователь не найден, выбрасывается UsernameNotFoundException")
         void getPublicUserProfile_NotFound_ShouldThrowException() {
-            // given
             when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
-            // when / then
             assertThrows(
                     UsernameNotFoundException.class,
                     () -> defaultUserService.getPublicUserProfile("unknown")

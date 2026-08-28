@@ -65,7 +65,10 @@ public class DefaultProductService implements ProductService {
 
         List<ProductOwnerViewModel> viewModels = products.stream()
                 .map(product -> {
-                    ProductOwnerDto creator = creatorsMap.get(product.createdBy());
+                    ProductOwnerDto creator = creatorsMap.getOrDefault(
+                            product.createdBy(),
+                            new ProductOwnerDto(product.createdBy(), "Неизвестен", "default-user-avatar.png")
+                    );
                     ReviewStatsDto stats = statsMap.getOrDefault(
                             product.id(),
                             new ReviewStatsDto(product.id(), 0.0, 0L)
