@@ -7,8 +7,14 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  MAVEN_ARGS: -B -ntp -Dstyle.color=never
 
 jobs:
   build:
@@ -18,24 +24,66 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Установка JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '17'
           cache: maven
 
-      - name: Компиляция всех модулей
-        run: mvn -B -ntp -DskipTests compile
-
       - name: Тесты (юнит + интеграционные)
-        run: mvn -B -ntp verify
+        run: mvn $MAVEN_ARGS verify
+
+      - name: Сводка по тестам
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import glob, os, xml.etree.ElementTree as ET
+          from collections import defaultdict
+
+          stats = defaultdict(lambda: [0, 0, 0, 0])
+          failed = []
+          for path in glob.glob('*/target/*-reports/TEST-*.xml'):
+              module = path.split('/')[0]
+              try:
+                  root = ET.parse(path).getroot()
+              except ET.ParseError:
+                  continue
+              kind = 'IT' if 'failsafe' in path else 'unit'
+              key = (module, kind)
+              stats[key][0] += int(root.get('tests', 0))
+              stats[key][1] += int(root.get('failures', 0))
+              stats[key][2] += int(root.get('errors', 0))
+              stats[key][3] += int(root.get('skipped', 0))
+              for case in root.iter('testcase'):
+                  if case.find('failure') is not None or case.find('error') is not None:
+                      failed.append(f"{case.get('classname')}.{case.get('name')}")
+
+          if not stats:
+              print('Отчётов о тестах не найдено.')
+              raise SystemExit
+
+          total = [sum(v[i] for v in stats.values()) for i in range(4)]
+          mark = '❌' if (total[1] or total[2]) else '✅'
+          print(f'## {mark} Тесты: {total[0]} всего, {total[1]} failures, {total[2]} errors, {total[3]} skipped\n')
+          print('| Модуль | Тип | Тестов | Failures | Errors | Skipped |')
+          print('|---|---|---:|---:|---:|---:|')
+          for (module, kind), v in sorted(stats.items()):
+              print(f'| `{module}` | {kind} | {v[0]} | {v[1]} | {v[2]} | {v[3]} |')
+
+          if failed:
+              print('\n### Упавшие тесты\n')
+              for name in failed[:50]:
+                  print(f'* `{name}`')
+              if len(failed) > 50:
+                  print(f'* …и ещё {len(failed) - 50}')
+          PY
 
       - name: Отчёты о тестах
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-reports
           path: |
@@ -49,10 +97,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     timeout-minutes: 60
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Подготовка env-файлов
         run: |
