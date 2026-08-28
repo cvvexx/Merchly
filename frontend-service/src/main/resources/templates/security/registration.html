@@ -19,6 +19,11 @@
                     <h1 class="h4 text-center mb-2 fw-bold">Создать аккаунт</h1>
                     <p class="text-muted small text-center mb-4">Займёт минуту. Аватар можно добавить позже.</p>
 
+                    <div class="alert alert-danger mb-4"
+                         th:if="${param.error != null and param.error[0] == 'rate_limited'}">
+                        Слишком много попыток регистрации. Подождите и попробуйте снова.
+                    </div>
+
                     <div class="alert alert-danger mb-4" th:if="${errors != null}">
                         <ul class="mb-0 ps-3">
                             <li th:each="err : ${errors}" th:text="${err}">Ошибка валидации</li>

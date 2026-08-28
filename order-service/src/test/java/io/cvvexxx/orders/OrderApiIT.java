@@ -52,7 +52,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * service) is hardcoded - everything is discovered at runtime via {@link DynamicPropertySource},
  * the same way production wires different addresses per environment via env vars.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "spring.cloud.config.enabled=false")
 @ActiveProfiles("test")
 @Testcontainers
 class OrderApiIT {

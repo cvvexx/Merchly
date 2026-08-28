@@ -51,6 +51,11 @@
                     Неверный логин или пароль. Проверьте раскладку и попробуйте ещё раз.
                 </div>
 
+                <div class="alert alert-danger py-2 small"
+                     th:if="${param.error != null and param.error[0] == 'rate_limited'}">
+                    Слишком много попыток входа. Подождите несколько минут и попробуйте снова.
+                </div>
+
                 <div class="alert alert-success py-2 small" th:if="${param.logout}">
                     Вы вышли из аккаунта.
                 </div>

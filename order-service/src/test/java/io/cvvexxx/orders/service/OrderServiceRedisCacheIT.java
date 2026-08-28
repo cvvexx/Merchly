@@ -52,7 +52,7 @@ import static org.mockito.Mockito.*;
  * Kafka publishing) are mocked - they are unrelated to caching and are already covered by
  * {@link io.cvvexxx.orders.OrderApiIT}.
  */
-@SpringBootTest
+@SpringBootTest(properties = "spring.cloud.config.enabled=false")
 @ActiveProfiles("test")
 @Testcontainers
 @Import(OrderServiceRedisCacheIT.ITConfig.class)

@@ -5,6 +5,8 @@ import io.cvvexxx.apigateway.security.JwtUtils;
 import io.cvvexxx.apigateway.security.KeycloakJwtAuthenticationToken;
 import io.cvvexxx.apigateway.security.KeycloakTokenRefreshFilter;
 import io.cvvexxx.apigateway.security.TokenRelayFilter;
+import io.cvvexxx.apigateway.security.ratelimit.RateLimitFilter;
+import io.cvvexxx.apigateway.security.ratelimit.RateLimitPolicy;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -57,6 +59,7 @@ public class SecurityBeans {
 
     private final KeycloakRestClient keycloakRestClient;
     private final JwtUtils jwtUtils;
+    private final RateLimitPolicy rateLimitPolicy;
 
     @Bean
     @Order(1)
@@ -77,6 +80,7 @@ public class SecurityBeans {
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+                .addFilterAfter(new RateLimitFilter(rateLimitPolicy), AuthorizationFilter.class)
                 .build();
     }
 
@@ -134,6 +138,7 @@ public class SecurityBeans {
                         AuthorizationFilter.class
                 )
                 .addFilterAfter(new TokenRelayFilter(), AuthorizationFilter.class)
+                .addFilterAfter(new RateLimitFilter(rateLimitPolicy), AuthorizationFilter.class)
                 .build();
     }
 
