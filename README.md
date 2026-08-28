@@ -81,7 +81,12 @@ flowchart LR
         US -->|"admin-cli"| KC
 
         CS["config-server :8888"]
+        GW -->|"конфигурация при старте"| CS
+        FE -->|"конфигурация при старте"| CS
         US -->|"конфигурация при старте"| CS
+        PS -->|"конфигурация при старте"| CS
+        OS -->|"конфигурация при старте"| CS
+        RS -->|"конфигурация при старте"| CS
 
         US --- USDB[("users_db")]
         PS --- PSDB[("products_db")]
@@ -101,7 +106,7 @@ flowchart LR
 | `product-service`  | 8081 | Каталог, поиск по названию, CRUD товаров (ADMIN), картинки в MinIO, списание и возврат остатков по Kafka |
 | `user-service`     | 8082 | Регистрация в Keycloak + локальный профиль с тем же UUID, аватары в MinIO, корзина                       |
 | `review-service`   | 8083 | Отзывы с пагинацией, один отзыв на товар от пользователя, агрегированная статистика оценок               |
-| `order-service`    | 8084 | Заказы, статусы, история, интеграция с Kafka, OpenAPI-схема                                              |
+| `order-service`    | 8084 | Заказы, статусы, история, интеграция с Kafka                                                             |
 | `config-server`    | 8888 | Spring Cloud Config Server: раздаёт конфигурацию сервисам из git-репозитория `merchly-server-config`     |
 
 Наружу пробрасывает порт только `gateway-service` и инфраструктура — `frontend-service`
@@ -115,17 +120,16 @@ flowchart LR
 | **Core**               | Java 17, Spring Boot 3.4.1, Maven (мультимодуль, 7 модулей)                                        |
 | **Архитектура**        | Микросервисы, BFF (Backend for Frontend)                                                           |
 | **Базы данных**        | PostgreSQL 16 — отдельный инстанс на каждый сервис, миграции Flyway                                |
-| **Кеш и сессии**       | Redis 7 — Spring Cache в четырёх сервисах + Spring Session для сессий BFF                          |
+| **Кеш и сессии**       | Redis 7 — Spring Cache в четырёх сервисах + Spring Session для сессий шлюза                        |
 | **Асинхронность**      | Apache Kafka (KRaft) — три топика между `order-service` и `product-service`                        |
 | **Безопасность**       | Spring Security, Keycloak 24 (OIDC), JWT, resource server в каждом бэкенд-сервисе                  |
 | **Rate limiting**      | Bucket4j 8.10 на шлюзе — token bucket по IP, пользователю и логину                                 |
 | **Отказоустойчивость** | Spring Cloud Gateway MVC 4.2, Resilience4j circuit breaker с fallback-эндпоинтами                  |
 | **Хранилище файлов**   | MinIO (S3-совместимое), клиент `io.minio:minio`                                                    |
-| **Конфигурация**       | Spring Cloud Config 2024.0.0 — `config-server` + git-репозиторий конфигов, клиент в `user-service` |
+| **Конфигурация**       | Spring Cloud Config 2024.0.0 — `config-server` + git-репозиторий конфигов, клиентами все шесть сервисов |
 | **Инфраструктура**     | Docker, Docker Compose (multi-stage сборка внутри контейнеров)                                     |
 | **Frontend**           | Thymeleaf, Bootstrap 5.3 (CDN), собственный CSS, ванильный JS с Fetch API                          |
 | **Тестирование**       | JUnit 5, Mockito, MockMvc, Testcontainers (Postgres, Redis, Kafka, MinIO), WireMock                |
-| **Документация API**   | springdoc-openapi в `order-service` (`/swagger-ui.html`)                                           |
 
 ## 🔐 Авторизация
 
@@ -257,50 +261,56 @@ sequenceDiagram
 
 Конфигурация вынесена из образов в отдельный git-репозиторий
 [`merchly-server-config`](https://github.com/cvvexx/merchly-server-config); раздаёт её
-`config-server` (Spring Cloud Config Server, порт 8888). Первым клиентом подключён
-**`user-service`** — у него не осталось локальных `application-{dev,prod}.properties`,
-всё приезжает с сервера при старте.
+`config-server` (Spring Cloud Config Server, порт 8888). Клиентами подключены
+**все шесть сервисов** — ни у одного не осталось локальных
+`application-{dev,prod}.properties`, всё приезжает с сервера при старте.
 
 ```mermaid
 flowchart LR
-    GIT["git: merchly-server-config<br/>user-service.properties<br/>user-service-{dev,prod}.properties<br/>application*.properties"]
+    GIT["git: merchly-server-config<br/>application*.properties<br/>{service}.properties<br/>{service}-{dev,prod}.properties"]
     CS["config-server :8888"]
-    US["user-service :8082"]
+
+    subgraph CLIENTS["Клиенты"]
+        GW["gateway-service :8086"]
+        FE["frontend-service :8080"]
+        US["user-service :8082"]
+        PS["product-service :8081"]
+        RS["review-service :8083"]
+        OS["order-service :8084"]
+    end
+
     ENV[".env / environment<br/>секреты и адреса"]
 
     GIT -->|"clone-on-start, JGit"| CS
-    CS -->|"GET /user-service/{profile}"| US
-    ENV -->|"подстановка ${...}"| US
+    CS -->|"GET /{service}/{profile}"| CLIENTS
+    ENV -->|"подстановка ${...}"| CLIENTS
 ```
 
 Как это устроено:
 
-* в `user-service` остался единственный локальный файл `application.properties` —
+* в каждом сервисе остался единственный локальный `application.properties` —
   в нём только `spring.application.name` (он нужен ДО обращения к серверу) и
   настройки самого клиента;
 * имя приложения = имя файла в config-репозитории, активный профиль (`dev` / `prod`)
   = суффикс файла, поэтому `user-service` с профилем `prod` получает склейку
   `application.properties` + `application-prod.properties` + `user-service.properties`
-    + `user-service-prod.properties`;
+  + `user-service-prod.properties`;
 * **секретов в config-репозитории нет** — там лежат плейсхолдеры `${USERS_DB_PASSWORD}`,
   `${MINIO_SECRET_KEY}`, `${KEYCLOAK_ADMIN_PASSWORD}`, а значения подставляет окружение
   самого сервиса из `.env`;
 * импорт помечен `optional:`, а строгость включается переменной `CONFIG_FAIL_FAST`.
-  В compose стоит `CONFIG_FAIL_FAST=true` и `depends_on: config-server: service_healthy`,
+  В `docker-compose.prod.yml` у всех шести сервисов стоят `CONFIG_SERVER_URL`,
+  `CONFIG_FAIL_FAST=true` и `depends_on: config-server: service_healthy`,
   поэтому в прод-сборке недоступный config-server — это падение на старте
   (`ConfigClientFailFastException`), а не молчаливый запуск с половиной настроек.
-  Локально и в тестах значение по умолчанию `false`, профиль `test` отключает клиент
-  целиком (`spring.cloud.config.enabled=false`).
+  Локально значение по умолчанию `false`, а в тестах клиент отключён системным
+  свойством `spring.cloud.config.enabled=false` — оно задано в surefire и failsafe
+  в корневом `pom.xml`.
 
-Посмотреть, что именно сервер отдаёт сервису:
-
-```bash
-curl -s http://localhost:8888/user-service/prod | jq
-```
-
-Остальные четыре сервиса пока читают конфигурацию из своих локальных
-`application-{profile}.properties`; файлы для них в config-репозитории уже
-подготовлены, подключение — по той же схеме.
+> Тот же ключ в `application-test.properties` **не работает**: `spring.config.import`
+> объявлен в базовом `application.properties` и резолвится на фазе ConfigData раньше,
+> чем читаются профильные файлы. Отключать клиента нужно системным свойством —
+> тогда `Binder` видит флаг вовремя.
 
 ## ⚡ Кеш, сессии и файлы
 
@@ -350,7 +360,15 @@ mvn verify      # + интеграционные тесты (*IT.java, нуже�
 Юнит-тесты покрывают сервисный слой (Mockito), контроллеры (MockMvc + `spring-security-test`),
 REST-клиенты (WireMock), Kafka-компоненты и правила rate limiting на шлюзе
 (`RateLimitFilterTest` — в том числе что анонимный трафик из внутренней сети не жжёт
-IP-бакет и что подделка `X-Forwarded-For` не помогает). Интеграционные тесты поднимают реальную
+IP-бакет и что подделка `X-Forwarded-For` не помогает).
+
+Клиент config-server в тестах отключён: корневой `pom.xml` передаёт
+`spring.cloud.config.enabled=false` системным свойством в surefire и failsafe,
+поэтому прогон не зависит от того, поднят ли у разработчика стек на `localhost:8888`
+(почему именно системным свойством, а не через `application-test.properties`, —
+в разделе про конфигурацию).
+
+Интеграционные тесты поднимают реальную
 инфраструктуру через Testcontainers:
 
 | Тест                       | Что поднимает                 | Что проверяет                                         |
@@ -362,6 +380,8 @@ IP-бакет и что подделка `X-Forwarded-For` не помогает
 | `CartServiceRedisCacheIT`  | Postgres, Redis               | кеш корзины и его инвалидацию                         |
 | `ReviewApiIT`              | Postgres, Redis               | отзывы и агрегированную статистику                    |
 | `ProductsListFlowIT`       | Redis, WireMock               | сквозной рендер списка товаров на BFF                 |
+| `GatewayTrafficRoutingIT`  | Redis, WireMock               | что BFF ходит в API через шлюз, а не напрямую         |
+| `GatewayServiceRoutesIT`   | Redis, WireMock               | что каждый префикс уходит в свой сервис               |
 | `GatewayRoutingIT`         | Redis, WireMock               | маршрутизацию шлюза и проброс токена                  |
 | `GatewayBffFlowIT`         | Redis, WireMock               | сквозной вход и обращение к API через шлюз            |
 | `GatewayFallbackIT`        | Redis, WireMock               | fallback-эндпоинты при недоступности сервиса          |
