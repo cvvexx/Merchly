@@ -3,8 +3,9 @@
 [![CI](https://github.com/cvvexx/Merchly/actions/workflows/ci.yml/badge.svg)](https://github.com/cvvexx/Merchly/actions/workflows/ci.yml)
 
 Маркетплейс мерча на микросервисах: Java 17, Spring Boot 3.4.1, PostgreSQL, Redis, Kafka,
-Keycloak, MinIO. Пять сервисов вокруг BFF-шлюза, асинхронное оформление заказа через Kafka,
-сессии и кеш в Redis, интеграционные тесты на Testcontainers.
+Keycloak, MinIO. API-шлюз как единственный вход, BFF на Thymeleaf за ним и четыре
+бэкенд-сервиса, асинхронное оформление заказа через Kafka, сессии и кеш в Redis,
+интеграционные тесты на Testcontainers.
 
 Весь стек поднимается одной командой вместе с демо-каталогом и тестовыми аккаунтами —
 Java и Maven на хосте не нужны.
@@ -26,14 +27,19 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ## 📖 О проекте
 
 Merchly — учебно-показательный проект интернет-магазина мерча, собранный как набор
-независимых сервисов вокруг BFF-шлюза. Пять Spring Boot приложений в одном
-Maven-мультимодуле:
+независимых сервисов за общим API-шлюзом. Шесть Spring Boot приложений плюс
+`config-server` в одном Maven-мультимодуле (7 модулей):
 
-* каждый сервис владеет своей базой (`merchly_users`, `merchly_products`,
+* **`gateway-service` — единственный вход снаружи.** На нём живут страница входа и
+  обмен логина с паролем на токены Keycloak, сессия в Redis, ограничение частоты
+  запросов и маршрутизация: страницы уходят в BFF, `/api/**` — в бэкенд-сервисы,
+  каждый маршрут прикрыт circuit breaker'ом с fallback-эндпоинтом.
+* **`frontend-service` — BFF.** Рендерит Thymeleaf-страницы, собирая их из ответов
+  остальных сервисов; публичные вызовы делает обратно через шлюз, релея токен
+  пользователя. Наружу его порт не проброшен — браузер до него напрямую не достаёт.
+* каждый бэкенд-сервис владеет своей базой (`merchly_users`, `merchly_products`,
   `merchly_orders`, `merchly_reviews`), связи между сущностями — только по UUID,
   без физических внешних ключей между базами;
-* пользователь общается только с `frontend-service` (BFF), который рендерит
-  Thymeleaf-страницы и сам ходит в остальные сервисы по внутренней сети Compose;
 * заказ проходит через Kafka: `order-service` публикует событие, `product-service`
   списывает остатки и при нехватке товара присылает отказ.
 
@@ -63,7 +69,9 @@ flowchart LR
         GW -->|"сессия"| REDIS
         GW -->|"login / refresh"| KC
 
-        FE -->|"Bearer JWT через шлюз"| GW
+        FE -->|"публичные /api/** :<br/>Bearer JWT через шлюз"| GW
+        FE -->|"/api/internal/** :<br/>client_credentials"| US
+        FE -->|"/api/internal/** :<br/>client_credentials"| PS
 
         OS -->|"client_credentials"| PS
         OS -->|"токен пользователя"| US
@@ -78,7 +86,7 @@ flowchart LR
         US --> MINIO
         PS --> MINIO
 
-        US -->|"admin-cli"| KC
+        US -->|"Admin REST API<br/>(реалм master)"| KC
 
         CS["config-server :8888"]
         GW -->|"конфигурация при старте"| CS
@@ -96,13 +104,16 @@ flowchart LR
     end
 
     Browser -->|"картинки товаров и аватары"| MINIO
-    Browser -->|"страница входа"| KC
 ```
+
+Страница входа живёт на шлюзе, а не в Keycloak: пароль уходит на `POST /do-login`,
+и уже шлюз меняет его на токены через direct access grant — браузер в Keycloak
+не редиректится.
 
 | Сервис             | Порт | Зона ответственности                                                                                     |
 |--------------------|------|----------------------------------------------------------------------------------------------------------|
-| `gateway-service`  | 8086 | Единственный вход снаружи: маршрутизация, вход в Keycloak, circuit breaker, rate limiting                |
-| `frontend-service` | 8080 | BFF: Thymeleaf-страницы, обновление токенов, агрегация ответов остальных сервисов                        |
+| `gateway-service`  | 8086 | Единственный вход снаружи: вход в Keycloak и обновление токенов, сессия, CSRF, rate limiting, маршрутизация, circuit breaker |
+| `frontend-service` | 8080 | BFF: Thymeleaf-страницы и агрегация ответов остальных сервисов; сам stateless resource server            |
 | `product-service`  | 8081 | Каталог, поиск по названию, CRUD товаров (ADMIN), картинки в MinIO, списание и возврат остатков по Kafka |
 | `user-service`     | 8082 | Регистрация в Keycloak + локальный профиль с тем же UUID, аватары в MinIO, корзина                       |
 | `review-service`   | 8083 | Отзывы с пагинацией, один отзыв на товар от пользователя, агрегированная статистика оценок               |
@@ -110,8 +121,11 @@ flowchart LR
 | `config-server`    | 8888 | Spring Cloud Config Server: раздаёт конфигурацию сервисам из git-репозитория `merchly-server-config`     |
 
 Наружу пробрасывает порт только `gateway-service` и инфраструктура — `frontend-service`
-и остальные бэкенд-сервисы доступны лишь внутри сети Compose. `frontend-service` ходит
-в API тоже через шлюз, релея токен пользователя.
+и остальные бэкенд-сервисы доступны лишь внутри сети Compose. Публичные `/api/**`
+BFF зовёт тоже через шлюз, релея токен пользователя, — так лимиты и circuit breaker
+работают и на этих вызовах. Напрямую он ходит только во внутренние `/api/internal/**`
+`user-service` и `product-service` под сервис-аккаунтом: там нет ни лимитов по
+пользователю, ни смысла гонять трафик через шлюз.
 
 ## 🛠 Технологический стек
 
@@ -121,7 +135,7 @@ flowchart LR
 | **Архитектура**        | Микросервисы, BFF (Backend for Frontend)                                                           |
 | **Базы данных**        | PostgreSQL 16 — отдельный инстанс на каждый сервис, миграции Flyway                                |
 | **Кеш и сессии**       | Redis 7 — Spring Cache в четырёх сервисах + Spring Session для сессий шлюза                        |
-| **Асинхронность**      | Apache Kafka (KRaft) — три топика между `order-service` и `product-service`                        |
+| **Асинхронность**      | Apache Kafka (KRaft) — три топика между `order-service` и `product-service` + `.DLT` для битых сообщений |
 | **Безопасность**       | Spring Security, Keycloak 24 (OIDC), JWT, resource server в каждом бэкенд-сервисе                  |
 | **Rate limiting**      | Bucket4j 8.10 на шлюзе — token bucket по IP, пользователю и логину                                 |
 | **Отказоустойчивость** | Spring Cloud Gateway MVC 4.2, Resilience4j circuit breaker с fallback-эндпоинтами                  |
@@ -133,7 +147,7 @@ flowchart LR
 
 ## 🔐 Авторизация
 
-Единственная точка входа для браузера — BFF. Схема входа:
+Единственная точка входа для браузера — шлюз, там же живёт форма логина. Схема входа:
 
 1. Пользователь отправляет форму на `POST /do-login` — эндпоинт живёт на шлюзе.
 2. `gateway-service` меняет логин/пароль на пару токенов у Keycloak
@@ -142,21 +156,24 @@ flowchart LR
    HTTP-сессии. Сессия хранится **в Redis** (Spring Session), браузер получает
    только cookie с идентификатором сессии — сами JWT наружу не уходят и в
    `localStorage` не попадают.
-4. `KeycloakTokenRefreshFilter` на каждом запросе проверяет `exp` access-токена и,
-   если до истечения осталось меньше 10 секунд, прозрачно обновляет пару токенов
-   через Keycloak. Если обновить не удалось — сессия инвалидируется и пользователя
-   редиректит на `/login?error=session_expired`.
-5. В бэкенд-сервисы запросы идут с `Authorization: Bearer <access token>` — каждый из
-   них является OAuth2 resource server со `SessionCreationPolicy.STATELESS` и сам
-   валидирует подпись по JWKS Keycloak.
+4. `KeycloakTokenRefreshFilter` на шлюзе на каждом запросе проверяет `exp`
+   access-токена и, если до истечения осталось меньше 10 секунд, прозрачно обновляет
+   пару токенов через Keycloak. Если обновить не удалось — сессия инвалидируется и
+   пользователя редиректит на `/login?error=session_expired`.
+5. Дальше `TokenRelayFilter` подставляет в проксируемый запрос
+   `Authorization: Bearer <access token>` из сессии. Получатели — и бэкенд-сервисы,
+   и сам BFF: каждый из них OAuth2 resource server со `SessionCreationPolicy.STATELESS`,
+   валидирующий подпись по JWKS Keycloak. Собственной сессии нет ни у кого, кроме шлюза.
 
 Для служебных вызовов, где нет пользователя, используется `client_credentials`:
 `order-service` ходит в `/api/internal/products` под клиентом `merchly_orders_client`,
 BFF — под `merchly_frontend_client`. Оба сервис-аккаунта имеют роль `INTERNAL_SERVICE`,
 и внутренние эндпоинты закрыты `@PreAuthorize("hasRole('INTERNAL_SERVICE')")`.
 
-CSRF на BFF включён (`CookieCsrfTokenRepository`), токен пробрасывается в страницы
-мета-тегами и подставляется в fetch-запросы.
+CSRF включён на шлюзе (`CookieCsrfTokenRepository.withHttpOnlyFalse()`), токен
+пробрасывается в страницы мета-тегами и подставляется в fetch-запросы. Внутренние
+сервисы, включая BFF, CSRF не проверяют — они stateless и авторизуются только
+по Bearer-токену.
 
 **Роли.** Живут в Keycloak (`ROLE_USER` — композитная роль по умолчанию, `ROLE_ADMIN` —
 точечно) и дублируются в таблице `user_roles` user-service. `USER` покупает, оставляет
@@ -200,7 +217,8 @@ CSRF на BFF включён (`CookieCsrfTokenRepository`), токен проб�
 | `GET /api/products/**`, `GET /api/reviews/**` | IP         | 120/мин        |
 | создание отзыва                               | USER       | 10/10м         |
 | `POST /api/orders/create`                     | USER       | 10/мин         |
-| загрузка аватара и картинок в MinIO           | USER       | 5/10м и 20/час |
+| редактирование профиля (аватар)               | USER       | 5/10м          |
+| создание товара (картинки)                    | USER       | 20/час         |
 | корзина                                       | USER       | 60/мин         |
 
 Отказ на формах входа и регистрации — редирект на свою страницу с `error=rate_limited`,
@@ -252,6 +270,10 @@ sequenceDiagram
   возврат остатка тоже выполняется только для реально списанного заказа.
 * **Гонки по остатку.** Товары выбираются `findByIdForUpdate` (пессимистичная
   блокировка), так что параллельные заказы на последнюю единицу не уведут остаток в минус.
+* **Битые сообщения не крутятся вечно.** В обоих сервисах слушатели обёрнуты
+  `DefaultErrorHandler` с экспоненциальным бэкоффом (4 повтора, 1 → 10 с), после чего
+  запись уезжает в `<топик>.DLT` через `DeadLetterPublishingRecoverer` — очередь
+  не встаёт колом из-за одного события.
 * **Статусы.** `PENDING → CONFIRMED` или `PENDING → CANCELLED`; подтверждение —
   ручное действие пользователя или админа, отдельного события «заказ подтверждён» нет.
   Страница заказа опрашивает `/orders/{id}/status`, поэтому асинхронная отмена
@@ -315,7 +337,7 @@ flowchart LR
 ## ⚡ Кеш, сессии и файлы
 
 Redis выступает и кешем (`spring.cache.type=redis`, JSON-сериализация), и хранилищем
-сессий BFF. Кеш включён в четырёх сервисах — каталог и карточка товара, корзина,
+сессий шлюза. Кеш включён в четырёх сервисах — каталог и карточка товара, корзина,
 профили, заказы, статистика отзывов — с TTL от 2 до 10 минут и инвалидацией через
 `@CacheEvict` в сервисном слое. Корзина при этом остаётся персистентной: она лежит
 в таблице `cart_item` user-service, Redis только ускоряет чтение.
@@ -345,8 +367,8 @@ Redis выступает и кешем (`spring.cache.type=redis`, JSON-сери
   Redis на шлюзе уже есть, переезд это замена `ConcurrentHashMap` в `RateLimitBuckets`
   на `bucket4j-redis`;
 * лимит частоты не ограничивает **размер** запроса: `POST /api/reviews/products/stats`
-  и внутренние `?ids=` принимают неограниченный `List<UUID>` — это `@Size` в самих
-  сервисах, а не задача шлюза;
+  и внутренние `?ids=` принимают неограниченный `List<UUID>` — это лечится `@Size`
+  в самих сервисах, а не на шлюзе;
 * интерфейс и сообщения валидации только на русском;
 * уровень логирования Spring Security и REST-клиентов выставлен в `DEBUG`.
 
@@ -374,24 +396,24 @@ IP-бакет и что подделка `X-Forwarded-For` не помогает
 | Тест                       | Что поднимает                 | Что проверяет                                         |
 |----------------------------|-------------------------------|-------------------------------------------------------|
 | `ProductServiceIT`         | Postgres, Kafka, MinIO, Redis | сценарии каталога и обработку событий заказа          |
-| `OrderApiIT`               | Postgres, Kafka, WireMock     | создание заказа и отмену по `order-failed`            |
+| `OrderApiIT`               | Postgres, Kafka, Redis, WireMock | создание заказа и отмену по `order-failed`         |
 | `OrderServiceRedisCacheIT` | Postgres, Redis               | что `@Cacheable`/`@CacheEvict` действительно работают |
 | `UserApiIT`                | Postgres, Redis, MinIO        | регистрацию, профиль, загрузку аватара                |
 | `CartServiceRedisCacheIT`  | Postgres, Redis               | кеш корзины и его инвалидацию                         |
 | `ReviewApiIT`              | Postgres, Redis               | отзывы и агрегированную статистику                    |
-| `ProductsListFlowIT`       | Redis, WireMock               | сквозной рендер списка товаров на BFF                 |
-| `GatewayTrafficRoutingIT`  | Redis, WireMock               | что BFF ходит в API через шлюз, а не напрямую         |
+| `ProductsListFlowIT`       | WireMock                      | сквозной рендер списка товаров на BFF                 |
+| `GatewayTrafficRoutingIT`  | WireMock                      | что BFF ходит в API через шлюз, а не напрямую         |
 | `GatewayServiceRoutesIT`   | Redis, WireMock               | что каждый префикс уходит в свой сервис               |
 | `GatewayRoutingIT`         | Redis, WireMock               | маршрутизацию шлюза и проброс токена                  |
 | `GatewayBffFlowIT`         | Redis, WireMock               | сквозной вход и обращение к API через шлюз            |
-| `GatewayFallbackIT`        | Redis, WireMock               | fallback-эндпоинты при недоступности сервиса          |
+| `GatewayFallbackIT`        | Redis                         | fallback-эндпоинты при недоступности сервиса          |
 
 ### CI
 
 `.github/workflows/ci.yml` запускается на каждый push и pull request:
 
-| Джоба            | Что делает                                                                                                                                             |
-|------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Сборка и тесты` | JDK 17 (Temurin) + кеш Maven, `mvn compile`, затем `mvn verify` — юнит-тесты и Testcontainers-тесты; отчёты surefire/failsafe сохраняются как артефакт |
-| `Сборка образов` | делает `.env.prod` и `.env.dev` из `.env.example`, валидирует оба compose-файла и собирает образы всех сервисов                                        |
+| Джоба            | Что делает                                                                                                                                                     |
+|------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Сборка и тесты` | JDK 17 (Temurin) + кеш Maven, `mvn verify` — юнит-тесты и Testcontainers-тесты; сводка по модулям в Job Summary, отчёты surefire/failsafe — в артефакт `test-reports` |
+| `Сборка образов` | делает `.env.prod` и `.env.dev` из `.env.example`, валидирует оба compose-файла и собирает образы всех сервисов. Идёт после тестов и только на pull request, `master` или ручной запуск |
 

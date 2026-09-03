@@ -36,9 +36,10 @@
    ```bash
    docker compose -f docker-compose.prod.yml ps
    ```
-   `frontend-service` стартует последним — он ждёт готовности всех остальных.
+   `frontend-service` стартует последним — он ждёт готовности всех остальных,
+   включая шлюз.
 5. Откройте:
-    * приложение — http://localhost:8080
+    * приложение — http://localhost:8086 (порт `gateway-service`, единственный вход)
     * консоль Keycloak — http://localhost:8090 (`admin` / `admin`)
     * консоль MinIO — http://localhost:9001 (ключи из `.env.prod`)
 
@@ -58,7 +59,8 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml down -v
 
 | Компонент          | Порт                                                                |
 |--------------------|---------------------------------------------------------------------|
-| `frontend-service` | 8080 (единственный сервис, проброшенный наружу)                     |
+| `gateway-service`  | 8086 — единственный сервис приложения, проброшенный наружу          |
+| `frontend-service` | 8080 — только внутри сети Compose (`expose`, без публикации порта)  |
 | `product-service`  | 8081 — только внутри сети Compose                                   |
 | `user-service`     | 8082 — только внутри сети Compose                                   |
 | `review-service`   | 8083 — только внутри сети Compose                                   |
@@ -70,32 +72,35 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml down -v
 | MinIO              | 9000, консоль 9001                                                  |
 | PostgreSQL         | 5432 users, 5433 products, 5434 keycloak, 5435 reviews, 5436 orders |
 
-Swagger UI `order-service` открывается только при локальном запуске сервиса из IDE —
-http://localhost:8084/swagger-ui.html — потому что наружу его порт не проброшен.
+Порты бэкенд-сервисов наружу не публикуются: и браузер, и BFF ходят в API через
+`gateway-service`. Чтобы постучаться в сервис напрямую, запускайте его локально
+из IDE в dev-режиме.
 
 ## Режим разработки
 
-`docker-compose.dev.yml` поднимает только инфраструктуру — БД, Redis, Kafka, Keycloak
-и MinIO — а Spring-сервисы запускаются из IDE с профилем `dev`
+`docker-compose.dev.yml` поднимает только инфраструктуру — БД, Redis, Kafka, Keycloak,
+MinIO и `config-server` — а Spring-сервисы запускаются из IDE с профилем `dev`
 (`SPRING_PROFILES_ACTIVE=dev`):
 
 ```bash
+cp .env.example .env.dev
 docker compose --env-file .env.dev -f docker-compose.dev.yml up -d
 ```
 
-Два отличия от прод-конфигурации, о которых стоит знать заранее:
+Реалм `merchly` импортируется так же, как в проде (`start-dev --import-realm` из
+`.keycloak/realm-export.json`), бакеты MinIO создаёт и наполняет тот же контейнер
+`minio-init`. Отличие одно: **демо-данные в БД не заливаются** — dev-конфигурация
+не задаёт `SPRING_FLYWAY_LOCATIONS`, поэтому `classpath:db/seed` не подхватывается
+и каталог стартует пустым.
 
-* Keycloak стартует **без** `--import-realm`, реалм `merchly` придётся импортировать
-  вручную из `.keycloak/realm-export.json` через консоль администратора;
-* бакеты MinIO не создаются и демо-данные не заливаются — контейнера `minio-init` в
-  dev-конфигурации нет, а `SPRING_FLYWAY_LOCATIONS` не включает `classpath:db/seed`.
+Все шесть сервисов, запущенные из IDE, берут конфигурацию у поднятого рядом
+`config-server` — `http://localhost:8888` (адрес переопределяется переменной
+`CONFIG_SERVER_URL`). Локальных `application-dev.properties` ни у одного сервиса
+больше нет, так что без config-server они стартуют с неполной конфигурацией; чтобы
+падать сразу и с внятной ошибкой, поставьте `CONFIG_FAIL_FAST=true`.
 
-Вместе с инфраструктурой поднимается и `config-server` — `user-service`, запущенный
-из IDE, берёт конфигурацию с `http://localhost:8888` (адрес переопределяется
-переменной `CONFIG_SERVER_URL`). Локальных `application-dev.properties` у
-`user-service` больше нет, так что без config-server он стартует с неполной
-конфигурацией; чтобы падать сразу и с внятной ошибкой, поставьте
-`CONFIG_FAIL_FAST=true`.
+Открывать приложение всё так же нужно на порту шлюза — http://localhost:8086, — поэтому
+`gateway-service` должен быть среди запущенных из IDE.
 
 Проверить, что сервер отдаёт нужный набор свойств:
 
@@ -149,7 +154,7 @@ docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build
 ## Кеши
 
 Redis используется и как кеш (`spring.cache.type=redis`, JSON-сериализация), и как
-хранилище сессий BFF. Все записи имеют TTL, инвалидация — через `@CacheEvict` в
+хранилище сессий шлюза. Все записи имеют TTL, инвалидация — через `@CacheEvict` в
 сервисном слое.
 
 | Сервис            | Кеш                                                    | Что хранит                                           | TTL    |
@@ -174,9 +179,10 @@ mvn verify      # + интеграционные тесты (*IT.java, нуже�
 не работает с Docker Engine 29+ (проба соединения использует API 1.32).
 
 Те же команды выполняет CI (`.github/workflows/ci.yml`) на каждый push и pull request:
-джоба «Сборка и тесты» гоняет `mvn verify` на JDK 17 и складывает отчёты
-surefire/failsafe в артефакт `test-reports`, джоба «Сборка образов» проверяет
-compose-файлы и собирает образы всех пяти сервисов.
+джоба «Сборка и тесты» гоняет `mvn verify` на JDK 17, печатает сводку по модулям
+в Job Summary и складывает отчёты surefire/failsafe в артефакт `test-reports`;
+джоба «Сборка образов» проверяет compose-файлы и собирает образы всех сервисов —
+она идёт после тестов и только на pull request, `master` или ручной запуск.
 
 ## Типовые проблемы
 
@@ -184,5 +190,6 @@ compose-файлы и собирает образы всех пяти серви
 |--------------------------------------------------------|-------------------------------------------------------------------------|
 | Часть контейнеров не стартует, в логах пустые имена БД | Забыт флаг `--env-file` — см. предупреждение выше                       |
 | Каталог пустой после запуска                           | Тома не пустые, сиды не применились — `down -v` и поднять заново        |
-| В dev-режиме не пускает в приложение                   | Реалм `merchly` не импортирован — залейте `.keycloak/realm-export.json` |
+| В dev-режиме каталог пустой                             | Так и задумано: сиды БД в dev не применяются — см. «Режим разработки»    |
+| Сервис из IDE падает с `ConfigClientFailFastException` | Не поднят `config-server` — запустите dev-стек или снимите `CONFIG_FAIL_FAST` |
 | Интеграционные тесты падают на старте контейнеров      | Старый Testcontainers с Docker Engine 29+ — нужна версия 1.21.4         |
